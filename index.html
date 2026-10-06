@@ -6,7 +6,10 @@
 
   <title>Συμβάσεις OneDrive</title>
 
-  <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+  <script
+    type="text/javascript"
+    src="https://alcdn.msauth.net/browser/2.35.0/js/msal-browser.min.js">
+  </script>
 
   <style>
     body {
@@ -38,8 +41,7 @@
     }
 
     #status {
-      margin-top: 20px;
-      margin-bottom: 20px;
+      margin: 20px 0;
       font-weight: bold;
     }
 
@@ -74,329 +76,174 @@
 
 </div>
 
-
 <script>
 
 const msalConfig = {
-
   auth: {
-
-    clientId:
-      "d15aa5e9-860e-4e0a-af14-283c401a08cc",
-
-    authority:
-      "https://login.microsoftonline.com/a17412e1-e4a8-4fed-835a-d1e613cf24d3",
-
-    redirectUri:
-      "https://spirosdalianismech-art.github.io/symvaseis-onedrive/"
-
+    clientId: "d15aa5e9-860e-4e0a-af14-283c401a08cc",
+    authority: "https://login.microsoftonline.com/a17412e1-e4a8-4fed-835a-d1e613cf24d3",
+    redirectUri: "https://spirosdalianismech-art.github.io/symvaseis-onedrive/"
   },
-
   cache: {
-
     cacheLocation: "sessionStorage",
-
     storeAuthStateInCookie: false
-
   }
-
 };
 
-
-let authClient = null;
-
-
-const authReady = (async function () {
-
-  authClient =
-    new msal.PublicClientApplication(msalConfig);
-
-  /*
-     Στις νεότερες εκδόσεις του MSAL
-     απαιτείται initialize().
-     Στις παλαιότερες μπορεί να μην υπάρχει.
-  */
-
-  if (typeof authClient.initialize === "function") {
-
-    await authClient.initialize();
-
-  }
-
-  return authClient;
-
-})();
-
+const msalInstance =
+  new msal.PublicClientApplication(msalConfig);
 
 const loginRequest = {
-
   scopes: [
     "User.Read",
     "Files.ReadWrite"
   ]
-
 };
-
 
 async function signIn() {
 
-  const status =
-    document.getElementById("status");
-
   try {
 
-    status.innerHTML =
+    document.getElementById("status").innerHTML =
       "Γίνεται σύνδεση με Microsoft...";
 
-
-    const client =
-      await authReady;
-
-
     const response =
-      await client.loginPopup(loginRequest);
+      await msalInstance.loginPopup(loginRequest);
 
-
-    client.setActiveAccount(
+    msalInstance.setActiveAccount(
       response.account
     );
 
-
-    status.innerHTML =
+    document.getElementById("status").innerHTML =
       "Συνδεθήκατε ως: " +
       response.account.username;
-
 
   } catch (error) {
 
     console.error(error);
 
-    status.innerHTML =
+    document.getElementById("status").innerHTML =
       "Σφάλμα σύνδεσης: " +
       error.message;
-
   }
-
 }
 
-
-
-async function getAccount() {
-
-  const client =
-    await authReady;
-
+async function getToken() {
 
   let account =
-    client.getActiveAccount();
-
+    msalInstance.getActiveAccount();
 
   if (!account) {
 
     const accounts =
-      client.getAllAccounts();
-
+      msalInstance.getAllAccounts();
 
     if (accounts.length > 0) {
 
       account = accounts[0];
 
-      client.setActiveAccount(account);
-
+      msalInstance.setActiveAccount(account);
     }
-
   }
-
-
-  return account;
-
-}
-
-
-
-async function getToken() {
-
-  const client =
-    await authReady;
-
-
-  const account =
-    await getAccount();
-
 
   if (!account) {
 
     throw new Error(
-      "Πρέπει πρώτα να πατήσετε Σύνδεση με Microsoft."
+      "Πρέπει πρώτα να συνδεθείτε."
     );
-
   }
-
 
   try {
 
     const response =
-      await client.acquireTokenSilent({
-
+      await msalInstance.acquireTokenSilent({
         scopes: [
           "User.Read",
           "Files.ReadWrite"
         ],
-
         account: account
-
       });
 
-
     return response.accessToken;
-
 
   } catch (error) {
 
-    console.log(
-      "Silent token failed. Popup will be used.",
-      error
-    );
-
-
     const response =
-      await client.acquireTokenPopup({
-
+      await msalInstance.acquireTokenPopup({
         scopes: [
           "User.Read",
           "Files.ReadWrite"
         ],
-
         account: account
-
       });
 
-
     return response.accessToken;
-
   }
-
 }
-
-
 
 async function loadFiles() {
 
-  const status =
-    document.getElementById("status");
-
-  const filesDiv =
-    document.getElementById("files");
-
-
   try {
 
-    status.innerHTML =
+    document.getElementById("status").innerHTML =
       "Ανάκτηση αρχείων από το OneDrive...";
-
 
     const token =
       await getToken();
 
-
     const response =
       await fetch(
-
         "https://graph.microsoft.com/v1.0/me/drive/root/children",
-
         {
-
-          method: "GET",
-
           headers: {
-
-            "Authorization":
+            Authorization:
               "Bearer " + token
-
           }
-
         }
-
       );
-
 
     if (!response.ok) {
-
-      const errorText =
-        await response.text();
-
       throw new Error(
-        "Microsoft Graph " +
-        response.status +
-        " - " +
-        errorText
+        "Microsoft Graph error: " +
+        response.status
       );
-
     }
-
 
     const data =
       await response.json();
 
+    const filesDiv =
+      document.getElementById("files");
 
     filesDiv.innerHTML =
       "<h2>Αρχεία OneDrive</h2>";
 
-
-    if (
-      !data.value ||
-      data.value.length === 0
-    ) {
-
-      filesDiv.innerHTML +=
-        "<p>Δεν βρέθηκαν αρχεία στον κεντρικό φάκελο.</p>";
-
-    }
-
-
-    data.value.forEach(function (item) {
+    data.value.forEach(function(item) {
 
       const div =
         document.createElement("div");
 
-
       div.className =
         "file";
 
-
-      if (item.folder) {
-
-        div.textContent =
-          "📁 " + item.name;
-
-      } else {
-
-        div.textContent =
-          "📄 " + item.name;
-
-      }
-
+      div.textContent =
+        (item.folder ? "📁 " : "📄 ") +
+        item.name;
 
       filesDiv.appendChild(div);
-
     });
 
-
-    status.innerHTML =
-      "Η σύνδεση με το OneDrive λειτουργεί κανονικά.";
-
+    document.getElementById("status").innerHTML =
+      "Η σύνδεση με το OneDrive λειτουργεί.";
 
   } catch (error) {
 
     console.error(error);
 
-
-    status.innerHTML =
+    document.getElementById("status").innerHTML =
       "Σφάλμα: " +
       error.message;
-
   }
-
 }
 
 </script>
