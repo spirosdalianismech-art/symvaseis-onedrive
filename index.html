@@ -43,6 +43,8 @@
     #status {
       margin: 20px 0;
       font-weight: bold;
+      white-space: pre-wrap;
+      word-break: break-word;
     }
 
     .file {
@@ -84,14 +86,17 @@ const msalConfig = {
     authority: "https://login.microsoftonline.com/a17412e1-e4a8-4fed-835a-d1e613cf24d3",
     redirectUri: "https://spirosdalianismech-art.github.io/symvaseis-onedrive/"
   },
+
   cache: {
     cacheLocation: "sessionStorage",
     storeAuthStateInCookie: false
   }
 };
 
+
 const msalInstance =
   new msal.PublicClientApplication(msalConfig);
+
 
 const loginRequest = {
   scopes: [
@@ -100,11 +105,15 @@ const loginRequest = {
   ]
 };
 
+
 async function signIn() {
+
+  const status =
+    document.getElementById("status");
 
   try {
 
-    document.getElementById("status").innerHTML =
+    status.innerHTML =
       "Γίνεται σύνδεση με Microsoft...";
 
     const response =
@@ -114,7 +123,7 @@ async function signIn() {
       response.account
     );
 
-    document.getElementById("status").innerHTML =
+    status.innerHTML =
       "Συνδεθήκατε ως: " +
       response.account.username;
 
@@ -122,13 +131,14 @@ async function signIn() {
 
     console.error(error);
 
-    document.getElementById("status").innerHTML =
-      "Σφάλμα σύνδεσης: " +
+    status.innerHTML =
+      "Σφάλμα σύνδεσης:\n" +
       error.message;
   }
 }
 
-async function getToken() {
+
+async function getAccount() {
 
   let account =
     msalInstance.getActiveAccount();
@@ -146,10 +156,19 @@ async function getToken() {
     }
   }
 
+  return account;
+}
+
+
+async function getToken() {
+
+  const account =
+    await getAccount();
+
   if (!account) {
 
     throw new Error(
-      "Πρέπει πρώτα να συνδεθείτε."
+      "Πρέπει πρώτα να πατήσετε «Σύνδεση με Microsoft»."
     );
   }
 
@@ -168,6 +187,11 @@ async function getToken() {
 
   } catch (error) {
 
+    console.log(
+      "Silent token failed. Χρήση popup.",
+      error
+    );
+
     const response =
       await msalInstance.acquireTokenPopup({
         scopes: [
@@ -181,12 +205,21 @@ async function getToken() {
   }
 }
 
+
 async function loadFiles() {
+
+  const status =
+    document.getElementById("status");
+
+  const filesDiv =
+    document.getElementById("files");
 
   try {
 
-    document.getElementById("status").innerHTML =
+    status.innerHTML =
       "Ανάκτηση αρχείων από το OneDrive...";
+
+    filesDiv.innerHTML = "";
 
     const token =
       await getToken();
@@ -195,53 +228,82 @@ async function loadFiles() {
       await fetch(
         "https://graph.microsoft.com/v1.0/me/drive/root/children",
         {
+          method: "GET",
           headers: {
-            Authorization:
-              "Bearer " + token
+            "Authorization":
+              "Bearer " + token,
+            "Accept":
+              "application/json"
           }
         }
       );
 
+
     if (!response.ok) {
+
+      const errorText =
+        await response.text();
+
       throw new Error(
-        "Microsoft Graph error: " +
-        response.status
+        "Microsoft Graph error " +
+        response.status +
+        ":\n\n" +
+        errorText
       );
     }
+
 
     const data =
       await response.json();
 
-    const filesDiv =
-      document.getElementById("files");
 
     filesDiv.innerHTML =
       "<h2>Αρχεία OneDrive</h2>";
 
-    data.value.forEach(function(item) {
 
-      const div =
-        document.createElement("div");
+    if (
+      !data.value ||
+      data.value.length === 0
+    ) {
 
-      div.className =
-        "file";
+      filesDiv.innerHTML +=
+        "<p>Δεν βρέθηκαν αρχεία στον κεντρικό φάκελο του OneDrive.</p>";
 
-      div.textContent =
-        (item.folder ? "📁 " : "📄 ") +
-        item.name;
+    } else {
 
-      filesDiv.appendChild(div);
-    });
+      data.value.forEach(function(item) {
 
-    document.getElementById("status").innerHTML =
-      "Η σύνδεση με το OneDrive λειτουργεί.";
+        const div =
+          document.createElement("div");
+
+        div.className =
+          "file";
+
+        if (item.folder) {
+
+          div.textContent =
+            "📁 " + item.name;
+
+        } else {
+
+          div.textContent =
+            "📄 " + item.name;
+        }
+
+        filesDiv.appendChild(div);
+      });
+    }
+
+
+    status.innerHTML =
+      "Η σύνδεση με το OneDrive λειτουργεί κανονικά.";
 
   } catch (error) {
 
     console.error(error);
 
-    document.getElementById("status").innerHTML =
-      "Σφάλμα: " +
+    status.innerHTML =
+      "Σφάλμα:\n" +
       error.message;
   }
 }
