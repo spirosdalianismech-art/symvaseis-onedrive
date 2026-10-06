@@ -167,6 +167,20 @@ dialog::backdrop{background:rgba(0,0,0,.43)}
           <button type="button" class="orange" onclick="openPicker('invoiceFolder')">Επιλογή φακέλου από OneDrive</button>
         </div>
       </div>
+
+      <div class="full">
+        <strong>Αρχεία Ανάθεσης Έργου</strong>
+        <div class="hint" style="margin:6px 0 8px">Επίλεξε πολλά αρχεία μαζί. Θα ανέβουν αυτόματα στο OneDrive όταν πατήσεις «Αποθήκευση».</div>
+        <input id="fAssignmentFiles" type="file" multiple onchange="showSelectedFormFiles('assignment')">
+        <div id="assignmentFilesSelected" class="selected-box" style="margin-top:7px">Δεν έχουν επιλεγεί αρχεία ανάθεσης.</div>
+      </div>
+
+      <div class="full">
+        <strong>Αρχεία Έργου</strong>
+        <div class="hint" style="margin:6px 0 8px">Επίλεξε πολλά αρχεία μαζί. Θα ανέβουν αυτόματα στο OneDrive όταν πατήσεις «Αποθήκευση».</div>
+        <input id="fProjectFiles" type="file" multiple onchange="showSelectedFormFiles('project')">
+        <div id="projectFilesSelected" class="selected-box" style="margin-top:7px">Δεν έχουν επιλεγεί αρχεία έργου.</div>
+      </div>
     </div>
   </div>
 
@@ -404,6 +418,8 @@ function newContract(){
   deleteBtn.classList.add("hidden");
   receiptsSelected.textContent="Δεν έχει επιλεγεί Excel.";
   invoiceSelected.textContent="Δεν έχει επιλεγεί φάκελος.";
+  assignmentFilesSelected.textContent="Δεν έχουν επιλεγεί αρχεία ανάθεσης.";
+  projectFilesSelected.textContent="Δεν έχουν επιλεγεί αρχεία έργου.";
   contractDialog.showModal();
 }
 function editContract(id){
@@ -416,7 +432,22 @@ function editContract(id){
   fOptionEnabled.checked=!!c.optionEnabled;fExpiry.value=c.expiryDate||"";fExtension.value=c.extensionDate||"";
   receiptsSelected.textContent=c.receiptsName?`${c.receiptsName}${c.balanceSheet?` — ${c.balanceSheet}!${c.balanceCell}`:""}`:"Δεν έχει επιλεγεί Excel.";
   invoiceSelected.textContent=c.invoicesFolderName||"Δεν έχει επιλεγεί φάκελος.";
+  fAssignmentFiles.value="";
+  fProjectFiles.value="";
+  assignmentFilesSelected.textContent=c.assignmentFolderName?`Υπάρχει φάκελος στο OneDrive: ${c.assignmentFolderName}. Μπορείς να προσθέσεις νέα αρχεία.`:"Δεν έχουν επιλεγεί νέα αρχεία ανάθεσης.";
+  projectFilesSelected.textContent=c.projectFolderName?`Υπάρχει φάκελος στο OneDrive: ${c.projectFolderName}. Μπορείς να προσθέσεις νέα αρχεία.`:"Δεν έχουν επιλεγεί νέα αρχεία έργου.";
   deleteBtn.classList.remove("hidden");contractDialog.showModal();
+}
+
+function showSelectedFormFiles(area){
+  const input=area==="assignment"?fAssignmentFiles:fProjectFiles;
+  const box=area==="assignment"?assignmentFilesSelected:projectFilesSelected;
+  const files=[...input.files];
+  if(!files.length){
+    box.textContent=area==="assignment"?"Δεν έχουν επιλεγεί αρχεία ανάθεσης.":"Δεν έχουν επιλεγεί αρχεία έργου.";
+    return;
+  }
+  box.textContent=`Επιλέχθηκαν ${files.length} αρχεία: `+files.map(f=>f.name).join(", ");
 }
 function closeContractDialog(){contractDialog.close()}
 
@@ -433,8 +464,23 @@ contractForm.addEventListener("submit",async e=>{
     if(draftReceipts)Object.assign(c,draftReceipts);
     if(draftInvoiceFolder)Object.assign(c,draftInvoiceFolder);
 
+    const assignmentFiles=[...fAssignmentFiles.files];
+    const projectFilesFromForm=[...fProjectFiles.files];
+
+    await saveData();
+
+    if(assignmentFiles.length){
+      setStatus(`Ανέβασμα ${assignmentFiles.length} αρχείων Ανάθεσης Έργου...`);
+      await uploadFilesForArea(c,"assignment",assignmentFiles);
+    }
+
+    if(projectFilesFromForm.length){
+      setStatus(`Ανέβασμα ${projectFilesFromForm.length} Αρχείων Έργου...`);
+      await uploadFilesForArea(c,"project",projectFilesFromForm);
+    }
+
     await saveData();fillYears();yearSelect.value=String(c.year);
-    closeContractDialog();render();setStatus("Η σύμβαση αποθηκεύτηκε.","ok");
+    closeContractDialog();render();setStatus("Η σύμβαση και τα επιλεγμένα αρχεία αποθηκεύτηκαν στο OneDrive.","ok");
   }catch(e){setStatus("Σφάλμα αποθήκευσης:\n"+e.message,"err")}
 });
 
@@ -686,6 +732,45 @@ async function openAssignmentFiles(id){
 }
 
 function closeUpload(){uploadDialog.close()}
+
+async function uploadFilesForArea(c,area,files){
+  if(!files || !files.length)return 0;
+
+  const isAssignment=area==="assignment";
+  let folder;
+
+  if(isAssignment && c.assignmentFolderId){
+    folder={id:c.assignmentFolderId,name:c.assignmentFolderName,webUrl:c.assignmentFolderWebUrl};
+  }else if(!isAssignment && c.projectFolderId){
+    folder={id:c.projectFolderId,name:c.projectFolderName,webUrl:c.projectFolderWebUrl};
+  }else{
+    folder=await ensureAreaFolder(c,area);
+    if(isAssignment){
+      c.assignmentFolderId=folder.id;
+      c.assignmentFolderName=folder.name;
+      c.assignmentFolderWebUrl=folder.webUrl;
+    }else{
+      c.projectFolderId=folder.id;
+      c.projectFolderName=folder.name;
+      c.projectFolderWebUrl=folder.webUrl;
+    }
+  }
+
+  let done=0;
+  for(const file of files){
+    const r=await graph(
+      `https://graph.microsoft.com/v1.0/me/drive/items/${folder.id}:/${encodeURIComponent(file.name)}:/content`,
+      {
+        method:"PUT",
+        headers:{"Content-Type":file.type||"application/octet-stream"},
+        body:file
+      }
+    );
+    if(!r.ok)throw new Error(`Αποτυχία στο ${file.name}: ${await r.text()}`);
+    done++;
+  }
+  return done;
+}
 
 async function uploadFilesToSelectedArea(){
   const c=contracts.find(x=>x.id===uploadContractId);
