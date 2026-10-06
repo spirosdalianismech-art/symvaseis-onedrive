@@ -16,11 +16,11 @@
       font-family: Arial, sans-serif;
       background: #f4f6f8;
       margin: 0;
-      padding: 40px;
+      padding: 30px;
     }
 
     .box {
-      max-width: 900px;
+      max-width: 1000px;
       margin: auto;
       background: white;
       padding: 30px;
@@ -32,24 +32,87 @@
       margin-top: 0;
     }
 
+    h2 {
+      margin-top: 30px;
+    }
+
     button {
-      padding: 12px 20px;
-      margin-right: 10px;
-      margin-bottom: 15px;
-      font-size: 16px;
+      padding: 12px 18px;
+      margin: 5px;
+      border: none;
+      border-radius: 7px;
       cursor: pointer;
+      font-size: 15px;
+    }
+
+    #loginBtn {
+      background: #0078d4;
+      color: white;
+    }
+
+    #logoutBtn {
+      background: #666;
+      color: white;
+    }
+
+    #refreshBtn {
+      background: #107c10;
+      color: white;
+    }
+
+    #uploadBtn {
+      background: #d83b01;
+      color: white;
+    }
+
+    button:hover {
+      opacity: 0.85;
     }
 
     #status {
-      margin: 20px 0;
-      font-weight: bold;
+      margin-top: 20px;
+      padding: 15px;
+      background: #eef3f8;
+      border-radius: 8px;
       white-space: pre-wrap;
-      word-break: break-word;
+    }
+
+    .upload-area {
+      margin-top: 25px;
+      padding: 20px;
+      border: 2px dashed #aaa;
+      border-radius: 10px;
+      background: #fafafa;
+    }
+
+    input[type="file"] {
+      margin: 10px 0;
     }
 
     .file {
-      padding: 10px;
-      border-bottom: 1px solid #ddd;
+      padding: 12px;
+      margin-top: 8px;
+      background: #f2f2f2;
+      border-radius: 7px;
+      cursor: pointer;
+    }
+
+    .file:hover {
+      background: #e5e5e5;
+    }
+
+    #files {
+      margin-top: 15px;
+    }
+
+    .success {
+      color: green;
+      font-weight: bold;
+    }
+
+    .error {
+      color: #c00000;
+      font-weight: bold;
     }
   </style>
 </head>
@@ -60,37 +123,88 @@
 
   <h1>Συμβάσεις OneDrive</h1>
 
-  <p>Σύνδεση με Microsoft 365 και OneDrive</p>
+  <p>
+    Σύνδεση της εφαρμογής με το Microsoft OneDrive.
+  </p>
 
-  <button onclick="signIn()">
-    Σύνδεση με Microsoft
+  <button id="loginBtn" onclick="signIn()">
+    Σύνδεση Microsoft
   </button>
 
-  <button onclick="loadFiles()">
-    Εμφάνιση αρχείων OneDrive
+  <button id="logoutBtn" onclick="signOut()">
+    Αποσύνδεση
+  </button>
+
+  <button id="refreshBtn" onclick="loadFiles()">
+    Ανανέωση αρχείων
   </button>
 
   <div id="status">
-    Δεν έχει γίνει σύνδεση.
+    Δεν υπάρχει ενεργή σύνδεση.
   </div>
 
-  <div id="files"></div>
+
+  <div class="upload-area">
+
+    <h2>Αποθήκευση αρχείου στο OneDrive</h2>
+
+    <p>
+      Επίλεξε ένα αρχείο από τον υπολογιστή σου και πάτησε
+      <strong>Αποθήκευση στο OneDrive</strong>.
+    </p>
+
+    <input
+      type="file"
+      id="fileInput"
+    >
+
+    <br>
+
+    <button
+      id="uploadBtn"
+      onclick="uploadFile()">
+      Αποθήκευση στο OneDrive
+    </button>
+
+  </div>
+
+
+  <h2>Αρχεία στο OneDrive</h2>
+
+  <div id="files">
+    Δεν έχουν φορτωθεί αρχεία.
+  </div>
 
 </div>
+
 
 <script>
 
 const msalConfig = {
+
   auth: {
-    clientId: "d15aa5e9-860e-4e0a-af14-283c401a08cc",
-    authority: "https://login.microsoftonline.com/a17412e1-e4a8-4fed-835a-d1e613cf24d3",
-    redirectUri: "https://spirosdalianismech-art.github.io/symvaseis-onedrive/"
+
+    clientId:
+      "d15aa5e9-860e-4e0a-af14-283c401a08cc",
+
+    authority:
+      "https://login.microsoftonline.com/a17412e1-e4a8-4fed-835a-d1e613cf24d3",
+
+    redirectUri:
+      "https://spirosdalianismech-art.github.io/symvaseis-onedrive/"
+
   },
 
   cache: {
-    cacheLocation: "sessionStorage",
-    storeAuthStateInCookie: false
+
+    cacheLocation:
+      "sessionStorage",
+
+    storeAuthStateInCookie:
+      false
+
   }
+
 };
 
 
@@ -99,43 +213,123 @@ const msalInstance =
 
 
 const loginRequest = {
+
   scopes: [
+
     "User.Read",
+
     "Files.ReadWrite"
+
   ]
+
 };
 
 
-async function signIn() {
+function setStatus(message, type = "") {
 
   const status =
     document.getElementById("status");
 
+  status.className = type;
+
+  status.innerText = message;
+
+}
+
+
+
+async function signIn() {
+
   try {
 
-    status.innerHTML =
-      "Γίνεται σύνδεση με Microsoft...";
+    setStatus(
+      "Γίνεται σύνδεση με Microsoft..."
+    );
 
     const response =
-      await msalInstance.loginPopup(loginRequest);
+      await msalInstance.loginPopup(
+        loginRequest
+      );
 
     msalInstance.setActiveAccount(
       response.account
     );
 
-    status.innerHTML =
-      "Συνδεθήκατε ως: " +
-      response.account.username;
+    setStatus(
+      "Συνδεθήκατε ως:\n" +
+      response.account.username,
+      "success"
+    );
 
-  } catch (error) {
+    await loadFiles();
+
+  }
+
+  catch (error) {
 
     console.error(error);
 
-    status.innerHTML =
+    setStatus(
       "Σφάλμα σύνδεσης:\n" +
-      error.message;
+      error.message,
+      "error"
+    );
+
   }
+
 }
+
+
+
+async function signOut() {
+
+  try {
+
+    const account =
+      await getAccount();
+
+    if (!account) {
+
+      setStatus(
+        "Δεν υπάρχει ενεργός λογαριασμός."
+      );
+
+      return;
+
+    }
+
+    await msalInstance.logoutPopup({
+
+      account: account,
+
+      postLogoutRedirectUri:
+        "https://spirosdalianismech-art.github.io/symvaseis-onedrive/"
+
+    });
+
+    document.getElementById("files").innerHTML =
+      "Δεν έχουν φορτωθεί αρχεία.";
+
+    setStatus(
+      "Έγινε αποσύνδεση."
+    );
+
+  }
+
+  catch (error) {
+
+    console.error(error);
+
+    setStatus(
+      "Σφάλμα αποσύνδεσης:\n" +
+      error.message,
+      "error"
+    );
+
+  }
+
+}
+
 
 
 async function getAccount() {
@@ -150,14 +344,21 @@ async function getAccount() {
 
     if (accounts.length > 0) {
 
-      account = accounts[0];
+      account =
+        accounts[0];
 
-      msalInstance.setActiveAccount(account);
+      msalInstance.setActiveAccount(
+        account
+      );
+
     }
+
   }
 
   return account;
+
 }
+
 
 
 async function getToken() {
@@ -168,24 +369,31 @@ async function getToken() {
   if (!account) {
 
     throw new Error(
-      "Πρέπει πρώτα να πατήσετε «Σύνδεση με Microsoft»."
+      "Πρέπει πρώτα να συνδεθείτε με Microsoft."
     );
+
   }
+
 
   try {
 
     const response =
       await msalInstance.acquireTokenSilent({
+
         scopes: [
           "User.Read",
           "Files.ReadWrite"
         ],
+
         account: account
+
       });
 
     return response.accessToken;
 
-  } catch (error) {
+  }
+
+  catch (error) {
 
     console.log(
       "Silent token failed. Χρήση popup.",
@@ -194,48 +402,59 @@ async function getToken() {
 
     const response =
       await msalInstance.acquireTokenPopup({
+
         scopes: [
           "User.Read",
           "Files.ReadWrite"
         ],
+
         account: account
+
       });
 
     return response.accessToken;
+
   }
+
 }
 
 
-async function loadFiles() {
 
-  const status =
-    document.getElementById("status");
+async function loadFiles() {
 
   const filesDiv =
     document.getElementById("files");
 
   try {
 
-    status.innerHTML =
-      "Ανάκτηση αρχείων από το OneDrive...";
-
-    filesDiv.innerHTML = "";
+    filesDiv.innerHTML =
+      "Φόρτωση αρχείων...";
 
     const token =
       await getToken();
 
+
     const response =
       await fetch(
+
         "https://graph.microsoft.com/v1.0/me/drive/root/children",
+
         {
+
           method: "GET",
+
           headers: {
+
             "Authorization":
               "Bearer " + token,
+
             "Accept":
               "application/json"
+
           }
+
         }
+
       );
 
 
@@ -245,11 +464,14 @@ async function loadFiles() {
         await response.text();
 
       throw new Error(
+
         "Microsoft Graph error " +
         response.status +
-        ":\n\n" +
+        "\n" +
         errorText
+
       );
+
     }
 
 
@@ -257,56 +479,266 @@ async function loadFiles() {
       await response.json();
 
 
-    filesDiv.innerHTML =
-      "<h2>Αρχεία OneDrive</h2>";
+    filesDiv.innerHTML = "";
 
 
-    if (
-      !data.value ||
-      data.value.length === 0
-    ) {
+    if (!data.value ||
+        data.value.length === 0) {
 
-      filesDiv.innerHTML +=
-        "<p>Δεν βρέθηκαν αρχεία στον κεντρικό φάκελο του OneDrive.</p>";
+      filesDiv.innerHTML =
+        "Δεν υπάρχουν αρχεία στο OneDrive.";
 
-    } else {
+      return;
 
-      data.value.forEach(function(item) {
-
-        const div =
-          document.createElement("div");
-
-        div.className =
-          "file";
-
-        if (item.folder) {
-
-          div.textContent =
-            "📁 " + item.name;
-
-        } else {
-
-          div.textContent =
-            "📄 " + item.name;
-        }
-
-        filesDiv.appendChild(div);
-      });
     }
 
 
-    status.innerHTML =
-      "Η σύνδεση με το OneDrive λειτουργεί κανονικά.";
+    data.value.forEach(item => {
 
-  } catch (error) {
+      const div =
+        document.createElement("div");
+
+      div.className =
+        "file";
+
+
+      if (item.folder) {
+
+        div.textContent =
+          "📁 " +
+          item.name;
+
+      }
+
+      else {
+
+        div.textContent =
+          "📄 " +
+          item.name;
+
+      }
+
+
+      if (item.webUrl) {
+
+        div.onclick = function() {
+
+          window.open(
+            item.webUrl,
+            "_blank"
+          );
+
+        };
+
+      }
+
+
+      filesDiv.appendChild(div);
+
+    });
+
+
+    setStatus(
+      "Η σύνδεση με το OneDrive λειτουργεί κανονικά.",
+      "success"
+    );
+
+  }
+
+  catch (error) {
 
     console.error(error);
 
-    status.innerHTML =
-      "Σφάλμα:\n" +
-      error.message;
+    filesDiv.innerHTML =
+      "Δεν ήταν δυνατή η φόρτωση των αρχείων.";
+
+    setStatus(
+      "Σφάλμα OneDrive:\n" +
+      error.message,
+      "error"
+    );
+
   }
+
 }
+
+
+
+async function uploadFile() {
+
+  const input =
+    document.getElementById("fileInput");
+
+  if (!input.files ||
+      input.files.length === 0) {
+
+    alert(
+      "Επίλεξε πρώτα ένα αρχείο."
+    );
+
+    return;
+
+  }
+
+
+  const file =
+    input.files[0];
+
+
+  try {
+
+    setStatus(
+      "Γίνεται αποθήκευση του αρχείου:\n" +
+      file.name
+    );
+
+
+    const token =
+      await getToken();
+
+
+    const safeFileName =
+      encodeURIComponent(file.name);
+
+
+    const uploadUrl =
+
+      "https://graph.microsoft.com/v1.0/me/drive/root:/" +
+
+      safeFileName +
+
+      ":/content";
+
+
+    const response =
+      await fetch(
+
+        uploadUrl,
+
+        {
+
+          method: "PUT",
+
+          headers: {
+
+            "Authorization":
+              "Bearer " + token,
+
+            "Content-Type":
+              file.type ||
+              "application/octet-stream"
+
+          },
+
+          body: file
+
+        }
+
+      );
+
+
+    if (!response.ok) {
+
+      const errorText =
+        await response.text();
+
+      throw new Error(
+
+        "Microsoft Graph error " +
+        response.status +
+        "\n" +
+        errorText
+
+      );
+
+    }
+
+
+    const uploadedFile =
+      await response.json();
+
+
+    setStatus(
+
+      "Το αρχείο αποθηκεύτηκε επιτυχώς στο OneDrive.\n\n" +
+
+      "Όνομα: " +
+      uploadedFile.name,
+
+      "success"
+
+    );
+
+
+    input.value = "";
+
+
+    await loadFiles();
+
+  }
+
+  catch (error) {
+
+    console.error(error);
+
+    setStatus(
+
+      "Σφάλμα αποθήκευσης:\n" +
+      error.message,
+
+      "error"
+
+    );
+
+  }
+
+}
+
+
+
+window.addEventListener(
+  "load",
+  async function() {
+
+    try {
+
+      const account =
+        await getAccount();
+
+
+      if (account) {
+
+        setStatus(
+
+          "Συνδεδεμένος ως:\n" +
+          account.username,
+
+          "success"
+
+        );
+
+        await loadFiles();
+
+      }
+
+      else {
+
+        setStatus(
+          "Δεν υπάρχει ενεργή σύνδεση. Πατήστε «Σύνδεση Microsoft»."
+        );
+
+      }
+
+    }
+
+    catch (error) {
+
+      console.error(error);
+
+    }
+
+  }
+);
 
 </script>
 
