@@ -84,7 +84,15 @@ const msalConfig = {
 };
 
 const msalInstance = new msal.PublicClientApplication(msalConfig);
+let msalReady = false;
 
+async function initializeMsal() {
+    await msalInstance.initialize();
+    msalReady = true;
+}
+
+initializeMsal();
+  
 const loginRequest = {
     scopes: [
         "User.Read",
@@ -95,7 +103,10 @@ const loginRequest = {
 async function signIn() {
 
     try {
-
+        if (!msalReady) {
+    await msalInstance.initialize();
+    msalReady = true;
+        }
         const response = await msalInstance.loginPopup(loginRequest);
 
         msalInstance.setActiveAccount(response.account);
