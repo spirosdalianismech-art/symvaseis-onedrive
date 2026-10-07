@@ -53,9 +53,11 @@ button:hover{opacity:.88}select,input{border:1px solid #cbd5e1;border-radius:7px
     <h2 id="contractTitle">Δεν έχει επιλεγεί σύμβαση</h2>
     <div id="contractMeta" class="muted"></div>
     <div class="source-grid">
-      <label>Διαδρομή Excel στο OneDrive<input id="excelPath"></label>
+      <label>Excel στο OneDrive
+        <input id="excelPath" readonly placeholder="Δεν έχει επιλεγεί αρχείο">
+      </label>
       <label>Φύλλο Excel<input id="excelSheet" value="ΣΥΜΒΑΣΗ"></label>
-      <button class="orange" onclick="saveSourceSettings()">Αποθήκευση διαδρομής</button>
+      <button class="blue" onclick="openOneDrivePicker()">📁 Επιλογή Excel από OneDrive</button>
     </div>
   </section>
 
@@ -103,6 +105,19 @@ button:hover{opacity:.88}select,input{border:1px solid #cbd5e1;border-radius:7px
     </div>
   </section>
 </div>
+
+
+<dialog id="pickerDialog" style="width:min(900px,96vw);border:0;border-radius:14px;padding:0;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+  <div style="background:#17365d;color:white;padding:16px 18px;display:flex;justify-content:space-between;align-items:center">
+    <strong>Επιλογή Excel από OneDrive</strong>
+    <button class="gray" onclick="closePicker()">✕</button>
+  </div>
+  <div style="padding:14px 16px;border-bottom:1px solid #ddd;display:flex;gap:8px;align-items:center">
+    <button class="gray" id="pickerBackBtn" onclick="pickerBack()">← Πίσω</button>
+    <span id="pickerPath" style="font-size:13px;color:#64748b">OneDrive</span>
+  </div>
+  <div id="pickerList" style="padding:12px;max-height:60vh;overflow:auto"></div>
+</dialog>
 
 <script>
 const CLIENT_ID="d15aa5e9-860e-4e0a-af14-283c401a08cc";
@@ -283,6 +298,80 @@ async function syncFromExcel(showMessage=true){
   if(showMessage)setStatus(`Ενημερώθηκαν ${newItems.length} γραμμές από το Excel. Οι υπολογισμοί ανά γραμμή είναι χωρίς ΦΠΑ.`,"ok")
  }catch(e){setStatus("Σφάλμα ενημέρωσης από Excel:\n"+e.message,"err")}
 }
+
+let pickerStack=[];
+
+async function openOneDrivePicker(){
+  try{
+    pickerStack=[];
+    pickerDialog.showModal();
+    await loadPickerFolder(null,"OneDrive");
+  }catch(e){
+    setStatus("Σφάλμα ανοίγματος OneDrive:\n"+e.message,"err");
+  }
+}
+function closePicker(){pickerDialog.close()}
+async function loadPickerFolder(itemId,label){
+  pickerList.innerHTML="<div style='padding:20px'>Φόρτωση...</div>";
+  const url=itemId
+    ? "https://graph.microsoft.com/v1.0/me/drive/items/"+encodeURIComponent(itemId)+"/children?$select=id,name,folder,file,parentReference,webUrl&$orderby=name"
+    : "https://graph.microsoft.com/v1.0/me/drive/root/children?$select=id,name,folder,file,parentReference,webUrl&$orderby=name";
+  const r=await graph(url);
+  if(!r.ok)throw new Error(await r.text());
+  const data=await r.json();
+  pickerPath.textContent=label||"OneDrive";
+  pickerBackBtn.disabled=pickerStack.length===0;
+  pickerList.innerHTML="";
+  const items=(data.value||[]).filter(x=>x.folder || /\.(xlsx|xlsm|xls)$/i.test(x.name||""));
+  if(!items.length){
+    pickerList.innerHTML="<div style='padding:20px;color:#64748b'>Δεν υπάρχουν φάκελοι ή αρχεία Excel εδώ.</div>";
+    return;
+  }
+  for(const item of items){
+    const row=document.createElement("div");
+    row.style.cssText="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 8px;border-bottom:1px solid #eee";
+    const left=document.createElement("div");
+    left.textContent=(item.folder?"📁 ":"📊 ")+item.name;
+    left.style.cssText="cursor:pointer;flex:1;font-weight:600";
+    row.appendChild(left);
+    if(item.folder){
+      left.onclick=async()=>{
+        pickerStack.push({id:itemId,label:pickerPath.textContent});
+        await loadPickerFolder(item.id,item.name);
+      };
+      const b=document.createElement("button");
+      b.className="gray";b.textContent="Άνοιγμα";
+      b.onclick=left.onclick;row.appendChild(b);
+    }else{
+      const b=document.createElement("button");
+      b.className="green";b.textContent="Επιλογή";
+      b.onclick=()=>chooseExcelItem(item);
+      row.appendChild(b);
+      left.onclick=b.onclick;
+    }
+    pickerList.appendChild(row);
+  }
+}
+async function pickerBack(){
+  if(!pickerStack.length)return;
+  const prev=pickerStack.pop();
+  await loadPickerFolder(prev.id,prev.label);
+}
+async function chooseExcelItem(item){
+  let parent=(item.parentReference&&item.parentReference.path)||"";
+  parent=parent.replace(/^\/drive\/root:/,"").replace(/^\/drive\/root$/,"");
+  const full=(parent?parent.replace(/^\//,"")+"/":"")+item.name;
+  excelPath.value=full;
+  const l=getLedger(true);
+  l.excelPath=full;
+  const c=getContract();
+  if(c)c.excelPath=full;
+  pickerDialog.close();
+  await saveAll();
+  setStatus("Επιλέχθηκε το Excel: "+item.name+". Γίνεται ανάγνωση του πίνακα...","ok");
+  await syncFromExcel(true);
+}
+
 window.addEventListener("load",async()=>{
  try{
   const a=await getAccount();
