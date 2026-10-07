@@ -29,6 +29,11 @@ button:hover{opacity:.88}select,input{border:1px solid #cbd5e1;border-radius:7px
  .table-wrap{overflow:visible}table,.history-table{min-width:0}th,td{font-size:9px;padding:4px}th{background:#eee!important;color:black!important;border:1px solid #999}td{border:1px solid #ccc}
  @page{size:landscape;margin:8mm}
 }
+
+input[type="text"], textarea, select {
+  text-transform: uppercase;
+}
+
 </style>
 </head>
 <body>
@@ -325,7 +330,7 @@ async function addReceipt(){
    netValue=amount;
    if(netValue>cur.remainingNet+0.005){setStatus("Το ποσό παραλαβής υπερβαίνει το υπόλοιπο αξίας της γραμμής.","err");return}
  }
- l.receipts.push({id:uid(),itemId:it.id,mode,units,netValue,date:receiptDate.value||new Date().toISOString().slice(0,10),note:receiptNote.value.trim(),createdAt:new Date().toISOString()});
+ l.receipts.push({id:uid(),itemId:it.id,mode,units,netValue,date:receiptDate.value||new Date().toISOString().slice(0,10),note:toUpperText(receiptNote.value.trim()),createdAt:new Date().toISOString()});
  receiptAmount.value="";receiptNote.value="";await saveAll()
 }
 async function deleteReceipt(id){
@@ -456,7 +461,23 @@ async function chooseExcelItem(item){
   await syncFromExcel(true);
 }
 
+
+function toUpperText(v){
+  return String(v ?? "").toLocaleUpperCase("el-GR");
+}
+function enableUppercaseInputs(){
+  document.querySelectorAll('input[type="text"], textarea').forEach(el=>{
+    el.addEventListener("input",()=>{
+      const start=el.selectionStart, end=el.selectionEnd;
+      el.value=toUpperText(el.value);
+      try{el.setSelectionRange(start,end)}catch{}
+    });
+    el.addEventListener("blur",()=>{ el.value=toUpperText(el.value); });
+  });
+}
+
 window.addEventListener("load",async()=>{
+  enableUppercaseInputs();
  try{
   const a=await getAccount();
   if(a){setStatus("Συνδεδεμένος ως "+a.username,"ok");await loadAll()}
