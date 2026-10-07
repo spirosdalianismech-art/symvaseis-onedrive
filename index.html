@@ -86,9 +86,9 @@ dialog{width:min(920px,96vw);border:0;border-radius:14px;padding:0;box-shadow:0 
       <label>Φορέας<input id="fAgency"></label>
       <label>Τρόπος Εκτέλεσης<input id="fExecution"></label>
       <label class="wide">Τίτλος Μελέτης<input id="fTitle" required></label>
-      <label>Προϋπολογισμός Μελέτης (€)<input id="fStudyBudget" type="number" step="0.01"></label>
+      <label>Προϋπολογισμός Μελέτης<input id="fStudyBudget" type="text" inputmode="decimal" placeholder="0,00 €"></label>
       <label>Ανάδοχος / Εταιρεία<input id="fContractor"></label>
-      <label>Προϋπολογισμός Σύμβασης (€)<input id="fContractBudget" type="number" step="0.01"></label>
+      <label>Προϋπολογισμός Σύμβασης<input id="fContractBudget" type="text" inputmode="decimal" placeholder="0,00 €"></label>
       <label>Ημερομηνία Οριστικής Λήξης<input id="fExpiry" type="date"></label>
       <label>ΦΠΑ σύμβασης (%)<input id="fVat" type="number" step="0.01" value="24"></label>
       <label class="wide">Διαδρομή Excel στο OneDrive
@@ -121,6 +121,22 @@ let records=[],currentEditingId=null;
 
 function setStatus(m,t=""){const e=document.getElementById("status");e.className="";if(t==="ok")e.classList.add("status-ok");if(t==="error")e.classList.add("status-error");e.innerText=m}
 function euro(v){return new Intl.NumberFormat("el-GR",{style:"currency",currency:"EUR"}).format(Number(v||0))}
+function parseEuroInput(v){
+  let s=String(v??"").trim().replace(/\s/g,"").replace(/€/g,"");
+  if(!s)return 0;
+  if(s.includes(",")&&s.includes(".")){
+    if(s.lastIndexOf(",")>s.lastIndexOf(".")) s=s.replace(/\./g,"").replace(",",".");
+    else s=s.replace(/,/g,"");
+  } else if(s.includes(",")) {
+    s=s.replace(",",".");
+  }
+  return Number(s.replace(/[^\d.-]/g,""))||0;
+}
+function setupCurrencyInput(el){
+  el.addEventListener("focus",()=>{ const n=parseEuroInput(el.value); el.value=n?String(n).replace(".",","):""; });
+  el.addEventListener("blur",()=>{ el.value=euro(parseEuroInput(el.value)); });
+}
+
 function id(){return Date.now().toString()+"-"+Math.random().toString(36).slice(2,9)}
 function encPath(p){return p.split("/").filter(Boolean).map(encodeURIComponent).join("/")}
 function esc(v){const d=document.createElement("div");d.textContent=v??"";return d.innerHTML}
@@ -226,7 +242,7 @@ function openParalaves(contractId=""){window.location.href="paralaves.html"+(con
 function openNewRecord(){currentEditingId=null;document.getElementById("dialogTitle").textContent="Νέα εγγραφή";document.getElementById("recordForm").reset();document.getElementById("fYear").value=document.getElementById("yearFilter").value||2026;document.getElementById("fVat").value="24";document.getElementById("fExcelSheet").value="ΣΥΜΒΑΣΗ";document.getElementById("deleteBtn").classList.add("hidden");document.getElementById("recordDialog").showModal()}
 function editRecord(x){
   const r=records.find(a=>a.id===x);if(!r)return;currentEditingId=x;document.getElementById("dialogTitle").textContent="Επεξεργασία εγγραφής";
-  const vals={fYear:r.year||2026,fStudyNo:r.studyNo||"",fAgency:r.agency||"",fExecution:r.execution||"",fTitle:r.title||"",fStudyBudget:r.studyBudget||"",fContractor:r.contractor||"",fContractBudget:r.contractBudget||"",fExpiry:r.expiry||"",fVat:r.vat??24,fExcelPath:r.excelPath||"",fExcelSheet:r.excelSheet||"ΣΥΜΒΑΣΗ"};
+  const vals={fYear:r.year||2026,fStudyNo:r.studyNo||"",fAgency:r.agency||"",fExecution:r.execution||"",fTitle:r.title||"",fStudyBudget:euro(r.studyBudget||0),fContractor:r.contractor||"",fContractBudget:euro(r.contractBudget||0),fExpiry:r.expiry||"",fVat:r.vat??24,fExcelPath:r.excelPath||"",fExcelSheet:r.excelSheet||"ΣΥΜΒΑΣΗ"};
   Object.entries(vals).forEach(([k,v])=>document.getElementById(k).value=v);document.getElementById("deleteBtn").classList.remove("hidden");document.getElementById("recordDialog").showModal()
 }
 function closeDialog(){document.getElementById("recordDialog").close()}
@@ -236,7 +252,7 @@ document.getElementById("recordForm").addEventListener("submit",async e=>{
     let r=currentEditingId?records.find(x=>x.id===currentEditingId):{id:id()};
     if(!currentEditingId)records.push(r);
     r.year=Number(fYear.value);r.studyNo=fStudyNo.value.trim();r.agency=fAgency.value.trim();r.execution=fExecution.value.trim();r.title=fTitle.value.trim();
-    r.studyBudget=Number(fStudyBudget.value||0);r.contractor=fContractor.value.trim();r.contractBudget=Number(fContractBudget.value||0);r.expiry=fExpiry.value;
+    r.studyBudget=parseEuroInput(fStudyBudget.value);r.contractor=fContractor.value.trim();r.contractBudget=parseEuroInput(fContractBudget.value);r.expiry=fExpiry.value;
     r.vat=Number(fVat.value||24);r.excelPath=fExcelPath.value.trim();r.excelSheet=fExcelSheet.value.trim()||"ΣΥΜΒΑΣΗ";
     const file=fContractFile.files[0];if(file){r.contractFileUrl=(await uploadContractFile(r,file)).webUrl}
     await saveData();populateYears();yearFilter.value=String(r.year);closeDialog();render();setStatus("Η εγγραφή αποθηκεύτηκε στο OneDrive.","ok")
@@ -252,6 +268,8 @@ async function deleteCurrentRecord(){
   records=records.filter(x=>x.id!==currentEditingId);await saveData();closeDialog();populateYears();render();setStatus("Η εγγραφή διαγράφηκε.","ok")
 }
 window.addEventListener("load",async()=>{
+  setupCurrencyInput(document.getElementById("fStudyBudget"));
+  setupCurrencyInput(document.getElementById("fContractBudget"));
   try{const a=await getAccount();if(a){setStatus("Συνδεδεμένος ως "+a.username,"ok");await loadData();await refreshFromParalaves(false)}else{populateYears();render()}}catch(e){setStatus(e.message,"error")}
 });
 </script>
