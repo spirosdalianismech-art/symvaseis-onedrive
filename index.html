@@ -39,6 +39,11 @@ input[type="text"], textarea, select {
   text-transform: uppercase;
 }
 
+
+.file-group{display:flex;flex-direction:column;gap:4px;min-width:190px}
+.file-group-title{font-weight:700;font-size:12px;color:#475569}
+.file-group a{font-size:12px}
+
 </style>
 </head>
 <body>
@@ -79,6 +84,10 @@ input[type="text"], textarea, select {
     </div>
   </div>
 </div>
+
+
+<input id="assignmentFilesInput" type="file" multiple class="hidden" onchange="handleCategoryUpload('assignment', this)">
+<input id="invoiceFilesInput" type="file" multiple class="hidden" onchange="handleCategoryUpload('invoice', this)">
 
 <dialog id="recordDialog">
 <form id="recordForm">
@@ -240,12 +249,14 @@ function render(){
       <td><div class="actions">
         <button class="btn-blue" onclick="editRecord('${r.id}')">✎</button>
         <button class="btn-purple" onclick="openParalaves('${r.id}')">Παραλαβές</button>
+        <button class="btn-green" onclick="selectFilesForRecord('${r.id}','assignment')">Διαδικασίες Ανάθεσης</button>
+        <button class="btn-orange" onclick="selectFilesForRecord('${r.id}','invoice')">Τιμολόγια</button>
       </div></td>
       <td>${esc(toUpperText(r.studyNo||""))}</td><td>${esc(toUpperText(r.agency||""))}</td><td>${esc(toUpperText(r.title||""))}</td><td>${esc(toUpperText(r.execution||""))}</td>
       <td class="num">${euro(r.studyBudget)}</td><td>${esc(toUpperText(r.contractor||""))}</td><td class="num">${euro(r.contractBudget)}</td>
       <td class="num"><strong>${euro(bal)}</strong></td><td>${r.expiry||""}</td><td class="center">${days===null?"":days}</td>
       <td><span class="badge ${st.cls}">${st.text}</span></td>
-      <td>${r.contractFileUrl?`<a class="file-link" href="${r.contractFileUrl}" target="_blank">Σύμβαση</a>`:"—"}</td>`;
+      <td>${renderOnlineFiles(r)}</td>`;
     body.appendChild(tr)
   }
 }
