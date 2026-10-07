@@ -362,6 +362,72 @@ function buildHeader(rows){
  return best
 }
 function findCol(headers,pred){for(let i=0;i<headers.length;i++)if(pred(headers[i]))return i;return -1}
+
+function excelHeaderToDate(value){
+  if(value===null || value===undefined || value==="") return null;
+
+  // Excel dates may arrive as JS Date values.
+  if(value instanceof Date && !Number.isNaN(value.getTime())){
+    return value.toISOString().slice(0,10);
+  }
+
+  // Excel serial date.
+  if(typeof value==="number" && value>20000 && value<80000){
+    const d=XLSX.SSF.parse_date_code(value);
+    if(d && d.y && d.m && d.d){
+      return String(d.y).padStart(4,"0")+"-"+String(d.m).padStart(2,"0")+"-"+String(d.d).padStart(2,"0");
+    }
+  }
+
+  const s=String(value).trim();
+
+  // dd/mm/yyyy, dd-mm-yyyy, dd.mm.yyyy, optionally with text after it.
+  let m=s.match(/(?:^|\s)(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})(?:\s|$)/);
+  if(m){
+    let y=Number(m[3]);
+    if(y<100) y+=2000;
+    const mo=Number(m[2]), d=Number(m[1]);
+    if(y>=2000 && mo>=1 && mo<=12 && d>=1 && d<=31){
+      return String(y).padStart(4,"0")+"-"+String(mo).padStart(2,"0")+"-"+String(d).padStart(2,"0");
+    }
+  }
+
+  // yyyy-mm-dd
+  m=s.match(/(?:^|\s)(20\d{2})-(\d{1,2})-(\d{1,2})(?:\s|$)/);
+  if(m){
+    return m[1]+"-"+String(Number(m[2])).padStart(2,"0")+"-"+String(Number(m[3])).padStart(2,"0");
+  }
+
+  return null;
+}
+
+function findExcelReceiptColumns(rows, startCol){
+  const cols=[];
+  const maxCols=Math.max(...rows.slice(0,8).map(r=>r?.length||0),0);
+
+  for(let c=Math.max(startCol,0); c<maxCols; c++){
+    let found=null;
+    let label="";
+
+    // Search the first 8 rows for a date header in this column.
+    for(let r=0; r<Math.min(8,rows.length); r++){
+      const raw=rows[r]?.[c];
+      const date=excelHeaderToDate(raw);
+      if(date){
+        found=date;
+        label=toUpperText(String(raw ?? ""));
+        break;
+      }
+    }
+
+    if(found){
+      cols.push({col:c,date:found,label});
+    }
+  }
+
+  return cols;
+}
+
 async function syncFromExcel(showMessage=true){
  const c=getContract(),l=getLedger(true);if(!c||!l)return;
  l.excelPath=excelPath.value.trim()||l.excelPath||c.excelPath||"";l.excelSheet=excelSheet.value.trim()||l.excelSheet||c.excelSheet||"ΣΥΜΒΑΣΗ";
@@ -370,7 +436,7 @@ async function syncFromExcel(showMessage=true){
   if(showMessage)setStatus("Διαβάζω τον υπάρχοντα πίνακα Excel...");
   const r=await graph("https://graph.microsoft.com/v1.0/me/drive/root:/"+encPath(l.excelPath)+":/content");
   if(!r.ok)throw new Error("Δεν βρέθηκε το Excel στο OneDrive. Έλεγξε τη διαδρομή.");
-  const wb=XLSX.read(await r.arrayBuffer(),{type:"array",cellDates:false});
+  const wb=XLSX.read(await r.arrayBuffer(),{type:"array",cellDates:true});
   let sh=wb.Sheets[l.excelSheet];if(!sh){const n=wb.SheetNames.find(n=>norm(n)===norm(l.excelSheet));if(n)sh=wb.Sheets[n]}if(!sh)sh=wb.Sheets[wb.SheetNames[0]];
   const rows=XLSX.utils.sheet_to_json(sh,{header:1,defval:"",raw:true});
   const h=buildHeader(rows),H=h.headers;
@@ -382,6 +448,12 @@ async function syncFromExcel(showMessage=true){
   const cRemUnits=findCol(H,x=>x.includes("ΥΠΟΛΟΙΠ")&&(x.includes("Μ.Μ")||x.includes("ΜΟΝΑΔ")||x.includes("ΠΟΣΟΤ")));
   const cRemValue=findCol(H,x=>x.includes("ΥΠΟΛΟΙΠ")&&(x.includes("€")||x.includes("ΑΞΙΑ")||x.includes("ΠΟΣΟ")||x.includes("ΣΥΜΒΑΣ")));
   if(cDesc<0||cQty<0||cPrice<0)throw new Error("Δεν μπόρεσα να αναγνωρίσω τις στήλες Περιγραφή / Ποσότητα / Τιμή μονάδας.");
+
+  // Οι στήλες δεξιά από τον βασικό πίνακα μπορούν να έχουν ημερομηνίες παραλαβής
+  // (π.χ. 20/05/2026 ΠΑΡΑΛΑΒΗ ΥΛΙΚΩΝ). Θα μετατραπούν αυτόματα σε ιστορικό.
+  const historyStartCol=Math.max(cRemValue,cRemUnits,cExpense,cPrice,cQty,cUnit,cDesc)+1;
+  const excelReceiptCols=findExcelReceiptColumns(rows,historyStartCol);
+
   const newItems=[];let blanks=0;
   for(let rr=h.row+h.depth;rr<rows.length;rr++){
     const row=rows[rr]||[],desc=toUpperText(String(row[cDesc]??"").trim()),qty=num(row[cQty]),price=num(row[cPrice]),expense=cExpense>=0?num(row[cExpense]):qty*price;
@@ -394,8 +466,57 @@ async function syncFromExcel(showMessage=true){
     newItems.push({id:itemId,sourceRow:rr+1,description:desc,unit,initialQty:qty,unitPrice:price,initialNet:expense||qty*price,baseRemainingUnits:baseUnits,baseRemainingNet:baseNet});
   }
   if(!newItems.length)throw new Error("Δεν βρέθηκαν γραμμές ειδών στον πίνακα.");
-  l.items=newItems;l.lastExcelSync=new Date().toISOString();recompute();await saveAll();
-  if(showMessage)setStatus(`Ενημερώθηκαν ${newItems.length} γραμμές από το Excel. Οι υπολογισμοί ανά γραμμή είναι χωρίς ΦΠΑ.`,"ok")
+
+  l.items=newItems;
+
+  // Διαγράφουμε μόνο τις προηγούμενες αυτόματα εισαγμένες παραλαβές Excel.
+  // Οι χειροκίνητες παραλαβές που καταχώρισες μέσα στο πρόγραμμα μένουν κανονικά.
+  l.receipts=(l.receipts||[]).filter(x=>x.source!=="excel");
+
+  let importedHistoryCount=0;
+
+  for(const item of newItems){
+    const rr=(item.sourceRow||1)-1;
+    const row=rows[rr]||[];
+
+    for(const hc of excelReceiptCols){
+      const raw=row[hc.col];
+      const units=num(raw);
+
+      // Κενό ή μηδενικό κελί = δεν υπήρξε παραλαβή για το συγκεκριμένο είδος εκείνη την ημερομηνία.
+      if(!(units>0)) continue;
+
+      l.receipts.push({
+        id:"excel-"+hash(item.id+"|"+hc.date+"|"+hc.col),
+        itemId:item.id,
+        mode:"units",
+        units:units,
+        netValue:units*Number(item.unitPrice||0),
+        date:hc.date,
+        note:hc.label || "ΠΑΡΑΛΑΒΗ ΑΠΟ EXCEL",
+        source:"excel",
+        excelColumn:hc.col,
+        createdAt:new Date().toISOString()
+      });
+
+      importedHistoryCount++;
+    }
+  }
+
+  l.lastExcelSync=new Date().toISOString();
+  recompute();
+  await saveAll();
+
+  if(showMessage){
+    setStatus(
+      `ΕΝΗΜΕΡΩΘΗΚΑΝ ${newItems.length} ΓΡΑΜΜΕΣ ΑΠΟ ΤΟ EXCEL.`+
+      (excelReceiptCols.length
+        ? ` ΒΡΕΘΗΚΑΝ ${excelReceiptCols.length} ΗΜΕΡΟΜΗΝΙΕΣ ΠΑΡΑΛΑΒΗΣ ΚΑΙ ${importedHistoryCount} ΚΑΤΑΧΩΡΙΣΕΙΣ ΙΣΤΟΡΙΚΟΥ.`
+        : " ΔΕΝ ΒΡΕΘΗΚΑΝ ΣΤΗΛΕΣ ΜΕ ΗΜΕΡΟΜΗΝΙΕΣ ΠΑΡΑΛΑΒΗΣ."
+      ),
+      "ok"
+    );
+  }
  }catch(e){setStatus("Σφάλμα ενημέρωσης από Excel:\n"+e.message,"err")}
 }
 
