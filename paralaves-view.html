@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Παραλαβές - Προβολή</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f1f5f9;color:#1f2937}header{background:#4c1d95;color:white;padding:20px 28px}header h1{margin:0}header p{margin:6px 0 0;opacity:.85}
+.toolbar{background:white;padding:13px 20px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-bottom:1px solid #ddd;position:sticky;top:0;z-index:5}button,select{font:inherit;border-radius:7px}button{border:0;padding:9px 13px;font-weight:700;cursor:pointer}.gray{background:#e5e7eb}.purple{background:#6d28d9;color:white}select{border:1px solid #cbd5e1;padding:9px;background:white}.dept{display:inline-flex;gap:5px;align-items:center;font-size:12px;font-weight:700;border:1px solid #cbd5e1;padding:7px 9px;border-radius:7px}
+.container{max-width:1750px;margin:auto;padding:20px}.head,.panel,.card{background:white;border-radius:11px;box-shadow:0 2px 8px rgba(0,0,0,.07)}.head{padding:17px;margin-bottom:14px}.head h2{margin:0 0 6px}.muted{color:#64748b}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:15px}.card{padding:15px}.label{font-size:13px;color:#64748b}.value{font-weight:700;font-size:22px;margin-top:6px}
+.panel{overflow:hidden;margin-bottom:16px}.title{padding:13px 15px;font-weight:700;border-bottom:1px solid #e5e7eb}.wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:1200px}th{background:#4c1d95;color:#fff;padding:8px;text-align:left;font-size:12px}td{padding:7px;border-bottom:1px solid #e5e7eb;font-size:13px}.num{text-align:right}.center{text-align:center}
+@media(max-width:900px){.cards{grid-template-columns:1fr 1fr}}
+@media print{.toolbar{display:none}.container{max-width:none;padding:0}.head,.panel,.card{box-shadow:none}header{background:white!important;color:black!important}.wrap{overflow:visible}table{min-width:0}th,td{font-size:8px;padding:4px}th{background:#eee!important;color:black!important;border:1px solid #999}td{border:1px solid #ccc}@page{size:landscape;margin:8mm}}
+</style>
+</head><body>
+<header><h1>Παραλαβές Συμβάσεων</h1><p>ΔΗΜΟΣΙΑ ΠΡΟΒΟΛΗ – ΜΟΝΟ ΑΝΑΓΝΩΣΗ</p></header>
+<div class="toolbar">
+<button class="gray" onclick="location.href='./view.html'">← ΣΥΜΒΑΣΕΙΣ</button>
+<select id="sel"></select>
+<label class="dept"><input type="checkbox" class="dc" value="ΚΤΙΡΙΑΚΩΝ" checked> ΚΤΙΡΙΑΚΩΝ</label>
+<label class="dept"><input type="checkbox" class="dc" value="ΚΟΙΝΟΧΡΗΣΤΩΝ" checked> ΚΟΙΝΟΧΡΗΣΤΩΝ</label>
+<label class="dept"><input type="checkbox" class="dc" value="ΗΛΕΚΤΡΟΦΩΤΙΣΜΟΥ" checked> ΗΛΕΚΤΡΟΦΩΤΙΣΜΟΥ</label>
+<button class="gray" onclick="window.print()">🖨 ΕΚΤΥΠΩΣΗ</button>
+</div>
+<div class="container">
+<section class="head"><h2 id="h">—</h2><div class="muted" id="m"></div></section>
+<div class="cards"><div class="card"><div class="label">ΑΡΧΙΚΗ ΑΞΙΑ ΧΩΡΙΣ ΦΠΑ</div><div class="value" id="a">0,00 €</div></div><div class="card"><div class="label">ΥΠΟΛΟΙΠΟ ΧΩΡΙΣ ΦΠΑ</div><div class="value" id="b">0,00 €</div></div><div class="card"><div class="label">ΦΠΑ ΥΠΟΛΟΙΠΟΥ</div><div class="value" id="c">0,00 €</div></div><div class="card"><div class="label">ΥΠΟΛΟΙΠΟ ΜΕ ΦΠΑ</div><div class="value" id="d">0,00 €</div></div></div>
+<section class="panel"><div class="title">ΑΝΑΛΥΣΗ ΕΙΔΩΝ</div><div class="wrap"><table><thead><tr><th>Α/Α</th><th>ΠΕΡΙΓΡΑΦΗ</th><th>Μ.Μ.</th><th class="num">ΑΡΧΙΚΗ ΠΟΣΟΤΗΤΑ</th><th class="num">ΤΙΜΗ ΜΟΝΑΔΑΣ</th><th class="num">ΑΡΧΙΚΗ ΑΞΙΑ</th><th class="num">ΥΠΟΛΟΙΠΟ ΜΟΝΑΔΩΝ</th><th class="num">ΥΠΟΛΟΙΠΟ ΧΩΡΙΣ ΦΠΑ</th></tr></thead><tbody id="items"></tbody></table></div></section>
+<section class="panel"><div class="title">ΙΣΤΟΡΙΚΟ ΠΑΡΑΛΑΒΩΝ ΑΝΑ ΗΜΕΡΟΜΗΝΙΑ</div><div class="wrap"><table><thead id="mh"></thead><tbody id="mb"></tbody></table></div></section>
+<section class="panel"><div class="title">ΑΝΑΛΥΤΙΚΟ ΙΣΤΟΡΙΚΟ</div><div class="wrap"><table><thead><tr><th>ΗΜΕΡΟΜΗΝΙΑ</th><th>ΕΙΔΟΣ</th><th>ΤΡΟΠΟΣ</th><th class="num">ΜΟΝΑΔΕΣ</th><th class="num">ΑΞΙΑ ΧΩΡΙΣ ΦΠΑ</th><th>ΠΑΡΑΤΗΡΗΣΗ</th></tr></thead><tbody id="hist"></tbody></table></div></section>
+</div>
+<script>
+let DATA={contracts:[],paralaves:[]},current=null;const euro=v=>new Intl.NumberFormat("el-GR",{style:"currency",currency:"EUR"}).format(Number(v||0));const esc=v=>{const x=document.createElement("div");x.textContent=v??"";return x.innerHTML};
+function line(it,l){const rr=l.receipts.filter(r=>r.itemId===it.id),u=rr.filter(r=>r.mode==="units").reduce((s,r)=>s+Number(r.units||0),0),n=rr.reduce((s,r)=>s+Number(r.netValue||0),0);return{u:Number(it.baseRemainingUnits??it.initialQty??0)-u,n:Number(it.baseRemainingNet??it.initialNet??0)-n}}
+function depts(){return[...document.querySelectorAll(".dc:checked")].map(x=>x.value)}
+function fill(){
+ const list=DATA.contracts.filter(x=>depts().includes(x.department||""));sel.innerHTML=list.map(x=>`<option value="${x.id}">${esc(x.studyNo)} — ${esc(x.title)} — ${esc(x.department)}</option>`).join("");if(!current||!list.some(x=>x.id===current))current=list[0]?.id||null;if(current)sel.value=current;render()
+}
+function render(){
+ const c0=DATA.contracts.find(x=>x.id===current),l=DATA.paralaves.find(x=>x.contractId===current);if(!c0||!l){h.textContent="ΔΕΝ ΥΠΑΡΧΟΥΝ ΔΕΔΟΜΕΝΑ";m.textContent="";items.innerHTML=hist.innerHTML=mb.innerHTML="";return}
+ h.textContent=(c0.studyNo?c0.studyNo+" — ":"")+c0.title;m.textContent=`ΤΜΗΜΑ: ${c0.department||"—"} | ΑΝΑΔΟΧΟΣ: ${c0.contractor||"—"} | ΦΠΑ: ${l.vat}%`;
+ a.textContent=euro(l.summary?.initialNet);b.textContent=euro(l.summary?.remainingNet);c.textContent=euro(l.summary?.remainingVat);d.textContent=euro(l.summary?.remainingWithVat);
+ items.innerHTML=l.items.map((it,i)=>{const x=line(it,l);return`<tr><td>${i+1}</td><td>${esc(it.description)}</td><td>${esc(it.unit)}</td><td class="num">${Number(it.initialQty||0).toLocaleString("el-GR")}</td><td class="num">${euro(it.unitPrice)}</td><td class="num">${euro(it.initialNet)}</td><td class="num">${x.u.toLocaleString("el-GR")}</td><td class="num"><strong>${euro(x.n)}</strong></td></tr>`}).join("");
+ const ds=[...new Set(l.receipts.map(r=>r.date).filter(Boolean))].sort();mh.innerHTML="<tr><th>Α/Α</th><th>ΠΕΡΙΓΡΑΦΗ</th><th>Μ.Μ.</th>"+ds.map(x=>`<th>${x.split("-").reverse().join("/")}</th>`).join("")+"</tr>";
+ mb.innerHTML=l.items.map((it,i)=>"<tr><td>"+(i+1)+"</td><td>"+esc(it.description)+"</td><td>"+esc(it.unit)+"</td>"+ds.map(dt=>{const rs=l.receipts.filter(r=>r.itemId===it.id&&r.date===dt);if(!rs.length)return"<td class='center'>—</td>";const u=rs.filter(r=>r.mode==="units").reduce((s,r)=>s+Number(r.units||0),0),v=rs.filter(r=>r.mode==="value").reduce((s,r)=>s+Number(r.netValue||0),0);return"<td class='center'>"+(u?u.toLocaleString("el-GR")+" "+esc(it.unit):"")+(u&&v?"<br>":"")+(v?euro(v):"")+"</td>"}).join("")+"</tr>").join("");
+ hist.innerHTML=[...l.receipts].sort((x,y)=>String(y.date).localeCompare(String(x.date))).map(r=>{const it=l.items.find(x=>x.id===r.itemId);return`<tr><td>${r.date?r.date.split("-").reverse().join("/"):""}</td><td>${esc(it?.description||"")}</td><td>${r.mode==="units"?"ΜΟΝΑΔΕΣ":"ΧΡΗΜΑΤΙΚΗ ΑΞΙΑ"}</td><td class="num">${r.mode==="units"?Number(r.units||0).toLocaleString("el-GR"):"—"}</td><td class="num">${euro(r.netValue)}</td><td>${esc(r.note||"")}</td></tr>`}).join("");
+}
+async function start(){try{DATA=await(await fetch("./public-data.json?"+Date.now())).json()}catch{}fill()}
+sel.onchange=()=>{current=sel.value;render()};document.querySelectorAll(".dc").forEach(x=>x.onchange=fill);start();
+</script></body></html>
