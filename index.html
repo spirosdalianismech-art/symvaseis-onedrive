@@ -44,6 +44,84 @@ input[type="text"], textarea, select {
 .file-group-title{font-weight:700;font-size:12px;color:#475569}
 .file-group a{font-size:12px}
 
+
+/* Πιο συμπαγής πίνακας και μεγαλύτερος χώρος για τον Τίτλο Μελέτης */
+table{
+  table-layout: auto;
+}
+
+th, td{
+  padding: 6px 7px;
+  line-height: 1.15;
+}
+
+th:nth-child(1),
+td:nth-child(1){
+  width: 150px;
+  min-width: 150px;
+  max-width: 150px;
+}
+
+th:nth-child(5),
+td:nth-child(5){
+  width: 420px;
+  min-width: 320px;
+}
+
+td:nth-child(5){
+  white-space: normal;
+  word-break: normal;
+}
+
+.actions{
+  display:grid;
+  grid-template-columns: 30px 1fr;
+  gap:4px;
+  align-items:center;
+  white-space:normal;
+}
+
+.actions button{
+  padding:5px 7px;
+  font-size:11px;
+  line-height:1.05;
+  min-height:26px;
+}
+
+.actions .btn-blue:first-child{
+  grid-row:1 / span 3;
+  align-self:stretch;
+  padding-left:5px;
+  padding-right:5px;
+}
+
+tbody tr{
+  height:auto;
+}
+
+.file-group{
+  gap:2px;
+}
+
+.file-group-title,
+.file-group a{
+  line-height:1.1;
+}
+
+
+.dept-filter{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  font-size:12px;
+  font-weight:700;
+  background:#f8fafc;
+  border:1px solid #cbd5e1;
+  border-radius:7px;
+  padding:7px 9px;
+}
+.dept-filter input{margin:0}
+
 </style>
 </head>
 <body>
@@ -56,6 +134,11 @@ input[type="text"], textarea, select {
   <button class="btn-blue" onclick="signIn()">Σύνδεση Microsoft</button>
   <button class="btn-gray" onclick="signOut()">Αποσύνδεση</button>
   <select id="yearFilter" onchange="render()"></select>
+
+  <label class="dept-filter"><input type="checkbox" class="deptCheck" value="ΚΤΙΡΙΑΚΩΝ" checked onchange="render()"> ΚΤΙΡΙΑΚΩΝ</label>
+  <label class="dept-filter"><input type="checkbox" class="deptCheck" value="ΚΟΙΝΟΧΡΗΣΤΩΝ" checked onchange="render()"> ΚΟΙΝΟΧΡΗΣΤΩΝ</label>
+  <label class="dept-filter"><input type="checkbox" class="deptCheck" value="ΗΛΕΚΤΡΟΦΩΤΙΣΜΟΥ" checked onchange="render()"> ΗΛΕΚΤΡΟΦΩΤΙΣΜΟΥ</label>
+
   <input id="searchInput" type="search" placeholder="Αναζήτηση σε όλες τις στήλες..." oninput="render()">
   <button class="btn-green" onclick="refreshFromParalaves(true)">↻ Ανανέωση υπολοίπων</button>
   <button class="btn-purple" onclick="openParalaves()">Παραλαβές</button>
@@ -75,7 +158,7 @@ input[type="text"], textarea, select {
     <div class="table-wrap">
       <table>
         <thead><tr>
-          <th>Ενέργεια</th><th>Α/Α Μελέτης</th><th>Φορέας</th><th>Τίτλος Μελέτης</th><th>Τρόπος Εκτέλεσης</th>
+          <th>Ενέργεια</th><th>Α/Α Μελέτης</th><th>Τμήμα</th><th>Φορέας</th><th>Τίτλος Μελέτης</th><th>Τρόπος Εκτέλεσης</th>
           <th class="num">Προϋπ. Μελέτης</th><th>Ανάδοχος / Εταιρεία</th><th class="num">Προϋπ. Σύμβασης</th>
           <th class="num">Υπόλοιπο με ΦΠΑ</th><th>Οριστική Λήξη</th><th class="center">Ημέρες</th><th>Κατάσταση</th><th>Online Αρχεία</th>
         </tr></thead>
@@ -97,6 +180,14 @@ input[type="text"], textarea, select {
     <div class="form-grid">
       <label>Έτος<input id="fYear" type="number" value="2026" required></label>
       <label>Α/Α Μελέτης<input id="fStudyNo" placeholder="π.χ. 03/2026"></label>
+      <label>Τμήμα
+        <select id="fDepartment" required>
+          <option value="">ΕΠΙΛΟΓΗ ΤΜΗΜΑΤΟΣ</option>
+          <option value="ΚΤΙΡΙΑΚΩΝ">ΚΤΙΡΙΑΚΩΝ</option>
+          <option value="ΚΟΙΝΟΧΡΗΣΤΩΝ">ΚΟΙΝΟΧΡΗΣΤΩΝ</option>
+          <option value="ΗΛΕΚΤΡΟΦΩΤΙΣΜΟΥ">ΗΛΕΚΤΡΟΦΩΤΙΣΜΟΥ</option>
+        </select>
+      </label>
       <label>Φορέας<input id="fAgency"></label>
       <label>Τρόπος Εκτέλεσης<input id="fExecution"></label>
       <label class="wide">Τίτλος Μελέτης<input id="fTitle" required></label>
@@ -413,26 +504,33 @@ async function uploadCategoryFile(record,file,type){
 }
 
 
+
+function selectedDepartments(){
+  return [...document.querySelectorAll(".deptCheck:checked")].map(x=>x.value);
+}
+
 function render(){
   const year=Number(document.getElementById("yearFilter").value||2026),q=document.getElementById("searchInput").value.trim().toLowerCase();
-  let list=records.filter(r=>Number(r.year)===year);if(q)list=list.filter(r=>JSON.stringify(r).toLowerCase().includes(q));
+  const depts=selectedDepartments();
+  let list=records.filter(r=>Number(r.year)===year && depts.includes(toUpperText(r.department||"")));
+  if(q)list=list.filter(r=>JSON.stringify(r).toLowerCase().includes(q));
   document.getElementById("countCard").textContent=list.length;
   document.getElementById("studyCard").textContent=euro(list.reduce((s,r)=>s+Number(r.studyBudget||0),0));
   document.getElementById("contractCard").textContent=euro(list.reduce((s,r)=>s+Number(r.contractBudget||0),0));
   document.getElementById("balanceCard").textContent=euro(list.reduce((s,r)=>s+Number(r.balanceWithVat ?? r.contractBudget ?? 0),0));
   const body=document.getElementById("contractsBody");body.innerHTML="";
-  if(!list.length){body.innerHTML='<tr><td colspan="13" style="padding:35px;text-align:center">Δεν υπάρχουν εγγραφές για το επιλεγμένο έτος.</td></tr>';return}
+  if(!list.length){body.innerHTML='<tr><td colspan="14" style="padding:35px;text-align:center">Δεν υπάρχουν εγγραφές για το επιλεγμένο έτος.</td></tr>';return}
   for(const r of list){
     const st=statusFor(r),days=r.expiry?daysUntil(r.expiry):"",bal=r.balanceWithVat ?? r.contractBudget ?? 0;
     const tr=document.createElement("tr");
     tr.innerHTML=`
       <td><div class="actions">
         <button class="btn-blue" onclick="editRecord('${r.id}')">✎</button>
-        <button class="btn-purple" onclick="openParalaves('${r.id}')">Παραλαβές</button>
-        <button class="btn-green" onclick="selectFilesForRecord('${r.id}','assignment')">Διαδικασίες Ανάθεσης</button>
-        <button class="btn-orange" onclick="selectFilesForRecord('${r.id}','invoice')">Τιμολόγια</button>
+        <button class="btn-purple" onclick="openParalaves('${r.id}')">ΠΑΡΑΛΑΒΕΣ</button>
+        <button class="btn-green" onclick="selectFilesForRecord('${r.id}','assignment')">ΑΝΑΘΕΣΗ</button>
+        <button class="btn-orange" onclick="selectFilesForRecord('${r.id}','invoice')">ΤΙΜΟΛΟΓΙΑ</button>
       </div></td>
-      <td>${esc(toUpperText(r.studyNo||""))}</td><td>${esc(toUpperText(r.agency||""))}</td><td>${esc(toUpperText(r.title||""))}</td><td>${esc(toUpperText(r.execution||""))}</td>
+      <td>${esc(toUpperText(r.studyNo||""))}</td><td>${esc(toUpperText(r.department||""))}</td><td>${esc(toUpperText(r.agency||""))}</td><td>${esc(toUpperText(r.title||""))}</td><td>${esc(toUpperText(r.execution||""))}</td>
       <td class="num">${euro(r.studyBudget)}</td><td>${esc(toUpperText(r.contractor||""))}</td><td class="num">${euro(r.contractBudget)}</td>
       <td class="num"><strong>${euro(bal)}</strong></td><td>${r.expiry||""}</td><td class="center">${days===null?"":days}</td>
       <td><span class="badge ${st.cls}">${st.text}</span></td>
@@ -441,10 +539,10 @@ function render(){
   }
 }
 function openParalaves(contractId=""){window.location.href="paralaves.html"+(contractId?`?contractId=${encodeURIComponent(contractId)}`:"")}
-function openNewRecord(){currentEditingId=null;document.getElementById("dialogTitle").textContent="Νέα εγγραφή";document.getElementById("recordForm").reset();document.getElementById("fYear").value=document.getElementById("yearFilter").value||2026;document.getElementById("fVat").value="24";document.getElementById("fExcelSheet").value="ΣΥΜΒΑΣΗ";document.getElementById("deleteBtn").classList.add("hidden");document.getElementById("recordDialog").showModal()}
+function openNewRecord(){currentEditingId=null;document.getElementById("dialogTitle").textContent="Νέα εγγραφή";document.getElementById("recordForm").reset();document.getElementById("fYear").value=document.getElementById("yearFilter").value||2026;document.getElementById("fVat").value="24";document.getElementById("fDepartment").value="";document.getElementById("fExcelSheet").value="ΣΥΜΒΑΣΗ";document.getElementById("deleteBtn").classList.add("hidden");document.getElementById("recordDialog").showModal()}
 function editRecord(x){
   const r=records.find(a=>a.id===x);if(!r)return;currentEditingId=x;document.getElementById("dialogTitle").textContent="Επεξεργασία εγγραφής";
-  const vals={fYear:r.year||2026,fStudyNo:r.studyNo||"",fAgency:r.agency||"",fExecution:r.execution||"",fTitle:r.title||"",fStudyBudget:euro(r.studyBudget||0),fContractor:r.contractor||"",fContractBudget:euro(r.contractBudget||0),fExpiry:r.expiry||"",fVat:r.vat??24,fExcelPath:r.excelPath||"",fExcelSheet:r.excelSheet||"ΣΥΜΒΑΣΗ"};
+  const vals={fYear:r.year||2026,fStudyNo:r.studyNo||"",fDepartment:r.department||"",fAgency:r.agency||"",fExecution:r.execution||"",fTitle:r.title||"",fStudyBudget:euro(r.studyBudget||0),fContractor:r.contractor||"",fContractBudget:euro(r.contractBudget||0),fExpiry:r.expiry||"",fVat:r.vat??24,fExcelPath:r.excelPath||"",fExcelSheet:r.excelSheet||"ΣΥΜΒΑΣΗ"};
   Object.entries(vals).forEach(([k,v])=>document.getElementById(k).value=v);document.getElementById("deleteBtn").classList.remove("hidden");document.getElementById("recordDialog").showModal()
 }
 function closeDialog(){document.getElementById("recordDialog").close()}
@@ -453,7 +551,7 @@ document.getElementById("recordForm").addEventListener("submit",async e=>{
   try{
     let r=currentEditingId?records.find(x=>x.id===currentEditingId):{id:id()};
     if(!currentEditingId)records.push(r);
-    r.year=Number(fYear.value);r.studyNo=toUpperText(fStudyNo.value.trim());r.agency=toUpperText(fAgency.value.trim());r.execution=toUpperText(fExecution.value.trim());r.title=toUpperText(fTitle.value.trim());
+    r.year=Number(fYear.value);r.studyNo=toUpperText(fStudyNo.value.trim());r.department=toUpperText(fDepartment.value.trim());r.agency=toUpperText(fAgency.value.trim());r.execution=toUpperText(fExecution.value.trim());r.title=toUpperText(fTitle.value.trim());
     r.studyBudget=parseEuroInput(fStudyBudget.value);r.contractor=toUpperText(fContractor.value.trim());r.contractBudget=parseEuroInput(fContractBudget.value);r.expiry=fExpiry.value;
     r.vat=Number(fVat.value||24);r.excelPath=fExcelPath.value.trim();r.excelSheet=toUpperText(fExcelSheet.value.trim())||"ΣΥΜΒΑΣΗ";
     const file=fContractFile.files[0];if(file){r.contractFileUrl=(await uploadContractFile(r,file)).webUrl}
@@ -485,7 +583,7 @@ function enableUppercaseInputs(){
 }
 
 function normalizeRecordText(record){
-  const fields=["studyNo","agency","execution","title","contractor","excelSheet"];
+  const fields=["studyNo","department","agency","execution","title","contractor","excelSheet"];
   let changed=false;
   for(const f of fields){
     if(record[f]!==undefined && record[f]!==null){
