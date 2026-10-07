@@ -233,6 +233,186 @@ function populateYears(){
   const ys=[...new Set(records.map(x=>Number(x.year)).filter(Boolean))];if(!ys.includes(2026))ys.push(2026);ys.sort((a,b)=>b-a);
   s.innerHTML=ys.map(y=>`<option value="${y}">${y}</option>`).join("");s.value=ys.includes(Number(old))?old:"2026"
 }
+
+let pendingUploadRecordId=null;
+
+function renderOnlineFiles(r){
+  const parts=[];
+
+  if(r.contractFileUrl){
+    parts.push(
+      `<div class="file-group">
+        <span class="file-group-title">ΣΥΜΒΑΣΗ</span>
+        <a class="file-link" href="${r.contractFileUrl}" target="_blank">ΑΝΟΙΓΜΑ</a>
+      </div>`
+    );
+  }
+
+  if(Array.isArray(r.assignmentFiles) && r.assignmentFiles.length){
+    const links=r.assignmentFiles.map((f,i)=>
+      `<a class="file-link" href="${f.webUrl}" target="_blank">${esc(f.name||("ΑΡΧΕΙΟ "+(i+1)))}</a>`
+    ).join("");
+    parts.push(
+      `<div class="file-group">
+        <span class="file-group-title">ΔΙΑΔΙΚΑΣΙΕΣ ΑΝΑΘΕΣΗΣ</span>
+        ${links}
+      </div>`
+    );
+  }
+
+  if(Array.isArray(r.invoiceFiles) && r.invoiceFiles.length){
+    const links=r.invoiceFiles.map((f,i)=>
+      `<a class="file-link" href="${f.webUrl}" target="_blank">${esc(f.name||("ΤΙΜΟΛΟΓΙΟ "+(i+1)))}</a>`
+    ).join("");
+    parts.push(
+      `<div class="file-group">
+        <span class="file-group-title">ΤΙΜΟΛΟΓΙΑ</span>
+        ${links}
+      </div>`
+    );
+  }
+
+  return parts.length ? parts.join("") : "—";
+}
+
+function selectFilesForRecord(recordId,type){
+  pendingUploadRecordId=recordId;
+  const input=type==="assignment"
+    ? document.getElementById("assignmentFilesInput")
+    : document.getElementById("invoiceFilesInput");
+
+  input.value="";
+  input.click();
+}
+
+async function handleCategoryUpload(type,input){
+  const record=records.find(r=>r.id===pendingUploadRecordId);
+  const files=[...(input.files||[])];
+
+  if(!record || !files.length)return;
+
+  try{
+    setStatus(`ΑΝΕΒΑΣΜΑ ${files.length} ΑΡΧΕΙΩΝ ΣΤΟ ONEDRIVE...`);
+
+    const uploaded=[];
+
+    for(const file of files){
+      const meta=await uploadCategoryFile(record,file,type);
+      uploaded.push({
+        name:toUpperText(meta.name||file.name),
+        webUrl:meta.webUrl,
+        id:meta.id
+      });
+    }
+
+    if(type==="assignment"){
+      record.assignmentFiles=[...(record.assignmentFiles||[]),...uploaded];
+    }else{
+      record.invoiceFiles=[...(record.invoiceFiles||[]),...uploaded];
+    }
+
+    await saveData();
+    render();
+
+    setStatus(
+      type==="assignment"
+        ? "ΟΙ ΔΙΑΔΙΚΑΣΙΕΣ ΑΝΑΘΕΣΗΣ ΑΠΟΘΗΚΕΥΤΗΚΑΝ ΣΤΟ ONEDRIVE."
+        : "ΤΑ ΤΙΜΟΛΟΓΙΑ ΑΠΟΘΗΚΕΥΤΗΚΑΝ ΣΤΟ ONEDRIVE.",
+      "ok"
+    );
+
+  }catch(err){
+    console.error(err);
+    setStatus("ΣΦΑΛΜΑ ΑΝΕΒΑΣΜΑΤΟΣ ΑΡΧΕΙΩΝ:\\n"+err.message,"error");
+  }finally{
+    pendingUploadRecordId=null;
+    input.value="";
+  }
+}
+
+async function ensureRecordCategoryFolder(record,type){
+  await ensureSubFolder("Files");
+
+  const baseName=(record.studyNo||record.id).replace(/[\\/:*?"<>|]/g,"_");
+  const categoryName=type==="assignment"
+    ? "ΔΙΑΔΙΚΑΣΙΕΣ ΑΝΑΘΕΣΗΣ"
+    : "ΤΙΜΟΛΟΓΙΑ";
+
+  const recordPath=encPath(APP_FOLDER+"/Files/"+baseName);
+
+  let chk=await graph(
+    "https://graph.microsoft.com/v1.0/me/drive/root:/"+recordPath
+  );
+
+  if(chk.status===404){
+    const parent=encPath(APP_FOLDER+"/Files");
+
+    const r=await graph(
+      "https://graph.microsoft.com/v1.0/me/drive/root:/"+parent+":/children",
+      {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          name:baseName,
+          folder:{},
+          ["@microsoft.graph.conflictBehavior"]:"fail"
+        })
+      }
+    );
+
+    if(!r.ok && r.status!==409)throw new Error(await r.text());
+  }
+
+  const catPath=encPath(
+    APP_FOLDER+"/Files/"+baseName+"/"+categoryName
+  );
+
+  chk=await graph(
+    "https://graph.microsoft.com/v1.0/me/drive/root:/"+catPath
+  );
+
+  if(chk.status===404){
+    const parent=encPath(APP_FOLDER+"/Files/"+baseName);
+
+    const r=await graph(
+      "https://graph.microsoft.com/v1.0/me/drive/root:/"+parent+":/children",
+      {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          name:categoryName,
+          folder:{},
+          ["@microsoft.graph.conflictBehavior"]:"fail"
+        })
+      }
+    );
+
+    if(!r.ok && r.status!==409)throw new Error(await r.text());
+  }
+
+  return APP_FOLDER+"/Files/"+baseName+"/"+categoryName;
+}
+
+async function uploadCategoryFile(record,file,type){
+  const folder=await ensureRecordCategoryFolder(record,type);
+  const path=encPath(folder+"/"+file.name);
+
+  const resp=await graph(
+    "https://graph.microsoft.com/v1.0/me/drive/root:/"+path+":/content",
+    {
+      method:"PUT",
+      headers:{
+        "Content-Type":file.type||"application/octet-stream"
+      },
+      body:file
+    }
+  );
+
+  if(!resp.ok)throw new Error(await resp.text());
+  return resp.json();
+}
+
+
 function render(){
   const year=Number(document.getElementById("yearFilter").value||2026),q=document.getElementById("searchInput").value.trim().toLowerCase();
   let list=records.filter(r=>Number(r.year)===year);if(q)list=list.filter(r=>JSON.stringify(r).toLowerCase().includes(q));
