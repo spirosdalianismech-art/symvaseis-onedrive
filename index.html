@@ -46,20 +46,159 @@ async function createAnonymousViewLinkById(itemId){
   }
 }
 
+
+async function graphJson(url){
+  const r=await graph(url);
+  if(!r.ok)throw new Error(await r.text());
+  return r.json();
+}
+
+async function listDriveFolderRecursiveByPath(path){
+  const out=[];
+  const encoded=encPath(path);
+  let url="https://graph.microsoft.com/v1.0/me/drive/root:/"+encoded+":/children?$select=id,name,webUrl,file,folder,parentReference";
+
+  while(url){
+    const data=await graphJson(url);
+    for(const item of (data.value||[])){
+      out.push(item);
+
+      if(item.folder){
+        const childPath=path+"/"+item.name;
+        const nested=await listDriveFolderRecursiveByPath(childPath);
+        out.push(...nested);
+      }
+    }
+    url=data["@odata.nextLink"]||null;
+  }
+
+  return out;
+}
+
+let _publicDriveFilesCache=null;
+
+async function getPublicDriveFilesCache(){
+  if(_publicDriveFilesCache)return _publicDriveFilesCache;
+
+  try{
+    _publicDriveFilesCache=await listDriveFolderRecursiveByPath(APP_FOLDER+"/Files");
+  }catch(e){
+    console.warn("Δεν μπόρεσα να σαρώσω τον φάκελο Files",e);
+    _publicDriveFilesCache=[];
+  }
+
+  return _publicDriveFilesCache;
+}
+
+function normalizedUrl(v){
+  try{
+    const u=new URL(v);
+    u.hash="";
+    return u.href.replace(/\/$/,"");
+  }catch{
+    return String(v||"").trim();
+  }
+}
+
+function filenameFromWebUrl(v){
+  try{
+    const u=new URL(v);
+    const part=u.pathname.split("/").filter(Boolean).pop()||"";
+    return decodeURIComponent(part).toLocaleUpperCase("el-GR");
+  }catch{
+    return "";
+  }
+}
+
+async function recoverLegacyContractFile(r){
+  if(r.contractFileId){
+    return {
+      id:r.contractFileId,
+      name:r.contractFileName||"ΣΥΜΒΑΣΗ"
+    };
+  }
+
+  if(!r.contractFileUrl)return null;
+
+  const files=await getPublicDriveFilesCache();
+  const wantedUrl=normalizedUrl(r.contractFileUrl);
+  const wantedName=filenameFromWebUrl(r.contractFileUrl);
+
+  let found=files.find(x=>x.file && normalizedUrl(x.webUrl)===wantedUrl);
+
+  if(!found && wantedName){
+    found=files.find(x=>
+      x.file &&
+      String(x.name||"").toLocaleUpperCase("el-GR")===wantedName
+    );
+  }
+
+  if(!found){
+    const studyPrefix=String(r.studyNo||"")
+      .replace(/[\\/:*?"<>|]/g,"_")
+      .toLocaleUpperCase("el-GR");
+
+    found=files.find(x=>
+      x.file &&
+      String(x.name||"").toLocaleUpperCase("el-GR").startsWith(studyPrefix+" - ")
+    );
+  }
+
+  if(found){
+    // Repair the main saved record too, so future publications no longer need recovery.
+    r.contractFileId=found.id;
+    r.contractFileName=toUpperText(found.name||"ΣΥΜΒΑΣΗ");
+    r.contractFileUrl=found.webUrl||r.contractFileUrl;
+    return {id:found.id,name:r.contractFileName};
+  }
+
+  return null;
+}
+
+function publicRecordKey(r){
+  return [
+    Number(r.year||0),
+    toUpperText(r.studyNo||"").trim(),
+    toUpperText(r.title||"").replace(/\s+/g," ").trim(),
+    toUpperText(r.contractor||"").replace(/\s+/g," ").trim()
+  ].join("|");
+}
+
+function mergePublicFileSets(target,source){
+  if(!target.contract && source.contract)target.contract=source.contract;
+
+  const merge=(a,b)=>{
+    const seen=new Set(a.map(x=>x.url));
+    for(const x of b){
+      if(x?.url && !seen.has(x.url)){
+        seen.add(x.url);
+        a.push(x);
+      }
+    }
+  };
+
+  merge(target.assignmentFiles,source.assignmentFiles||[]);
+  merge(target.invoiceFiles,source.invoiceFiles||[]);
+  return target;
+}
+
 async function publicFilesForRecord(r){
   const out={contract:null,assignmentFiles:[],invoiceFiles:[]};
 
-  if(r.contractFileId){
-    const url=await createAnonymousViewLinkById(r.contractFileId);
-    if(url)out.contract={name:r.contractFileName||"ΣΥΜΒΑΣΗ",url};
+  const legacy=await recoverLegacyContractFile(r);
+  if(legacy?.id){
+    const url=await createAnonymousViewLinkById(legacy.id);
+    if(url)out.contract={name:legacy.name||"ΣΥΜΒΑΣΗ",url};
   }
 
   for(const f of (r.assignmentFiles||[])){
+    if(!f?.id)continue;
     const url=await createAnonymousViewLinkById(f.id);
     if(url)out.assignmentFiles.push({name:toUpperText(f.name||"ΑΡΧΕΙΟ"),url});
   }
 
   for(const f of (r.invoiceFiles||[])){
+    if(!f?.id)continue;
     const url=await createAnonymousViewLinkById(f.id);
     if(url)out.invoiceFiles.push({name:toUpperText(f.name||"ΤΙΜΟΛΟΓΙΟ"),url});
   }
@@ -72,31 +211,61 @@ async function publishPublicData(){
     setStatus("ΔΗΜΙΟΥΡΓΙΑ ΔΗΜΟΣΙΑΣ ΠΡΟΒΟΛΗΣ...");
 
     const par=await readJsonFile(PAR_FILE);
+    const ledgers=Array.isArray(par?.contracts)?par.contracts:[];
+    const ledgerIds=new Set(ledgers.map(x=>x.contractId));
+    const groups=new Map();
+
+    for(const r of records){
+      const key=publicRecordKey(r);
+      if(!groups.has(key))groups.set(key,[]);
+      groups.get(key).push(r);
+    }
+
     const publicContracts=[];
+    let processed=0;
 
-    for(let i=0;i<records.length;i++){
-      const r=records[i];
-      setStatus(`ΔΗΜΟΣΙΕΥΣΗ ${i+1}/${records.length}...`);
+    for(const sameRecords of groups.values()){
+      // Αν υπάρχουν διπλές εγγραφές της ίδιας σύμβασης, προτιμάμε αυτή
+      // που είναι πραγματικά συνδεδεμένη με τις Παραλαβές.
+      const primary=
+        sameRecords.find(r=>ledgerIds.has(r.id)) ||
+        sameRecords.find(r=>Number(r.balanceWithVat||0)>0) ||
+        sameRecords[0];
 
-      const files=await publicFilesForRecord(r);
+      const mergedFiles={contract:null,assignmentFiles:[],invoiceFiles:[]};
+
+      for(const r of sameRecords){
+        processed++;
+        setStatus(`ΔΗΜΟΣΙΕΥΣΗ ${processed}/${records.length}...`);
+        mergePublicFileSets(mergedFiles,await publicFilesForRecord(r));
+      }
+
+      const ledger=ledgers.find(x=>x.contractId===primary.id);
+      const balanceWithVat=
+        ledger?.summary?.remainingWithVat!==undefined
+          ? Number(ledger.summary.remainingWithVat||0)
+          : Number(primary.balanceWithVat ?? primary.contractBudget ?? 0);
 
       publicContracts.push({
-        id:r.id,
-        year:Number(r.year||0),
-        studyNo:toUpperText(r.studyNo||""),
-        department:toUpperText(r.department||""),
-        agency:toUpperText(r.agency||""),
-        title:toUpperText(r.title||""),
-        execution:toUpperText(r.execution||""),
-        studyBudget:Number(r.studyBudget||0),
-        contractor:toUpperText(r.contractor||""),
-        contractBudget:Number(r.contractBudget||0),
-        balanceWithVat:Number(r.balanceWithVat ?? r.contractBudget ?? 0),
-        expiry:r.expiry||"",
-        vat:Number(r.vat??24),
-        files
+        id:primary.id,
+        year:Number(primary.year||0),
+        studyNo:toUpperText(primary.studyNo||""),
+        department:toUpperText(primary.department||""),
+        agency:toUpperText(primary.agency||""),
+        title:toUpperText(primary.title||""),
+        execution:toUpperText(primary.execution||""),
+        studyBudget:Number(primary.studyBudget||0),
+        contractor:toUpperText(primary.contractor||""),
+        contractBudget:Number(primary.contractBudget||0),
+        balanceWithVat,
+        expiry:primary.expiry||"",
+        vat:Number(primary.vat??24),
+        files:mergedFiles
       });
     }
+
+    // Αφού ανακτήσουμε ID από παλιά αρχεία, τα αποθηκεύουμε και στο OneDrive.
+    await saveData();
 
     const publicParalaves=(Array.isArray(par?.contracts)?par.contracts:[]).map(l=>({
       contractId:l.contractId,
@@ -142,7 +311,7 @@ async function publishPublicData(){
     setStatus("ΕΤΟΙΜΟ. ΚΑΤΕΒΗΚΕ ΤΟ public-data.json ΣΤΙΣ ΛΗΨΕΙΣ.", "ok");
 
     setTimeout(()=>{
-      alert("Η ΔΗΜΟΣΙΕΥΣΗ ΕΤΟΙΜΑΣΤΗΚΕ.\n\nΚατέβηκε το αρχείο public-data.json.\nΑντικατάστησέ το στο GitHub.");
+      alert("Η ΔΗΜΟΣΙΕΥΣΗ ΕΤΟΙΜΑΣΤΗΚΕ.\n\nΈγινε έλεγχος και των παλιών αρχείων OneDrive.\nΚατέβηκε το public-data.json.\nΑντικατάστησέ το στο GitHub.");
     },100);
 
   }catch(e){
