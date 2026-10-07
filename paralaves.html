@@ -200,7 +200,18 @@ async function saveAll(){
 async function loadAll(){
  setStatus("Φόρτωση δεδομένων...");
  const s=await readJson(DATA_FILE);contracts=Array.isArray(s?.records)?s.records:[];
+ contracts=contracts.map(c=>({
+   ...c,
+   studyNo:toUpperText(c.studyNo||""),
+   agency:toUpperText(c.agency||""),
+   execution:toUpperText(c.execution||""),
+   title:toUpperText(c.title||""),
+   contractor:toUpperText(c.contractor||""),
+   excelSheet:toUpperText(c.excelSheet||"ΣΥΜΒΑΣΗ")
+ }));
  const p=await readJson(PAR_FILE);parData=p&&Array.isArray(p.contracts)?p:{version:1,contracts:[]};
+ const normalizedText=normalizeParalavesText();
+ if(normalizedText) await writeJson(PAR_FILE,parData);
  fillContractSelect();
  const q=new URLSearchParams(location.search).get("contractId");
  currentId=(q&&contracts.some(c=>c.id===q))?q:(contracts[0]?.id||null);
@@ -290,8 +301,8 @@ function render(){
  const c=getContract(),l=getLedger(false);
  if(!c||!l){contractTitle.textContent="Δεν υπάρχουν συμβάσεις";contractMeta.textContent="Δημιούργησε πρώτα εγγραφή στο πρόγραμμα Συμβάσεων.";itemsBody.innerHTML="";historyBody.innerHTML="";return}
  l.vat=Number(l.vat??c.vat??24);excelPath.value=l.excelPath||c.excelPath||"";excelSheet.value=l.excelSheet||c.excelSheet||"ΣΥΜΒΑΣΗ";
- contractTitle.textContent=(c.studyNo?c.studyNo+" — ":"")+c.title;
- contractMeta.textContent=`Ανάδοχος: ${c.contractor||"—"} | ΦΠΑ: ${l.vat}% | Excel: ${excelPath.value||"δεν έχει δηλωθεί"}`;
+ contractTitle.textContent=toUpperText((c.studyNo?c.studyNo+" — ":"")+c.title);
+ contractMeta.textContent=toUpperText(`Ανάδοχος: ${c.contractor||"—"} | ΦΠΑ: ${l.vat}% | Excel: ${excelPath.value||"δεν έχει δηλωθεί"}`);
  const s=recompute()||{};
  initialNet.textContent=euro(s.initialNet);remainingNet.textContent=euro(s.remainingNet);remainingVat.textContent=euro(s.remainingVat);remainingWithVat.textContent=euro(s.remainingWithVat);
  lineCount.textContent=`${l.items.length} γραμμές`;
@@ -373,10 +384,10 @@ async function syncFromExcel(showMessage=true){
   if(cDesc<0||cQty<0||cPrice<0)throw new Error("Δεν μπόρεσα να αναγνωρίσω τις στήλες Περιγραφή / Ποσότητα / Τιμή μονάδας.");
   const newItems=[];let blanks=0;
   for(let rr=h.row+h.depth;rr<rows.length;rr++){
-    const row=rows[rr]||[],desc=String(row[cDesc]??"").trim(),qty=num(row[cQty]),price=num(row[cPrice]),expense=cExpense>=0?num(row[cExpense]):qty*price;
+    const row=rows[rr]||[],desc=toUpperText(String(row[cDesc]??"").trim()),qty=num(row[cQty]),price=num(row[cPrice]),expense=cExpense>=0?num(row[cExpense]):qty*price;
     if(!desc&&!qty&&!price&&!expense){blanks++;if(blanks>=8&&newItems.length)break;continue}else blanks=0;
     if(!desc||(!(qty||price||expense)))continue;
-    const unit=cUnit>=0?String(row[cUnit]??"").trim():"";
+    const unit=cUnit>=0?toUpperText(String(row[cUnit]??"").trim()):"";
     const baseUnits=cRemUnits>=0&&String(row[cRemUnits]??"").trim()!==""?num(row[cRemUnits]):qty;
     const baseNet=cRemValue>=0&&String(row[cRemValue]??"").trim()!==""?num(row[cRemValue]):expense;
     const itemId=hash(norm(desc)+"|"+norm(unit)+"|"+price.toFixed(6));
@@ -474,6 +485,38 @@ function enableUppercaseInputs(){
     });
     el.addEventListener("blur",()=>{ el.value=toUpperText(el.value); });
   });
+}
+
+function normalizeParalavesText(){
+  let changed=false;
+
+  for(const ledger of (parData.contracts || [])){
+    const fields=["studyNo","title","excelSheet"];
+    for(const f of fields){
+      if(ledger[f]!==undefined && ledger[f]!==null){
+        const u=toUpperText(ledger[f]);
+        if(ledger[f]!==u){ ledger[f]=u; changed=true; }
+      }
+    }
+
+    for(const item of (ledger.items || [])){
+      for(const f of ["description","unit"]){
+        if(item[f]!==undefined && item[f]!==null){
+          const u=toUpperText(item[f]);
+          if(item[f]!==u){ item[f]=u; changed=true; }
+        }
+      }
+    }
+
+    for(const rec of (ledger.receipts || [])){
+      if(rec.note!==undefined && rec.note!==null){
+        const u=toUpperText(rec.note);
+        if(rec.note!==u){ rec.note=u; changed=true; }
+      }
+    }
+  }
+
+  return changed;
 }
 
 window.addEventListener("load",async()=>{
