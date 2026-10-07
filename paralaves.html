@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Παραλαβές Συμβάσεων</title>
+<script src="https://alcdn.msauth.net/browser/2.35.0/js/msal-browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f1f5f9;color:#1f2937}
+header{background:#4c1d95;color:white;padding:20px 28px}header h1{margin:0;font-size:27px}header p{margin:6px 0 0;opacity:.85}
+.toolbar{background:white;padding:14px 20px;display:flex;gap:9px;flex-wrap:wrap;align-items:center;border-bottom:1px solid #ddd;position:sticky;top:0;z-index:10}
+button,select,input{font:inherit}button{border:0;border-radius:7px;padding:10px 14px;cursor:pointer;font-weight:600}
+.blue{background:#0078d4;color:white}.green{background:#16833b;color:white}.purple{background:#6d28d9;color:white}.orange{background:#d97706;color:white}.red{background:#c62828;color:white}.gray{background:#e5e7eb;color:#222}
+button:hover{opacity:.88}select,input{border:1px solid #cbd5e1;border-radius:7px;padding:10px;background:white}
+.container{max-width:1750px;margin:auto;padding:20px}#status{padding:12px 14px;border-radius:8px;background:#e8eef5;margin-bottom:15px;white-space:pre-wrap}.ok{background:#dcfce7!important;color:#166534}.err{background:#fee2e2!important;color:#991b1b}
+.contract-head{background:white;border-radius:12px;padding:18px;box-shadow:0 2px 9px rgba(0,0,0,.08);margin-bottom:15px}
+.contract-head h2{margin:0 0 8px}.muted{color:#64748b}.source-grid{display:grid;grid-template-columns:2fr 1fr auto;gap:10px;margin-top:12px;align-items:end}.source-grid label{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:600}
+.cards{display:grid;grid-template-columns:repeat(4,minmax(180px,1fr));gap:12px;margin-bottom:16px}.card{background:white;border-radius:10px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.07)}.card .label{font-size:13px;color:#64748b}.card .value{font-weight:700;font-size:23px;margin-top:7px}
+.panel{background:white;border-radius:12px;box-shadow:0 2px 9px rgba(0,0,0,.08);margin-bottom:18px;overflow:hidden}.panel-title{padding:14px 16px;font-weight:700;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center}
+.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:1300px}th{background:#4c1d95;color:white;text-align:left;padding:10px;font-size:13px;white-space:nowrap}td{padding:9px;border-bottom:1px solid #e5e7eb;font-size:13px;vertical-align:middle}
+.num{text-align:right}.center{text-align:center}.receipt-form{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 2fr auto;gap:8px;padding:15px;align-items:end}.receipt-form label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600}
+.history-table{min-width:900px}.negative{color:#b91c1c;font-weight:700}.positive{color:#166534;font-weight:700}.hidden{display:none!important}
+@media(max-width:950px){.cards{grid-template-columns:1fr 1fr}.source-grid,.receipt-form{grid-template-columns:1fr}}
+@media print{
+ .toolbar,#status,.source-grid,.receipt-form,.no-print{display:none!important}body{background:white}.container{max-width:none;padding:0}
+ header{background:white!important;color:black!important;padding:0 0 12px;border-bottom:2px solid #000}.contract-head,.panel,.card{box-shadow:none}
+ .cards{grid-template-columns:repeat(4,1fr);gap:6px}.card{border:1px solid #aaa;padding:10px}
+ .table-wrap{overflow:visible}table,.history-table{min-width:0}th,td{font-size:9px;padding:4px}th{background:#eee!important;color:black!important;border:1px solid #999}td{border:1px solid #ccc}
+ @page{size:landscape;margin:8mm}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Παραλαβές Συμβάσεων</h1>
+  <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
+</header>
+
+<div class="toolbar">
+  <button class="gray" onclick="goBack()">← Συμβάσεις</button>
+  <button class="blue" onclick="signIn()">Σύνδεση Microsoft</button>
+  <select id="contractSelect" onchange="selectContract(this.value)"></select>
+  <button class="green" onclick="syncFromExcel(true)">↻ Ενημέρωση από Excel</button>
+  <button class="purple" onclick="saveAll()">💾 Αποθήκευση</button>
+  <button class="gray" onclick="window.print()">🖨 Εκτύπωση</button>
+</div>
+
+<div class="container">
+  <div id="status">Σύνδεση με Microsoft για φόρτωση δεδομένων.</div>
+
+  <section class="contract-head">
+    <h2 id="contractTitle">Δεν έχει επιλεγεί σύμβαση</h2>
+    <div id="contractMeta" class="muted"></div>
+    <div class="source-grid">
+      <label>Διαδρομή Excel στο OneDrive<input id="excelPath"></label>
+      <label>Φύλλο Excel<input id="excelSheet" value="ΣΥΜΒΑΣΗ"></label>
+      <button class="orange" onclick="saveSourceSettings()">Αποθήκευση διαδρομής</button>
+    </div>
+  </section>
+
+  <div class="cards">
+    <div class="card"><div class="label">Αρχική αξία χωρίς ΦΠΑ</div><div class="value" id="initialNet">0,00 €</div></div>
+    <div class="card"><div class="label">Υπόλοιπο χωρίς ΦΠΑ</div><div class="value" id="remainingNet">0,00 €</div></div>
+    <div class="card"><div class="label">ΦΠΑ υπολοίπου</div><div class="value" id="remainingVat">0,00 €</div></div>
+    <div class="card"><div class="label">Υπόλοιπο σύμβασης με ΦΠΑ</div><div class="value" id="remainingWithVat">0,00 €</div></div>
+  </div>
+
+  <section class="panel">
+    <div class="panel-title"><span>Ανάλυση ειδών</span><span id="lineCount" class="muted"></span></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Α/Α</th><th>Περιγραφή</th><th>Μ.Μ.</th><th class="num">Αρχική ποσότητα</th><th class="num">Τιμή μονάδας</th>
+          <th class="num">Αρχική αξία χωρίς ΦΠΑ</th><th class="num">Υπόλοιπο μονάδων</th><th class="num">Υπόλοιπο αξίας χωρίς ΦΠΑ</th><th class="num">Υπόλοιπο με ΦΠΑ</th>
+        </tr></thead>
+        <tbody id="itemsBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-title">Νέα παραλαβή</div>
+    <div class="receipt-form">
+      <label>Είδος<select id="receiptItem"></select></label>
+      <label>Τρόπος
+        <select id="receiptMode"><option value="units">Μονάδες μέτρησης</option><option value="value">Χρηματική αξία (€)</option></select>
+      </label>
+      <label>Ποσότητα / Ποσό<input id="receiptAmount" type="number" step="0.001" min="0"></label>
+      <label>Ημερομηνία<input id="receiptDate" type="date"></label>
+      <label>Παρατήρηση<input id="receiptNote"></label>
+      <button class="green" onclick="addReceipt()">+ Καταχώριση</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-title">Ιστορικό παραλαβών</div>
+    <div class="table-wrap">
+      <table class="history-table">
+        <thead><tr><th>Ημερομηνία</th><th>Είδος</th><th>Τρόπος</th><th class="num">Μονάδες</th><th class="num">Αξία χωρίς ΦΠΑ</th><th>Παρατήρηση</th><th class="no-print">Ενέργεια</th></tr></thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<script>
+const CLIENT_ID="d15aa5e9-860e-4e0a-af14-283c401a08cc";
+const REDIRECT_URI="https://spirosdalianismech-art.github.io/symvaseis-onedrive/paralaves.html";
+const APP_FOLDER="SymvaseisApp", DATA_FILE="symvaseis-data.json", PAR_FILE="paralaves-data.json";
+
+const msalInstance=new msal.PublicClientApplication({
+  auth:{clientId:CLIENT_ID,authority:"https://login.microsoftonline.com/common",redirectUri:REDIRECT_URI},
+  cache:{cacheLocation:"localStorage",storeAuthStateInCookie:false}
+});
+const loginRequest={scopes:["User.Read","Files.ReadWrite"],prompt:"select_account"};
+
+let contracts=[],parData={version:1,contracts:[]},currentId=null;
+
+function setStatus(m,t=""){const e=document.getElementById("status");e.className="";if(t==="ok")e.classList.add("ok");if(t==="err")e.classList.add("err");e.innerText=m}
+function euro(v){return new Intl.NumberFormat("el-GR",{style:"currency",currency:"EUR"}).format(Number(v||0))}
+function num(v){if(typeof v==="number")return v;let s=String(v??"").trim();if(!s)return 0;s=s.replace(/\s/g,"").replace(/€/g,"");if(s.includes(",")&&s.includes(".")){if(s.lastIndexOf(",")>s.lastIndexOf("."))s=s.replace(/\./g,"").replace(",",".");else s=s.replace(/,/g,"")}else if(s.includes(","))s=s.replace(",",".");return Number(s.replace(/[^\d.-]/g,""))||0}
+function norm(s){return String(s??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/\s+/g," ").trim()}
+function esc(v){const d=document.createElement("div");d.textContent=v??"";return d.innerHTML}
+function encPath(p){return p.split("/").filter(Boolean).map(encodeURIComponent).join("/")}
+function uid(){return Date.now().toString()+"-"+Math.random().toString(36).slice(2,9)}
+function hash(s){let h=0;for(let i=0;i<s.length;i++)h=((h<<5)-h)+s.charCodeAt(i),h|=0;return "i"+Math.abs(h)}
+function goBack(){location.href="./"}
+
+async function getAccount(){let a=msalInstance.getActiveAccount();if(!a){const xs=msalInstance.getAllAccounts();if(xs.length){a=xs[0];msalInstance.setActiveAccount(a)}}return a}
+async function getToken(){const a=await getAccount();if(!a)throw new Error("Πρέπει πρώτα να συνδεθείτε με Microsoft.");try{return (await msalInstance.acquireTokenSilent({scopes:["User.Read","Files.ReadWrite"],account:a})).accessToken}catch{return (await msalInstance.acquireTokenPopup({scopes:["User.Read","Files.ReadWrite"],account:a})).accessToken}}
+async function graph(url,opt={}){const tok=await getToken();opt.headers=opt.headers||{};opt.headers.Authorization="Bearer "+tok;return fetch(url,opt)}
+async function signIn(){try{const r=await msalInstance.loginPopup(loginRequest);msalInstance.setActiveAccount(r.account);setStatus("Συνδεθήκατε ως "+r.account.username,"ok");await loadAll()}catch(e){setStatus("Σφάλμα σύνδεσης:\n"+e.message,"err")}}
+async function ensureRootFolder(){
+ const c=await graph("https://graph.microsoft.com/v1.0/me/drive/root:/"+encodeURIComponent(APP_FOLDER));if(c.ok)return;if(c.status!==404)throw new Error(await c.text());
+ const r=await graph("https://graph.microsoft.com/v1.0/me/drive/root/children",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:APP_FOLDER,folder:{},["@microsoft.graph.conflictBehavior"]:"fail"})});if(!r.ok&&r.status!==409)throw new Error(await r.text())
+}
+async function readJson(name){await ensureRootFolder();const r=await graph("https://graph.microsoft.com/v1.0/me/drive/root:/"+encPath(APP_FOLDER+"/"+name)+":/content");if(r.status===404)return null;if(!r.ok)throw new Error(await r.text());return JSON.parse(await r.text())}
+async function writeJson(name,obj){await ensureRootFolder();const r=await graph("https://graph.microsoft.com/v1.0/me/drive/root:/"+encPath(APP_FOLDER+"/"+name)+":/content",{method:"PUT",headers:{"Content-Type":"application/json;charset=utf-8"},body:JSON.stringify(obj,null,2)});if(!r.ok)throw new Error(await r.text())}
+
+function getContract(){return contracts.find(c=>c.id===currentId)}
+function getLedger(create=true){
+ let l=parData.contracts.find(x=>x.contractId===currentId);
+ if(!l&&create){const c=getContract();if(!c)return null;l={contractId:c.id,studyNo:c.studyNo||"",title:c.title||"",vat:Number(c.vat??24),excelPath:c.excelPath||"",excelSheet:c.excelSheet||"ΣΥΜΒΑΣΗ",items:[],receipts:[],summary:{}};parData.contracts.push(l)}
+ return l
+}
+function computeLine(item,ledger){
+ const receipts=ledger.receipts.filter(r=>r.itemId===item.id);
+ const appUnits=receipts.filter(r=>r.mode==="units").reduce((s,r)=>s+Number(r.units||0),0);
+ const appNet=receipts.reduce((s,r)=>s+Number(r.netValue||0),0);
+ const baseUnits=Number(item.baseRemainingUnits ?? item.initialQty ?? 0);
+ const baseNet=Number(item.baseRemainingNet ?? item.initialNet ?? 0);
+ return {remainingUnits:baseUnits-appUnits,remainingNet:baseNet-appNet}
+}
+function recompute(){
+ const l=getLedger(false);if(!l)return;
+ let init=0,rem=0;
+ for(const it of l.items){init+=Number(it.initialNet||0);rem+=computeLine(it,l).remainingNet}
+ rem=Math.max(0,rem);const vat=Number(l.vat??24),vatAmt=rem*vat/100,total=rem+vatAmt;
+ l.summary={initialNet:init,remainingNet:rem,remainingVat:vatAmt,remainingWithVat:total,updatedAt:new Date().toISOString()};
+ return l.summary
+}
+async function saveAll(){
+ try{recompute();parData.updatedAt=new Date().toISOString();await writeJson(PAR_FILE,parData);render();setStatus("Οι παραλαβές και τα υπόλοιπα αποθηκεύτηκαν στο OneDrive.","ok")}
+ catch(e){setStatus("Σφάλμα αποθήκευσης:\n"+e.message,"err")}
+}
+async function loadAll(){
+ setStatus("Φόρτωση δεδομένων...");
+ const s=await readJson(DATA_FILE);contracts=Array.isArray(s?.records)?s.records:[];
+ const p=await readJson(PAR_FILE);parData=p&&Array.isArray(p.contracts)?p:{version:1,contracts:[]};
+ fillContractSelect();
+ const q=new URLSearchParams(location.search).get("contractId");
+ currentId=(q&&contracts.some(c=>c.id===q))?q:(contracts[0]?.id||null);
+ if(currentId){contractSelect.value=currentId;ensureLedger(true);render();const l=getLedger(false);if((l.excelPath||getContract()?.excelPath)&&!l.lastAutoSyncSession){l.lastAutoSyncSession=true;await syncFromExcel(false)}}
+ else render();
+ setStatus("Τα δεδομένα φορτώθηκαν.","ok")
+}
+function fillContractSelect(){
+ const s=document.getElementById("contractSelect");s.innerHTML=contracts.map(c=>`<option value="${c.id}">${esc(c.studyNo||"")} — ${esc(c.title||"")}</option>`).join("")
+}
+async function selectContract(id){
+ currentId=id;ensureLedger(true);const l=getLedger(false);render();
+ history.replaceState(null,"","paralaves.html?contractId="+encodeURIComponent(id));
+ if((l.excelPath||getContract()?.excelPath))await syncFromExcel(false)
+}
+function render(){
+ const c=getContract(),l=getLedger(false);
+ if(!c||!l){contractTitle.textContent="Δεν υπάρχουν συμβάσεις";contractMeta.textContent="Δημιούργησε πρώτα εγγραφή στο πρόγραμμα Συμβάσεων.";itemsBody.innerHTML="";historyBody.innerHTML="";return}
+ l.vat=Number(l.vat??c.vat??24);excelPath.value=l.excelPath||c.excelPath||"";excelSheet.value=l.excelSheet||c.excelSheet||"ΣΥΜΒΑΣΗ";
+ contractTitle.textContent=(c.studyNo?c.studyNo+" — ":"")+c.title;
+ contractMeta.textContent=`Ανάδοχος: ${c.contractor||"—"} | ΦΠΑ: ${l.vat}% | Excel: ${excelPath.value||"δεν έχει δηλωθεί"}`;
+ const s=recompute()||{};
+ initialNet.textContent=euro(s.initialNet);remainingNet.textContent=euro(s.remainingNet);remainingVat.textContent=euro(s.remainingVat);remainingWithVat.textContent=euro(s.remainingWithVat);
+ lineCount.textContent=`${l.items.length} γραμμές`;
+ itemsBody.innerHTML="";
+ l.items.forEach((it,i)=>{const x=computeLine(it,l);const tr=document.createElement("tr");tr.innerHTML=`
+   <td>${i+1}</td><td>${esc(it.description)}</td><td>${esc(it.unit)}</td>
+   <td class="num">${Number(it.initialQty||0).toLocaleString("el-GR")}</td><td class="num">${euro(it.unitPrice)}</td>
+   <td class="num">${euro(it.initialNet)}</td><td class="num ${x.remainingUnits<0?"negative":""}">${x.remainingUnits.toLocaleString("el-GR")}</td>
+   <td class="num ${x.remainingNet<0?"negative":""}"><strong>${euro(x.remainingNet)}</strong></td>
+   <td class="num">${euro(x.remainingNet*(1+l.vat/100))}</td>`;itemsBody.appendChild(tr)});
+ receiptItem.innerHTML=l.items.map(it=>`<option value="${it.id}">${esc(it.description)}</option>`).join("");
+ historyBody.innerHTML="";
+ [...l.receipts].sort((a,b)=>String(b.date).localeCompare(String(a.date))).forEach(r=>{const it=l.items.find(x=>x.id===r.itemId);const tr=document.createElement("tr");tr.innerHTML=`
+   <td>${r.date||""}</td><td>${esc(it?.description||"")}</td><td>${r.mode==="units"?"Μονάδες":"Χρηματική αξία"}</td>
+   <td class="num">${r.mode==="units"?Number(r.units||0).toLocaleString("el-GR"):"—"}</td><td class="num">${euro(r.netValue)}</td>
+   <td>${esc(r.note||"")}</td><td class="no-print"><button class="red" onclick="deleteReceipt('${r.id}')">Διαγραφή</button></td>`;historyBody.appendChild(tr)});
+ if(!l.receipts.length)historyBody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px">Δεν υπάρχουν ακόμη καταχωρισμένες παραλαβές.</td></tr>';
+ receiptDate.value=receiptDate.value||new Date().toISOString().slice(0,10)
+}
+async function saveSourceSettings(){
+ const l=getLedger(true);l.excelPath=excelPath.value.trim();l.excelSheet=excelSheet.value.trim()||"ΣΥΜΒΑΣΗ";
+ const c=getContract();if(c){c.excelPath=l.excelPath;c.excelSheet=l.excelSheet}
+ await saveAll();setStatus("Η διαδρομή Excel αποθηκεύτηκε.","ok")
+}
+async function addReceipt(){
+ const l=getLedger(false),it=l?.items.find(x=>x.id===receiptItem.value);if(!l||!it)return;
+ const amount=Number(receiptAmount.value||0);if(!(amount>0)){setStatus("Γράψε ποσότητα ή ποσό μεγαλύτερο από μηδέν.","err");return}
+ const cur=computeLine(it,l),mode=receiptMode.value;
+ let units=0,netValue=0;
+ if(mode==="units"){
+   units=amount;netValue=units*Number(it.unitPrice||0);
+   if(units>cur.remainingUnits+1e-9){setStatus("Οι μονάδες παραλαβής είναι περισσότερες από το υπόλοιπο μονάδων.","err");return}
+   if(netValue>cur.remainingNet+0.005){setStatus("Η αξία της παραλαβής υπερβαίνει το υπόλοιπο αξίας της γραμμής.","err");return}
+ }else{
+   netValue=amount;
+   if(netValue>cur.remainingNet+0.005){setStatus("Το ποσό παραλαβής υπερβαίνει το υπόλοιπο αξίας της γραμμής.","err");return}
+ }
+ l.receipts.push({id:uid(),itemId:it.id,mode,units,netValue,date:receiptDate.value||new Date().toISOString().slice(0,10),note:receiptNote.value.trim(),createdAt:new Date().toISOString()});
+ receiptAmount.value="";receiptNote.value="";await saveAll()
+}
+async function deleteReceipt(id){
+ const l=getLedger(false);if(!l||!confirm("Να διαγραφεί αυτή η παραλαβή;"))return;l.receipts=l.receipts.filter(r=>r.id!==id);await saveAll()
+}
+
+function buildHeader(rows){
+ let best={score:-1,row:0,headers:[]};
+ for(let r=0;r<Math.min(rows.length,35);r++){
+   for(const depth of [1,2]){
+     const max=Math.max(rows[r]?.length||0,rows[r+1]?.length||0),h=[];
+     for(let c=0;c<max;c++)h[c]=norm([rows[r]?.[c]??"",depth===2?(rows[r+1]?.[c]??""):""].join(" "));
+     let score=0;
+     for(const x of h){if(x.includes("ΠΕΡΙΓΡΑΦ")||x.includes("ΤΙΤΛ"))score+=3;if(x.includes("ΠΟΣΟΤ"))score+=2;if(x.includes("ΤΙΜ")&&x.includes("ΜΟΝ"))score+=3;if(x.includes("Μ.Μ")||x==="ΜΜ"||x.includes("ΜΟΝΑΔΑ ΜΕΤΡ"))score+=2;if(x.includes("ΥΠΟΛΟΙΠ"))score+=1}
+     if(score>best.score)best={score,row:r,depth,headers:h}
+   }
+ }
+ return best
+}
+function findCol(headers,pred){for(let i=0;i<headers.length;i++)if(pred(headers[i]))return i;return -1}
+async function syncFromExcel(showMessage=true){
+ const c=getContract(),l=getLedger(true);if(!c||!l)return;
+ l.excelPath=excelPath.value.trim()||l.excelPath||c.excelPath||"";l.excelSheet=excelSheet.value.trim()||l.excelSheet||c.excelSheet||"ΣΥΜΒΑΣΗ";
+ if(!l.excelPath){if(showMessage)setStatus("Δεν έχει δηλωθεί διαδρομή Excel.","err");return}
+ try{
+  if(showMessage)setStatus("Διαβάζω τον υπάρχοντα πίνακα Excel...");
+  const r=await graph("https://graph.microsoft.com/v1.0/me/drive/root:/"+encPath(l.excelPath)+":/content");
+  if(!r.ok)throw new Error("Δεν βρέθηκε το Excel στο OneDrive. Έλεγξε τη διαδρομή.");
+  const wb=XLSX.read(await r.arrayBuffer(),{type:"array",cellDates:false});
+  let sh=wb.Sheets[l.excelSheet];if(!sh){const n=wb.SheetNames.find(n=>norm(n)===norm(l.excelSheet));if(n)sh=wb.Sheets[n]}if(!sh)sh=wb.Sheets[wb.SheetNames[0]];
+  const rows=XLSX.utils.sheet_to_json(sh,{header:1,defval:"",raw:true});
+  const h=buildHeader(rows),H=h.headers;
+  const cDesc=findCol(H,x=>x.includes("ΠΕΡΙΓΡΑΦ")||x.includes("ΤΙΤΛ"));
+  const cUnit=findCol(H,x=>x.includes("Μ.Μ")||x==="ΜΜ"||x.includes("ΜΟΝΑΔΑ ΜΕΤΡ"));
+  const cQty=findCol(H,x=>x.includes("ΠΟΣΟΤ")&&!x.includes("ΥΠΟΛΟΙΠ"));
+  const cPrice=findCol(H,x=>x.includes("ΤΙΜ")&&x.includes("ΜΟΝ"));
+  const cExpense=findCol(H,x=>(x.includes("ΔΑΠΑΝ")||x.includes("ΑΞΙΑ"))&&!x.includes("ΥΠΟΛΟΙΠ")&&!x.includes("ΠΑΡΑΛΑΒ"));
+  const cRemUnits=findCol(H,x=>x.includes("ΥΠΟΛΟΙΠ")&&(x.includes("Μ.Μ")||x.includes("ΜΟΝΑΔ")||x.includes("ΠΟΣΟΤ")));
+  const cRemValue=findCol(H,x=>x.includes("ΥΠΟΛΟΙΠ")&&(x.includes("€")||x.includes("ΑΞΙΑ")||x.includes("ΠΟΣΟ")||x.includes("ΣΥΜΒΑΣ")));
+  if(cDesc<0||cQty<0||cPrice<0)throw new Error("Δεν μπόρεσα να αναγνωρίσω τις στήλες Περιγραφή / Ποσότητα / Τιμή μονάδας.");
+  const newItems=[];let blanks=0;
+  for(let rr=h.row+h.depth;rr<rows.length;rr++){
+    const row=rows[rr]||[],desc=String(row[cDesc]??"").trim(),qty=num(row[cQty]),price=num(row[cPrice]),expense=cExpense>=0?num(row[cExpense]):qty*price;
+    if(!desc&&!qty&&!price&&!expense){blanks++;if(blanks>=8&&newItems.length)break;continue}else blanks=0;
+    if(!desc||(!(qty||price||expense)))continue;
+    const unit=cUnit>=0?String(row[cUnit]??"").trim():"";
+    const baseUnits=cRemUnits>=0&&String(row[cRemUnits]??"").trim()!==""?num(row[cRemUnits]):qty;
+    const baseNet=cRemValue>=0&&String(row[cRemValue]??"").trim()!==""?num(row[cRemValue]):expense;
+    const itemId=hash(norm(desc)+"|"+norm(unit)+"|"+price.toFixed(6));
+    newItems.push({id:itemId,sourceRow:rr+1,description:desc,unit,initialQty:qty,unitPrice:price,initialNet:expense||qty*price,baseRemainingUnits:baseUnits,baseRemainingNet:baseNet});
+  }
+  if(!newItems.length)throw new Error("Δεν βρέθηκαν γραμμές ειδών στον πίνακα.");
+  l.items=newItems;l.lastExcelSync=new Date().toISOString();recompute();await saveAll();
+  if(showMessage)setStatus(`Ενημερώθηκαν ${newItems.length} γραμμές από το Excel. Οι υπολογισμοί ανά γραμμή είναι χωρίς ΦΠΑ.`,"ok")
+ }catch(e){setStatus("Σφάλμα ενημέρωσης από Excel:\n"+e.message,"err")}
+}
+window.addEventListener("load",async()=>{
+ try{
+  const a=await getAccount();
+  if(a){setStatus("Συνδεδεμένος ως "+a.username,"ok");await loadAll()}
+  else setStatus("Πατήστε «Σύνδεση Microsoft».","")
+ }catch(e){setStatus(e.message,"err")}
+});
+</script>
+</body>
+</html>
