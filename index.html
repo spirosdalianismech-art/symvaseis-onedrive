@@ -4,7 +4,154 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Μελέτες και Συμβάσεις</title>
-<script src="https://alcdn.msauth.net/browser/2.35.0/js/msal-browser.min.js"></script>
+<script src="https://alcdn.msauth.net/browser/2.35.0/js/msal-browser.min.js">
+/* =========================================================
+   PUBLIC READ-ONLY VIEW
+========================================================= */
+
+function openPublicView(){
+  window.open("./view.html","_blank");
+}
+
+function downloadTextFile(filename,text,mime="application/json"){
+  const blob=new Blob([text],{type:mime});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download=filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+
+async function createAnonymousViewLinkById(itemId){
+  if(!itemId)return null;
+  try{
+    const r=await graph(
+      "https://graph.microsoft.com/v1.0/me/drive/items/"+encodeURIComponent(itemId)+"/createLink",
+      {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({type:"view",scope:"anonymous"})
+      }
+    );
+    if(!r.ok)return null;
+    const data=await r.json();
+    return data?.link?.webUrl||null;
+  }catch(e){
+    console.warn("Anonymous link failed", itemId, e);
+    return null;
+  }
+}
+
+async function publicFilesForRecord(r){
+  const out={contract:null,assignmentFiles:[],invoiceFiles:[]};
+
+  if(r.contractFileId){
+    const url=await createAnonymousViewLinkById(r.contractFileId);
+    if(url)out.contract={name:r.contractFileName||"ΣΥΜΒΑΣΗ",url};
+  }
+
+  for(const f of (r.assignmentFiles||[])){
+    const url=await createAnonymousViewLinkById(f.id);
+    if(url)out.assignmentFiles.push({name:toUpperText(f.name||"ΑΡΧΕΙΟ"),url});
+  }
+
+  for(const f of (r.invoiceFiles||[])){
+    const url=await createAnonymousViewLinkById(f.id);
+    if(url)out.invoiceFiles.push({name:toUpperText(f.name||"ΤΙΜΟΛΟΓΙΟ"),url});
+  }
+
+  return out;
+}
+
+async function publishPublicData(){
+  try{
+    setStatus("ΔΗΜΙΟΥΡΓΙΑ ΔΗΜΟΣΙΑΣ ΠΡΟΒΟΛΗΣ...");
+
+    const par=await readJsonFile(PAR_FILE);
+    const publicContracts=[];
+
+    for(let i=0;i<records.length;i++){
+      const r=records[i];
+      setStatus(`ΔΗΜΟΣΙΕΥΣΗ ${i+1}/${records.length}...`);
+
+      const files=await publicFilesForRecord(r);
+
+      publicContracts.push({
+        id:r.id,
+        year:Number(r.year||0),
+        studyNo:toUpperText(r.studyNo||""),
+        department:toUpperText(r.department||""),
+        agency:toUpperText(r.agency||""),
+        title:toUpperText(r.title||""),
+        execution:toUpperText(r.execution||""),
+        studyBudget:Number(r.studyBudget||0),
+        contractor:toUpperText(r.contractor||""),
+        contractBudget:Number(r.contractBudget||0),
+        balanceWithVat:Number(r.balanceWithVat ?? r.contractBudget ?? 0),
+        expiry:r.expiry||"",
+        vat:Number(r.vat??24),
+        files
+      });
+    }
+
+    const publicParalaves=(Array.isArray(par?.contracts)?par.contracts:[]).map(l=>({
+      contractId:l.contractId,
+      studyNo:toUpperText(l.studyNo||""),
+      title:toUpperText(l.title||""),
+      vat:Number(l.vat??24),
+      items:(l.items||[]).map(it=>({
+        id:it.id,
+        description:toUpperText(it.description||""),
+        unit:toUpperText(it.unit||""),
+        initialQty:Number(it.initialQty||0),
+        unitPrice:Number(it.unitPrice||0),
+        initialNet:Number(it.initialNet||0),
+        baseRemainingUnits:Number(it.baseRemainingUnits ?? it.initialQty ?? 0),
+        baseRemainingNet:Number(it.baseRemainingNet ?? it.initialNet ?? 0)
+      })),
+      receipts:(l.receipts||[]).map(x=>({
+        id:x.id,
+        itemId:x.itemId,
+        mode:x.mode,
+        units:Number(x.units||0),
+        netValue:Number(x.netValue||0),
+        date:x.date||"",
+        note:toUpperText(x.note||"")
+      })),
+      summary:{
+        initialNet:Number(l.summary?.initialNet||0),
+        remainingNet:Number(l.summary?.remainingNet||0),
+        remainingVat:Number(l.summary?.remainingVat||0),
+        remainingWithVat:Number(l.summary?.remainingWithVat||0),
+        updatedAt:l.summary?.updatedAt||""
+      }
+    }));
+
+    const payload={
+      version:1,
+      publishedAt:new Date().toISOString(),
+      contracts:publicContracts,
+      paralaves:publicParalaves
+    };
+
+    downloadTextFile("public-data.json",JSON.stringify(payload,null,2));
+    setStatus("ΕΤΟΙΜΟ. ΚΑΤΕΒΗΚΕ ΤΟ public-data.json ΣΤΙΣ ΛΗΨΕΙΣ.", "ok");
+
+    setTimeout(()=>{
+      alert("Η ΔΗΜΟΣΙΕΥΣΗ ΕΤΟΙΜΑΣΤΗΚΕ.\n\nΚατέβηκε το αρχείο public-data.json.\nΑντικατάστησέ το στο GitHub.");
+    },100);
+
+  }catch(e){
+    console.error(e);
+    setStatus("ΣΦΑΛΜΑ ΔΗΜΟΣΙΕΥΣΗΣ:\n"+e.message,"error");
+    alert("Σφάλμα στη Δημοσίευση:\n"+e.message);
+  }
+}
+
+</script>
 <style>
 *{box-sizing:border-box} body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#eef2f6;color:#1f2937}
 header{background:#17365d;color:white;padding:22px 30px} header h1{margin:0;font-size:28px} header p{margin:6px 0 0;opacity:.85}
