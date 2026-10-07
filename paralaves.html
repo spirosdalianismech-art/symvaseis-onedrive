@@ -34,6 +34,20 @@ input[type="text"], textarea, select {
   text-transform: uppercase;
 }
 
+
+.dept-filter{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  font-size:12px;
+  font-weight:700;
+  background:#f8fafc;
+  border:1px solid #cbd5e1;
+  border-radius:7px;
+  padding:7px 9px;
+}
+.dept-filter input{margin:0}
+
 </style>
 </head>
 <body>
@@ -46,6 +60,11 @@ input[type="text"], textarea, select {
   <button class="gray" onclick="goBack()">← Συμβάσεις</button>
   <button class="blue" onclick="signIn()">Σύνδεση Microsoft</button>
   <select id="contractSelect" onchange="selectContract(this.value)"></select>
+
+  <label class="dept-filter"><input type="checkbox" class="deptCheck" value="ΚΤΙΡΙΑΚΩΝ" checked onchange="applyDepartmentFilter()"> ΚΤΙΡΙΑΚΩΝ</label>
+  <label class="dept-filter"><input type="checkbox" class="deptCheck" value="ΚΟΙΝΟΧΡΗΣΤΩΝ" checked onchange="applyDepartmentFilter()"> ΚΟΙΝΟΧΡΗΣΤΩΝ</label>
+  <label class="dept-filter"><input type="checkbox" class="deptCheck" value="ΗΛΕΚΤΡΟΦΩΤΙΣΜΟΥ" checked onchange="applyDepartmentFilter()"> ΗΛΕΚΤΡΟΦΩΤΙΣΜΟΥ</label>
+
   <button class="green" onclick="syncFromExcel(true)">↻ Ενημέρωση από Excel</button>
   <button class="purple" onclick="saveAll()">💾 Αποθήκευση</button>
   <button class="gray" onclick="window.print()">🖨 Εκτύπωση</button>
@@ -207,6 +226,7 @@ async function loadAll(){
    execution:toUpperText(c.execution||""),
    title:toUpperText(c.title||""),
    contractor:toUpperText(c.contractor||""),
+   department:toUpperText(c.department||""),
    excelSheet:toUpperText(c.excelSheet||"ΣΥΜΒΑΣΗ")
  }));
  const p=await readJson(PAR_FILE);parData=p&&Array.isArray(p.contracts)?p:{version:1,contracts:[]};
@@ -214,13 +234,48 @@ async function loadAll(){
  if(normalizedText) await writeJson(PAR_FILE,parData);
  fillContractSelect();
  const q=new URLSearchParams(location.search).get("contractId");
- currentId=(q&&contracts.some(c=>c.id===q))?q:(contracts[0]?.id||null);
+ const visibleContracts=filteredContracts();
+ currentId=(q&&visibleContracts.some(c=>c.id===q))?q:(visibleContracts[0]?.id||null);
  if(currentId){contractSelect.value=currentId;getLedger(true);render();const l=getLedger(false);if((l.excelPath||getContract()?.excelPath)&&!l.lastAutoSyncSession){l.lastAutoSyncSession=true;await syncFromExcel(false)}}
  else render();
  setStatus("Τα δεδομένα φορτώθηκαν.","ok")
 }
+function selectedDepartments(){
+  return [...document.querySelectorAll(".deptCheck:checked")].map(x=>x.value);
+}
+
+function filteredContracts(){
+  const depts=selectedDepartments();
+  return contracts.filter(c=>depts.includes(toUpperText(c.department||"")));
+}
+
 function fillContractSelect(){
- const s=document.getElementById("contractSelect");s.innerHTML=contracts.map(c=>`<option value="${c.id}">${esc(c.studyNo||"")} — ${esc(c.title||"")}</option>`).join("")
+  const s=document.getElementById("contractSelect");
+  const list=filteredContracts();
+
+  s.innerHTML=list.map(c=>
+    `<option value="${c.id}">${esc(c.studyNo||"")} — ${esc(c.title||"")} — ${esc(c.department||"")}</option>`
+  ).join("");
+
+  if(currentId && list.some(c=>c.id===currentId)){
+    s.value=currentId;
+  }else{
+    currentId=list[0]?.id||null;
+    if(currentId) s.value=currentId;
+  }
+}
+
+async function applyDepartmentFilter(){
+  fillContractSelect();
+
+  if(currentId){
+    getLedger(true);
+    render();
+    const l=getLedger(false);
+    if((l?.excelPath||getContract()?.excelPath)) await syncFromExcel(false);
+  }else{
+    render();
+  }
 }
 async function selectContract(id){
  currentId=id;getLedger(true);const l=getLedger(false);render();
@@ -299,10 +354,10 @@ function formatDateGR(s){
 
 function render(){
  const c=getContract(),l=getLedger(false);
- if(!c||!l){contractTitle.textContent="Δεν υπάρχουν συμβάσεις";contractMeta.textContent="Δημιούργησε πρώτα εγγραφή στο πρόγραμμα Συμβάσεων.";itemsBody.innerHTML="";historyBody.innerHTML="";return}
+ if(!c||!l){contractTitle.textContent="ΔΕΝ ΥΠΑΡΧΟΥΝ ΣΥΜΒΑΣΕΙΣ ΓΙΑ ΤΑ ΕΠΙΛΕΓΜΕΝΑ ΤΜΗΜΑΤΑ";contractMeta.textContent="ΕΠΙΛΕΞΕ ΕΝΑ Ή ΠΕΡΙΣΣΟΤΕΡΑ ΤΜΗΜΑΤΑ Ή ΔΗΜΙΟΥΡΓΗΣΕ ΕΓΓΡΑΦΗ ΣΤΟ ΠΡΟΓΡΑΜΜΑ ΣΥΜΒΑΣΕΩΝ.";itemsBody.innerHTML="";historyBody.innerHTML="";return}
  l.vat=Number(l.vat??c.vat??24);excelPath.value=l.excelPath||c.excelPath||"";excelSheet.value=l.excelSheet||c.excelSheet||"ΣΥΜΒΑΣΗ";
  contractTitle.textContent=toUpperText((c.studyNo?c.studyNo+" — ":"")+c.title);
- contractMeta.textContent=toUpperText(`Ανάδοχος: ${c.contractor||"—"} | ΦΠΑ: ${l.vat}% | Excel: ${excelPath.value||"δεν έχει δηλωθεί"}`);
+ contractMeta.textContent=toUpperText(`ΤΜΗΜΑ: ${c.department||"—"} | ΑΝΑΔΟΧΟΣ: ${c.contractor||"—"} | ΦΠΑ: ${l.vat}% | EXCEL: ${excelPath.value||"ΔΕΝ ΕΧΕΙ ΔΗΛΩΘΕΙ"}`);
  const s=recompute()||{};
  initialNet.textContent=euro(s.initialNet);remainingNet.textContent=euro(s.remainingNet);remainingVat.textContent=euro(s.remainingVat);remainingWithVat.textContent=euro(s.remainingWithVat);
  lineCount.textContent=`${l.items.length} γραμμές`;
