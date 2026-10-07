@@ -186,7 +186,7 @@ async function loadAll(){
  fillContractSelect();
  const q=new URLSearchParams(location.search).get("contractId");
  currentId=(q&&contracts.some(c=>c.id===q))?q:(contracts[0]?.id||null);
- if(currentId){contractSelect.value=currentId;ensureLedger(true);render();const l=getLedger(false);if((l.excelPath||getContract()?.excelPath)&&!l.lastAutoSyncSession){l.lastAutoSyncSession=true;await syncFromExcel(false)}}
+ if(currentId){contractSelect.value=currentId;getLedger(true);render();const l=getLedger(false);if((l.excelPath||getContract()?.excelPath)&&!l.lastAutoSyncSession){l.lastAutoSyncSession=true;await syncFromExcel(false)}}
  else render();
  setStatus("Τα δεδομένα φορτώθηκαν.","ok")
 }
@@ -194,7 +194,7 @@ function fillContractSelect(){
  const s=document.getElementById("contractSelect");s.innerHTML=contracts.map(c=>`<option value="${c.id}">${esc(c.studyNo||"")} — ${esc(c.title||"")}</option>`).join("")
 }
 async function selectContract(id){
- currentId=id;ensureLedger(true);const l=getLedger(false);render();
+ currentId=id;getLedger(true);const l=getLedger(false);render();
  history.replaceState(null,"","paralaves.html?contractId="+encodeURIComponent(id));
  if((l.excelPath||getContract()?.excelPath))await syncFromExcel(false)
 }
