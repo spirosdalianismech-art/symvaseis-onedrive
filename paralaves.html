@@ -231,13 +231,48 @@ async function loadAll(){
    excelSheet:toUpperText(c.excelSheet||"ΣΥΜΒΑΣΗ")
  }));
  const p=await readJson(PAR_FILE);parData=p&&Array.isArray(p.contracts)?p:{version:1,contracts:[]};
+ inferMissingDepartments();
  const normalizedText=normalizeParalavesText();
  if(normalizedText) await writeJson(PAR_FILE,parData);
- fillContractSelect();
+
  const q=new URLSearchParams(location.search).get("contractId");
+
+ // Αν ανοίξαμε τις Παραλαβές από συγκεκριμένη σύμβαση, αυτή έχει προτεραιότητα.
+ // Έτσι μια παλιά εγγραφή δεν χάνεται λόγω φίλτρου τμήματος.
+ if(q && contracts.some(c=>c.id===q)){
+   currentId=q;
+ }
+
+ fillContractSelect();
+
  const visibleContracts=filteredContracts();
- currentId=(q&&visibleContracts.some(c=>c.id===q))?q:(visibleContracts[0]?.id||null);
- if(currentId){contractSelect.value=currentId;getLedger(true);render();const l=getLedger(false);if((l.excelPath||getContract()?.excelPath)&&!l.lastAutoSyncSession){l.lastAutoSyncSession=true;await syncFromExcel(false)}}
+
+ if(!currentId || !contracts.some(c=>c.id===currentId)){
+   currentId=visibleContracts[0]?.id||contracts[0]?.id||null;
+ }
+
+ // Αν το contractId υπάρχει αλλά δεν μπήκε στη λίστα λόγω παλιού κενού τμήματος,
+ // το προσθέτουμε προσωρινά ώστε να μπορεί να γίνει η ενημέρωση από Excel.
+ if(currentId && ![...contractSelect.options].some(o=>o.value===currentId)){
+   const c=contracts.find(x=>x.id===currentId);
+   if(c){
+     const o=document.createElement("option");
+     o.value=c.id;
+     o.textContent=`${c.studyNo||""} — ${c.title||""} — ${c.department||"ΧΩΡΙΣ ΤΜΗΜΑ"}`;
+     contractSelect.prepend(o);
+   }
+ }
+
+ if(currentId){
+   contractSelect.value=currentId;
+   getLedger(true);
+   render();
+   const l=getLedger(false);
+   if((l.excelPath||getContract()?.excelPath)&&!l.lastAutoSyncSession){
+     l.lastAutoSyncSession=true;
+     await syncFromExcel(false);
+   }
+ }
  else render();
  setStatus("Τα δεδομένα φορτώθηκαν.","ok")
 }
@@ -245,9 +280,42 @@ function selectedDepartments(){
   return [...document.querySelectorAll(".deptCheck:checked")].map(x=>x.value);
 }
 
+
+function normDept(v){
+  return toUpperText(v||"")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g,"")
+    .replace(/\s+/g," ")
+    .trim();
+}
+
+function inferMissingDepartments(){
+  const known=contracts.filter(c=>c.department);
+  for(const c of contracts){
+    if(c.department)continue;
+
+    const same=known.find(x=>
+      toUpperText(x.studyNo||"").trim()===toUpperText(c.studyNo||"").trim() &&
+      toUpperText(x.title||"").replace(/\s+/g," ").trim()===
+      toUpperText(c.title||"").replace(/\s+/g," ").trim()
+    );
+
+    if(same)c.department=same.department;
+  }
+}
+
 function filteredContracts(){
-  const depts=selectedDepartments();
-  return contracts.filter(c=>depts.includes(toUpperText(c.department||"")));
+  const depts=selectedDepartments().map(normDept);
+  const allSelected=depts.length===3;
+
+  return contracts.filter(c=>{
+    const d=normDept(c.department||"");
+
+    // Παλιά εγγραφή χωρίς τμήμα: δεν την εξαφανίζουμε όταν είναι ενεργά όλα τα φίλτρα.
+    if(!d)return allSelected;
+
+    return depts.includes(d);
+  });
 }
 
 function fillContractSelect(){
@@ -260,9 +328,9 @@ function fillContractSelect(){
 
   if(currentId && list.some(c=>c.id===currentId)){
     s.value=currentId;
-  }else{
+  }else if(!currentId){
     currentId=list[0]?.id||null;
-    if(currentId) s.value=currentId;
+    if(currentId)s.value=currentId;
   }
 }
 
