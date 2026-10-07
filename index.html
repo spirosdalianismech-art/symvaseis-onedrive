@@ -188,8 +188,14 @@ async function loadData(){
   setStatus("Φόρτωση δεδομένων από το OneDrive...");
   const data=await readJsonFile(DATA_FILE);
   records=Array.isArray(data?.records)?data.records:[];
-  if(!data)await saveData();
-  populateYears();render();setStatus("Τα δεδομένα φορτώθηκαν από το OneDrive.","ok")
+  const textWasNormalized=normalizeAllStoredText();
+  if(!data || textWasNormalized)await saveData();
+  populateYears();render();setStatus(
+    textWasNormalized
+      ? "Τα δεδομένα φορτώθηκαν και τα κείμενα μετατράπηκαν σε ΚΕΦΑΛΑΙΑ."
+      : "Τα δεδομένα φορτώθηκαν από το OneDrive.",
+    "ok"
+  )
 }
 async function saveData(){await writeJsonFile(DATA_FILE,{version:2,updatedAt:new Date().toISOString(),records})}
 
@@ -235,8 +241,8 @@ function render(){
         <button class="btn-blue" onclick="editRecord('${r.id}')">✎</button>
         <button class="btn-purple" onclick="openParalaves('${r.id}')">Παραλαβές</button>
       </div></td>
-      <td>${esc(r.studyNo||"")}</td><td>${esc(r.agency||"")}</td><td>${esc(r.title||"")}</td><td>${esc(r.execution||"")}</td>
-      <td class="num">${euro(r.studyBudget)}</td><td>${esc(r.contractor||"")}</td><td class="num">${euro(r.contractBudget)}</td>
+      <td>${esc(toUpperText(r.studyNo||""))}</td><td>${esc(toUpperText(r.agency||""))}</td><td>${esc(toUpperText(r.title||""))}</td><td>${esc(toUpperText(r.execution||""))}</td>
+      <td class="num">${euro(r.studyBudget)}</td><td>${esc(toUpperText(r.contractor||""))}</td><td class="num">${euro(r.contractBudget)}</td>
       <td class="num"><strong>${euro(bal)}</strong></td><td>${r.expiry||""}</td><td class="center">${days===null?"":days}</td>
       <td><span class="badge ${st.cls}">${st.text}</span></td>
       <td>${r.contractFileUrl?`<a class="file-link" href="${r.contractFileUrl}" target="_blank">Σύμβαση</a>`:"—"}</td>`;
@@ -285,6 +291,28 @@ function enableUppercaseInputs(){
     });
     el.addEventListener("blur",()=>{ el.value=toUpperText(el.value); });
   });
+}
+
+function normalizeRecordText(record){
+  const fields=["studyNo","agency","execution","title","contractor","excelSheet"];
+  let changed=false;
+  for(const f of fields){
+    if(record[f]!==undefined && record[f]!==null){
+      const upper=toUpperText(record[f]);
+      if(record[f]!==upper){
+        record[f]=upper;
+        changed=true;
+      }
+    }
+  }
+  return changed;
+}
+function normalizeAllStoredText(){
+  let changed=false;
+  for(const record of records){
+    if(normalizeRecordText(record)) changed=true;
+  }
+  return changed;
 }
 
 window.addEventListener("load",async()=>{
