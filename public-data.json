@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "publishedAt": "2026-10-07T08:11:11.898Z",
+  "publishedAt": "2026-10-07T08:24:40.603Z",
   "contracts": [
     {
       "id": "1791355477941-e0ommwh",
@@ -17,7 +17,10 @@
       "expiry": "2026-09-05",
       "vat": 24,
       "files": {
-        "contract": null,
+        "contract": {
+          "name": "13 - Π_13_2026.XLSX",
+          "url": "https://1drv.ms/x/c/9bd14135b1164825/IQCWf-rr7_ElSL28zY5vy5AvAdhA-OgCKO2FwOsx7tir638"
+        },
         "assignmentFiles": [
           {
             "name": "ΜΕΛΕΤΗ.DOCX",
@@ -34,46 +37,6 @@
             "url": "https://1drv.ms/b/c/9bd14135b1164825/IQBpzzumwDuvQr7RbL26URhWAauB0Rfj1hGSRNxyC4Cw7ls"
           }
         ]
-      }
-    },
-    {
-      "id": "1791357867422-801twkl",
-      "year": 2026,
-      "studyNo": "13",
-      "department": "ΗΛΕΚΤΡΟΦΩΤΙΣΜΟΥ",
-      "agency": "ΔΗΜΟΣ ΠΑΤΡΕΩΝ",
-      "title": "ΠΡΟΜΗΘΕΙΑ ΗΛΕΚΤΡΟΛΟΓΙΚΟΥ ΥΛΙΚΟΥ ΓΙΑ ΕΡΓΑΣΙΕΣ ΣΥΝΤΗΡΗΣΗΣ ΗΛΕΚΤΡΙΚΩΝ ΕΓΚΑΤΑΣΤΑΣΕΩΝ ΣΧΟΛΙΚΩΝ ΣΥΓΚΡΟΤΗΜΑΤΩΝ ΔΕΥΤΕΡΟΒΑΘΜΙΑΣ ΕΚΠΑΙΔΕΥΣΗΣ ΤΟΥ ΔΗΜΟΥ ΠΑΤΡΕΩΝ",
-      "execution": "ΑΠ' ΕΥΘΕΙΑΣ ΑΝΑΘΕΣΗ",
-      "studyBudget": 19941.68,
-      "contractor": "ΝΙΚΟΛΑΟΣ ΔΗΜ. ΑΘΑΝΑΣΟΠΟΥΛΟΣ",
-      "contractBudget": 15213.06,
-      "balanceWithVat": 0,
-      "expiry": "2026-09-05",
-      "vat": 24,
-      "files": {
-        "contract": null,
-        "assignmentFiles": [],
-        "invoiceFiles": []
-      }
-    },
-    {
-      "id": "1791359606453-qt08cl2",
-      "year": 2026,
-      "studyNo": "13",
-      "department": "ΗΛΕΚΤΡΟΦΩΤΙΣΜΟΥ",
-      "agency": "ΔΗΜΟΣ ΠΑΤΡΕΩΝ",
-      "title": "ΠΡΟΜΗΘΕΙΑ ΗΛΕΚΤΡΟΛΟΓΙΚΟΥ ΥΛΙΚΟΥ ΓΙΑ ΕΡΓΑΣΙΕΣ ΣΥΝΤΗΡΗΣΗΣ ΗΛΕΚΤΡΙΚΩΝ ΕΓΚΑΤΑΣΤΑΣΕΩΝ ΣΧΟΛΙΚΩΝ ΣΥΓΚΡΟΤΗΜΑΤΩΝ ΔΕΥΤΕΡΟΒΑΘΜΙΑΣ ΕΚΠΑΙΔΕΥΣΗΣ ΤΟΥ ΔΗΜΟΥ ΠΑΤΡΕΩΝ",
-      "execution": "ΑΠ' ΕΥΘΕΙΑΣ ΑΝΑΘΕΣΗ",
-      "studyBudget": 19941.68,
-      "contractor": "ΝΙΚΟΛΑΟΣ ΔΗΜ. ΑΘΑΝΑΣΟΠΟΥΛΟΣ",
-      "contractBudget": 15213.06,
-      "balanceWithVat": 15213.06,
-      "expiry": "2026-09-05",
-      "vat": 24,
-      "files": {
-        "contract": null,
-        "assignmentFiles": [],
-        "invoiceFiles": []
       }
     }
   ],
