@@ -96,7 +96,20 @@ button:hover{opacity:.88}select,input{border:1px solid #cbd5e1;border-radius:7px
   </section>
 
   <section class="panel">
-    <div class="panel-title">Ιστορικό παραλαβών</div>
+    <div class="panel-title">
+      <span>Ιστορικό παραλαβών ανά ημερομηνία</span>
+      <span class="muted">Κάθε ημερομηνία εμφανίζεται σε ξεχωριστή στήλη</span>
+    </div>
+    <div class="table-wrap">
+      <table id="dateHistoryTable">
+        <thead id="dateHistoryHead"></thead>
+        <tbody id="dateHistoryBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-title">Αναλυτικό ιστορικό παραλαβών</div>
     <div class="table-wrap">
       <table class="history-table">
         <thead><tr><th>Ημερομηνία</th><th>Είδος</th><th>Τρόπος</th><th class="num">Μονάδες</th><th class="num">Αξία χωρίς ΦΠΑ</th><th>Παρατήρηση</th><th class="no-print">Ενέργεια</th></tr></thead>
@@ -198,6 +211,76 @@ async function selectContract(id){
  history.replaceState(null,"","paralaves.html?contractId="+encodeURIComponent(id));
  if((l.excelPath||getContract()?.excelPath))await syncFromExcel(false)
 }
+
+function renderDateHistoryMatrix(){
+  const l=getLedger(false);
+  const head=document.getElementById("dateHistoryHead");
+  const body=document.getElementById("dateHistoryBody");
+  if(!head||!body)return;
+
+  if(!l || !l.items.length){
+    head.innerHTML="";
+    body.innerHTML='<tr><td style="padding:20px;text-align:center">Δεν υπάρχουν είδη.</td></tr>';
+    return;
+  }
+
+  const dates=[...new Set(
+    l.receipts
+      .map(r=>r.date)
+      .filter(Boolean)
+  )].sort();
+
+  head.innerHTML=
+    '<tr><th>Α/Α</th><th>Περιγραφή</th><th>Μ.Μ.</th>'+
+    dates.map(d=>'<th class="center">'+formatDateGR(d)+'</th>').join("")+
+    '<th class="num">Σύνολο παραλαβών χωρίς ΦΠΑ</th></tr>';
+
+  body.innerHTML="";
+
+  l.items.forEach((it,index)=>{
+    let totalNet=0;
+    const cells=dates.map(date=>{
+      const rs=l.receipts.filter(r=>r.itemId===it.id && r.date===date);
+      if(!rs.length)return "<td class='center'>—</td>";
+
+      const units=rs.filter(r=>r.mode==="units").reduce((s,r)=>s+Number(r.units||0),0);
+      const unitNet=rs.filter(r=>r.mode==="units").reduce((s,r)=>s+Number(r.netValue||0),0);
+      const valueNet=rs.filter(r=>r.mode==="value").reduce((s,r)=>s+Number(r.netValue||0),0);
+      totalNet += unitNet + valueNet;
+
+      const parts=[];
+      if(units) parts.push(units.toLocaleString("el-GR")+" "+(it.unit||"μον."));
+      if(valueNet) parts.push(euro(valueNet));
+      return "<td class='center'><strong>"+parts.join("<br>")+"</strong></td>";
+    }).join("");
+
+    const tr=document.createElement("tr");
+    tr.innerHTML=
+      "<td>"+(index+1)+"</td>"+
+      "<td>"+esc(it.description)+"</td>"+
+      "<td>"+esc(it.unit||"")+"</td>"+
+      cells+
+      "<td class='num'><strong>"+euro(totalNet)+"</strong></td>";
+    body.appendChild(tr);
+  });
+
+  if(!dates.length){
+    head.innerHTML="<tr><th>Α/Α</th><th>Περιγραφή</th><th>Μ.Μ.</th><th>Παραλαβές</th></tr>";
+    body.innerHTML="";
+    l.items.forEach((it,index)=>{
+      const tr=document.createElement("tr");
+      tr.innerHTML="<td>"+(index+1)+"</td><td>"+esc(it.description)+"</td><td>"+esc(it.unit||"")+"</td><td class='center'>Δεν υπάρχει ακόμη παραλαβή</td>";
+      body.appendChild(tr);
+    });
+  }
+}
+
+function formatDateGR(s){
+  if(!s)return "";
+  const p=s.split("-");
+  return p.length===3 ? p[2]+"/"+p[1]+"/"+p[0] : s;
+}
+
 function render(){
  const c=getContract(),l=getLedger(false);
  if(!c||!l){contractTitle.textContent="Δεν υπάρχουν συμβάσεις";contractMeta.textContent="Δημιούργησε πρώτα εγγραφή στο πρόγραμμα Συμβάσεων.";itemsBody.innerHTML="";historyBody.innerHTML="";return}
@@ -221,6 +304,7 @@ function render(){
    <td class="num">${r.mode==="units"?Number(r.units||0).toLocaleString("el-GR"):"—"}</td><td class="num">${euro(r.netValue)}</td>
    <td>${esc(r.note||"")}</td><td class="no-print"><button class="red" onclick="deleteReceipt('${r.id}')">Διαγραφή</button></td>`;historyBody.appendChild(tr)});
  if(!l.receipts.length)historyBody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px">Δεν υπάρχουν ακόμη καταχωρισμένες παραλαβές.</td></tr>';
+ renderDateHistoryMatrix();
  receiptDate.value=receiptDate.value||new Date().toISOString().slice(0,10)
 }
 async function saveSourceSettings(){
