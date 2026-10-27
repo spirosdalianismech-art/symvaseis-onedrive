@@ -497,7 +497,7 @@ function excelHeaderToDate(value){
 
   // Excel dates may arrive as JS Date values.
   if(value instanceof Date && !Number.isNaN(value.getTime())){
-    return localDateISO(value);
+    return [value.getUTCFullYear(),String(value.getUTCMonth()+1).padStart(2,"0"),String(value.getUTCDate()).padStart(2,"0")].join("-");
   }
 
   // Excel serial date.
@@ -530,30 +530,27 @@ function excelHeaderToDate(value){
   return null;
 }
 
-function findExcelReceiptColumns(rows, startCol){
+function findExcelReceiptColumns(rows, startCol, sheet){
   const cols=[];
   const maxCols=Math.max(...rows.slice(0,8).map(r=>r?.length||0),0);
 
   for(let c=Math.max(startCol,0); c<maxCols; c++){
     let found=null;
     let label="";
-
-    // Search the first 8 rows for a date header in this column.
     for(let r=0; r<Math.min(8,rows.length); r++){
-      const raw=rows[r]?.[c];
+      // Read the underlying numeric Excel serial directly from the worksheet.
+      // This avoids timezone shifts when SheetJS or JavaScript builds a Date object.
+      const cell=sheet[XLSX.utils.encode_cell({r,c})];
+      const raw=(cell && cell.t==="n") ? cell.v : rows[r]?.[c];
       const date=excelHeaderToDate(raw);
       if(date){
         found=date;
-        label=toUpperText(String(raw ?? ""));
+        label=toUpperText(String(cell?.w ?? raw ?? ""));
         break;
       }
     }
-
-    if(found){
-      cols.push({col:c,date:found,label});
-    }
+    if(found)cols.push({col:c,date:found,label});
   }
-
   return cols;
 }
 
@@ -565,7 +562,9 @@ async function syncFromExcel(showMessage=true){
   if(showMessage)setStatus("Διαβάζω τον υπάρχοντα πίνακα Excel...");
   const r=await graph("https://graph.microsoft.com/v1.0/me/drive/root:/"+encPath(l.excelPath)+":/content");
   if(!r.ok)throw new Error("Δεν βρέθηκε το Excel στο OneDrive. Έλεγξε τη διαδρομή.");
-  const wb=XLSX.read(await r.arrayBuffer(),{type:"array",cellDates:true});
+  // Διαβάζουμε τις ημερομηνίες Excel ως αριθμούς σειράς, όχι ως JS Date.
+   // Έτσι αποφεύγουμε μετατόπιση κατά μία ημέρα λόγω ζώνης ώρας.
+   const wb=XLSX.read(await r.arrayBuffer(),{type:"array",cellDates:false});
   let sh=wb.Sheets[l.excelSheet];if(!sh){const n=wb.SheetNames.find(n=>norm(n)===norm(l.excelSheet));if(n)sh=wb.Sheets[n]}if(!sh)sh=wb.Sheets[wb.SheetNames[0]];
   const rows=XLSX.utils.sheet_to_json(sh,{header:1,defval:"",raw:true});
   const h=buildHeader(rows),H=h.headers;
@@ -581,7 +580,7 @@ async function syncFromExcel(showMessage=true){
   // Οι στήλες δεξιά από τον βασικό πίνακα μπορούν να έχουν ημερομηνίες παραλαβής
   // (π.χ. 20/05/2026 ΠΑΡΑΛΑΒΗ ΥΛΙΚΩΝ). Θα μετατραπούν αυτόματα σε ιστορικό.
   const historyStartCol=Math.max(cRemValue,cRemUnits,cExpense,cPrice,cQty,cUnit,cDesc)+1;
-  const excelReceiptCols=findExcelReceiptColumns(rows,historyStartCol);
+  const excelReceiptCols=findExcelReceiptColumns(rows,historyStartCol,sh);
 
   const newItems=[];let blanks=0;
   for(let rr=h.row+h.depth;rr<rows.length;rr++){
