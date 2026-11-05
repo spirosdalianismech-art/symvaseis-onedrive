@@ -361,7 +361,7 @@ input[type="text"], textarea, select {
 .file-group-title{font-weight:700;font-size:12px;color:#475569}
 .file-group a{font-size:12px}
 .file-entry{display:flex;align-items:flex-start;gap:5px;margin:4px 0;max-width:300px}
-.file-entry .file-link{flex:1;min-width:0;overflow-wrap:anywhere}
+.file-entry .file-link{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .file-remove{background:#b91c1c;color:#fff;border:0;border-radius:5px;padding:4px 6px;font-size:10px;font-weight:700;line-height:1.2;white-space:nowrap;cursor:pointer}
 .file-remove:disabled{opacity:.55;cursor:wait}
 @media print{.file-remove{display:none!important}}
@@ -657,11 +657,14 @@ function renderOnlineFiles(r){
 
   // Το κουμπί αφαιρεί μόνο το συγκεκριμένο αρχείο, όχι όλη την εγγραφή.
   function fileEntry(f,type,index,defaultName){
-    const name=esc(f?.name||defaultName);
+    const fullName=String(f?.name||defaultName).trim();
+    const firstWord=fullName.split(/\s+/)[0]||defaultName;
+    const name=esc(firstWord);
+    const fullTitle=esc(fullName);
     const url=esc(f?.webUrl||"");
     const link=url
-      ? `<a class="file-link" href="${url}" target="_blank" rel="noopener noreferrer">${name}</a>`
-      : `<span>${name}</span>`;
+      ? `<a class="file-link" href="${url}" target="_blank" rel="noopener noreferrer" title="${fullTitle}">${name}</a>`
+      : `<span title="${fullTitle}">${name}</span>`;
     return `<div class="file-entry">
       ${link}
       <button type="button" class="file-remove no-print"
