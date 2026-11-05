@@ -360,6 +360,11 @@ input[type="text"], textarea, select {
 .file-group{display:flex;flex-direction:column;gap:4px;min-width:190px}
 .file-group-title{font-weight:700;font-size:12px;color:#475569}
 .file-group a{font-size:12px}
+.file-entry{display:flex;align-items:flex-start;gap:5px;margin:4px 0;max-width:300px}
+.file-entry .file-link{flex:1;min-width:0;overflow-wrap:anywhere}
+.file-remove{background:#b91c1c;color:#fff;border:0;border-radius:5px;padding:4px 6px;font-size:10px;font-weight:700;line-height:1.2;white-space:nowrap;cursor:pointer}
+.file-remove:disabled{opacity:.55;cursor:wait}
+@media print{.file-remove{display:none!important}}
 
 
 /* Πιο συμπαγής πίνακας και μεγαλύτερος χώρος για τον Τίτλο Μελέτης */
@@ -648,41 +653,147 @@ let pendingUploadRecordId=null;
 
 function renderOnlineFiles(r){
   const parts=[];
+  const recordId=esc(String(r.id));
+
+  // Το κουμπί αφαιρεί μόνο το συγκεκριμένο αρχείο, όχι όλη την εγγραφή.
+  function fileEntry(f,type,index,defaultName){
+    const name=esc(f?.name||defaultName);
+    const url=esc(f?.webUrl||"");
+    const link=url
+      ? `<a class="file-link" href="${url}" target="_blank" rel="noopener noreferrer">${name}</a>`
+      : `<span>${name}</span>`;
+    return `<div class="file-entry">
+      ${link}
+      <button type="button" class="file-remove no-print"
+        data-record-id="${recordId}" data-file-type="${type}" data-file-index="${index}"
+        onclick="removeStoredFile(this)" title="Αφαίρεση αυτού του εγγράφου">✕ ΔΙΑΓΡΑΦΗ</button>
+    </div>`;
+  }
 
   if(r.contractFileUrl){
-    parts.push(
-      `<div class="file-group">
-        <span class="file-group-title">ΣΥΜΒΑΣΗ</span>
-        <a class="file-link" href="${r.contractFileUrl}" target="_blank">ΑΝΟΙΓΜΑ</a>
-      </div>`
-    );
+    parts.push(`<div class="file-group">
+      <span class="file-group-title">ΣΥΜΒΑΣΗ</span>
+      ${fileEntry({name:r.contractFileName||"ΑΝΟΙΓΜΑ",webUrl:r.contractFileUrl},"contract",0,"ΣΥΜΒΑΣΗ")}
+    </div>`);
   }
 
   if(Array.isArray(r.assignmentFiles) && r.assignmentFiles.length){
     const links=r.assignmentFiles.map((f,i)=>
-      `<a class="file-link" href="${f.webUrl}" target="_blank">${esc(f.name||("ΑΡΧΕΙΟ "+(i+1)))}</a>`
+      fileEntry(f,"assignment",i,"ΑΡΧΕΙΟ "+(i+1))
     ).join("");
-    parts.push(
-      `<div class="file-group">
-        <span class="file-group-title">ΔΙΑΔΙΚΑΣΙΕΣ ΑΝΑΘΕΣΗΣ</span>
-        ${links}
-      </div>`
-    );
+    parts.push(`<div class="file-group">
+      <span class="file-group-title">ΔΙΑΔΙΚΑΣΙΕΣ ΑΝΑΘΕΣΗΣ</span>
+      ${links}
+    </div>`);
   }
 
   if(Array.isArray(r.invoiceFiles) && r.invoiceFiles.length){
     const links=r.invoiceFiles.map((f,i)=>
-      `<a class="file-link" href="${f.webUrl}" target="_blank">${esc(f.name||("ΤΙΜΟΛΟΓΙΟ "+(i+1)))}</a>`
+      fileEntry(f,"invoice",i,"ΤΙΜΟΛΟΓΙΟ "+(i+1))
     ).join("");
-    parts.push(
-      `<div class="file-group">
-        <span class="file-group-title">ΤΙΜΟΛΟΓΙΑ</span>
-        ${links}
-      </div>`
-    );
+    parts.push(`<div class="file-group">
+      <span class="file-group-title">ΤΙΜΟΛΟΓΙΑ</span>
+      ${links}
+    </div>`);
   }
 
   return parts.length ? parts.join("") : "—";
+}
+
+// Διαγραφή από τη λίστα και προαιρετικά και από το πραγματικό αρχείο OneDrive.
+async function removeStoredFile(button){
+  const record=records.find(r=>String(r.id)===button.dataset.recordId);
+  const type=button.dataset.fileType;
+  const index=Number(button.dataset.fileIndex);
+  const field=type==="assignment" ? "assignmentFiles" :
+              type==="invoice" ? "invoiceFiles" : null;
+
+  if(!record || (type!=="contract" && !field)){
+    alert("Δεν βρέθηκε η εγγραφή ή η κατηγορία αρχείου.");
+    return;
+  }
+  const file=type==="contract"
+    ? {id:record.contractFileId||null,name:record.contractFileName||"ΣΥΜΒΑΣΗ",webUrl:record.contractFileUrl}
+    : (Array.isArray(record[field]) ? record[field][index] : null);
+  if(!file || (type==="contract" && !record.contractFileUrl)){
+    alert("Το αρχείο δεν βρέθηκε. Ανανεώστε τη σελίδα.");
+    return;
+  }
+
+  const filename=file.name||"ΑΡΧΕΙΟ";
+  if(!confirm("Να αφαιρεθεί το αρχείο «"+filename+"» από την εφαρμογή;\n\nΗ μελέτη και τα υπόλοιπα έγγραφα θα διατηρηθούν."))return;
+
+  const deleteFromOneDrive=Boolean(file.id) && confirm(
+    "Θέλετε ΕΠΙΣΗΣ να διαγραφεί οριστικά το αρχείο από το OneDrive;\n\n"+
+    "OK = Διαγραφή και από το OneDrive\n"+
+    "Ακύρωση = Μόνο αφαίρεση από την εφαρμογή (το αρχείο μένει στο OneDrive)"
+  );
+  if(deleteFromOneDrive && !confirm("ΤΕΛΙΚΗ ΕΠΙΒΕΒΑΙΩΣΗ: Να διαγραφεί το «"+filename+"» από το OneDrive;"))return;
+
+  // Άλλες εγγραφές μπορεί να έχουν σύνδεσμο προς το ίδιο αρχείο.
+  if(deleteFromOneDrive){
+    const usedElsewhere=records.some(r=>{
+      if(r===record)return false;
+      return r.contractFileId===file.id ||
+        (r.assignmentFiles||[]).some(f=>f.id===file.id) ||
+        (r.invoiceFiles||[]).some(f=>f.id===file.id);
+    });
+    if(usedElsewhere){
+      alert("Το αρχείο χρησιμοποιείται και από άλλη εγγραφή. Δεν θα διαγραφεί από το OneDrive.");
+      return;
+    }
+  }
+
+  button.disabled=true;
+  const oldFiles=field ? [...record[field]] : null;
+  const oldContract={
+    contractFileId:record.contractFileId,
+    contractFileName:record.contractFileName,
+    contractFileUrl:record.contractFileUrl
+  };
+  try{
+    if(type==="contract"){
+      delete record.contractFileId;
+      delete record.contractFileName;
+      delete record.contractFileUrl;
+    }else{
+      record[field].splice(index,1);
+    }
+
+    // Πρώτα αποθηκεύουμε τη νέα λίστα. Σε αποτυχία αποκαθιστούμε τα δεδομένα.
+    try{
+      await saveData();
+    }catch(saveError){
+      if(type==="contract"){
+        for(const key of Object.keys(oldContract)){
+          if(oldContract[key]===undefined)delete record[key];
+          else record[key]=oldContract[key];
+        }
+      }else record[field]=oldFiles;
+      throw saveError;
+    }
+    render();
+
+    if(deleteFromOneDrive){
+      const response=await graph(
+        "https://graph.microsoft.com/v1.0/me/drive/items/"+encodeURIComponent(file.id),
+        {method:"DELETE"}
+      );
+      if(!response.ok && response.status!==404){
+        throw new Error("Η αφαίρεση από την εφαρμογή αποθηκεύτηκε, αλλά η διαγραφή στο OneDrive απέτυχε (HTTP "+response.status+"). Το αρχείο ίσως παραμένει στο OneDrive.");
+      }
+      _publicDriveFilesCache=null;
+      setStatus("Το αρχείο «"+filename+"» αφαιρέθηκε από την εφαρμογή και διαγράφηκε από το OneDrive. Για τη δημόσια προβολή, εκτελέστε ξανά ΔΗΜΟΣΙΕΥΣΗ.","ok");
+    }else{
+      setStatus("Το αρχείο «"+filename+"» αφαιρέθηκε από τη λίστα. Το αρχείο διατηρείται στο OneDrive. Για τη δημόσια προβολή, εκτελέστε ξανά ΔΗΜΟΣΙΕΥΣΗ.","ok");
+    }
+  }catch(error){
+    console.error("Αποτυχία διαγραφής αρχείου",error);
+    setStatus("Σφάλμα: "+error.message,"error");
+    alert(error.message);
+  }finally{
+    button.disabled=false;
+  }
 }
 
 function selectFilesForRecord(recordId,type){
