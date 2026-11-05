@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Μελέτες και Συμβάσεις</title>
+<script src="https://alcdn.msauth.net/browser/2.35.0/js/msal-browser.min.js"></script>
+<script>
+/* =========================================================
+   PUBLIC READ-ONLY VIEW
+========================================================= */
+
+function openPublicView(){
+  window.open("./view.html","_blank");
+}
+
+function downloadTextFile(filename,text,mime="application/json"){
+  const blob=new Blob([text],{type:mime});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download=filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+
+async function createAnonymousViewLinkById(itemId){
+  if(!itemId)return null;
+  try{
+    const r=await graph(
+      "https://graph.microsoft.com/v1.0/me/drive/items/"+encodeURIComponent(itemId)+"/createLink",
+      {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({type:"view",scope:"anonymous"})
+      }
+    );
+    if(!r.ok)return null;
+    const data=await r.json();
+    return data?.link?.webUrl||null;
+  }catch(e){
+    console.warn("Anonymous link failed", itemId, e);
+    return null;
+  }
+}
+
+
+async function graphJson(url){
+  const r=await graph(url);
+  if(!r.ok)throw new Error(await r.text());
+  return r.json();
+}
+
+async function listDriveFolderRecursiveByPath(path){
+  const out=[];
+  const encoded=encPath(path);
+  let url="https://graph.microsoft.com/v1.0/me/drive/root:/"+encoded+":/children?$select=id,name,webUrl,file,folder,parentReference";
+
+  while(url){
+    const data=await graphJson(url);
+    for(const item of (data.value||[])){
+      out.push(item);
+
+      if(item.folder){
+        const childPath=path+"/"+item.name;
+        const nested=await listDriveFolderRecursiveByPath(childPath);
+        out.push(...nested);
+      }
+    }
+    url=data["@odata.nextLink"]||null;
+  }
+
+  return out;
+}
+
+let _publicDriveFilesCache=null;
+
+async function getPublicDriveFilesCache(){
+  if(_publicDriveFilesCache)return _publicDriveFilesCache;
+
+  try{
+    _publicDriveFilesCache=await listDriveFolderRecursiveByPath(APP_FOLDER+"/Files");
+  }catch(e){
+    console.warn("Δεν μπόρεσα να σαρώσω τον φάκελο Files",e);
+    _publicDriveFilesCache=[];
+  }
+
+  return _publicDriveFilesCache;
+}
+
+function normalizedUrl(v){
+  try{
+    const u=new URL(v);
+    u.hash="";
+    return u.href.replace(/\/$/,"");
+  }catch{
+    return String(v||"").trim();
+  }
+}
+
+function filenameFromWebUrl(v){
+  try{
+    const u=new URL(v);
+    const part=u.pathname.split("/").filter(Boolean).pop()||"";
+    return decodeURIComponent(part).toLocaleUpperCase("el-GR");
+  }catch{
+    return "";
+  }
+}
+
+async function recoverLegacyContractFile(r){
+  if(r.contractFileId){
+    return {
+      id:r.contractFileId,
+      name:r.contractFileName||"ΣΥΜΒΑΣΗ"
+    };
+  }
+
+  if(!r.contractFileUrl)return null;
+
+  const files=await getPublicDriveFilesCache();
+  const wantedUrl=normalizedUrl(r.contractFileUrl);
+  const wantedName=filenameFromWebUrl(r.contractFileUrl);
+
+  let found=files.find(x=>x.file && normalizedUrl(x.webUrl)===wantedUrl);
+
+  if(!found && wantedName){
+    found=files.find(x=>
+      x.file &&
+      String(x.name||"").toLocaleUpperCase("el-GR")===wantedName
+    );
+  }
+
+  if(!found){
+    const studyPrefix=String(r.studyNo||"")
+      .replace(/[\\/:*?"<>|]/g,"_")
+      .toLocaleUpperCase("el-GR");
+
+    found=files.find(x=>
+      x.file &&
+      String(x.name||"").toLocaleUpperCase("el-GR").startsWith(studyPrefix+" - ")
+    );
+  }
+
+  if(found){
+    // Repair the main saved record too, so future publications no longer need recovery.
+    r.contractFileId=found.id;
+    r.contractFileName=toUpperText(found.name||"ΣΥΜΒΑΣΗ");
+    r.contractFileUrl=found.webUrl||r.contractFileUrl;
+    return {id:found.id,name:r.contractFileName};
+  }
+
+  return null;
+}
+
+function publicRecordKey(r){
+  return [
+    Number(r.year||0),
+    toUpperText(r.studyNo||"").trim(),
+    toUpperText(r.title||"").replace(/\s+/g," ").trim(),
+    toUpperText(r.contractor||"").replace(/\s+/g," ").trim()
+  ].join("|");
+}
+
+function mergePublicFileSets(target,source){
+  if(!target.contract && source.contract)target.contract=source.contract;
+
+  const merge=(a,b)=>{
+    const seen=new Set(a.map(x=>x.url));
+    for(const x of b){
+      if(x?.url && !seen.has(x.url)){
+        seen.add(x.url);
+        a.push(x);
+      }
+    }
+  };
+
+  merge(target.assignmentFiles,source.assignmentFiles||[]);
+  merge(target.invoiceFiles,source.invoiceFiles||[]);
+  return target;
+}
+
+async function publicFilesForRecord(r){
+  const out={contract:null,assignmentFiles:[],invoiceFiles:[]};
+
+  const legacy=await recoverLegacyContractFile(r);
+  if(legacy?.id){
+    const url=await createAnonymousViewLinkById(legacy.id);
+    if(url)out.contract={name:legacy.name||"ΣΥΜΒΑΣΗ",url};
+  }
+
+  for(const f of (r.assignmentFiles||[])){
+    if(!f?.id)continue;
+    const url=await createAnonymousViewLinkById(f.id);
+    if(url)out.assignmentFiles.push({name:toUpperText(f.name||"ΑΡΧΕΙΟ"),url});
+  }
+
+  for(const f of (r.invoiceFiles||[])){
+    if(!f?.id)continue;
+    const url=await createAnonymousViewLinkById(f.id);
+    if(url)out.invoiceFiles.push({name:toUpperText(f.name||"ΤΙΜΟΛΟΓΙΟ"),url});
+  }
+
+  return out;
+}
+
+async function publishPublicData(){
+  try{
+    setStatus("ΔΗΜΙΟΥΡΓΙΑ ΔΗΜΟΣΙΑΣ ΠΡΟΒΟΛΗΣ...");
+
+    const par=await readJsonFile(PAR_FILE);
+    const ledgers=Array.isArray(par?.contracts)?par.contracts:[];
+    const ledgerIds=new Set(ledgers.map(x=>x.contractId));
+    const groups=new Map();
+
+    for(const r of records){
+      const key=publicRecordKey(r);
+      if(!groups.has(key))groups.set(key,[]);
+      groups.get(key).push(r);
+    }
+
+    const publicContracts=[];
+    let processed=0;
+
+    for(const sameRecords of groups.values()){
+      // Αν υπάρχουν διπλές εγγραφές της ίδιας σύμβασης, προτιμάμε αυτή
+      // που είναι πραγματικά συνδεδεμένη με τις Παραλαβές.
+      const primary=
+        sameRecords.find(r=>ledgerIds.has(r.id)) ||
+        sameRecords.find(r=>Number(r.balanceWithVat||0)>0) ||
+        sameRecords[0];
+
+      const mergedFiles={contract:null,assignmentFiles:[],invoiceFiles:[]};
+
+      for(const r of sameRecords){
+        processed++;
+        setStatus(`ΔΗΜΟΣΙΕΥΣΗ ${processed}/${records.length}...`);
+        mergePublicFileSets(mergedFiles,await publicFilesForRecord(r));
+      }
+
+      const ledger=ledgers.find(x=>x.contractId===primary.id);
+      const balanceWithVat=
+        ledger?.summary?.remainingWithVat!==undefined
+          ? Number(ledger.summary.remainingWithVat||0)
+          : Number(primary.balanceWithVat ?? primary.contractBudget ?? 0);
+
+      publicContracts.push({
+        id:primary.id,
+        year:Number(primary.year||0),
+        studyNo:toUpperText(primary.studyNo||""),
+        department:toUpperText(primary.department||""),
+        agency:toUpperText(primary.agency||""),
+        title:toUpperText(primary.title||""),
+        execution:toUpperText(primary.execution||""),
+        studyBudget:Number(primary.studyBudget||0),
+        contractor:toUpperText(primary.contractor||""),
+        contractBudget:Number(primary.contractBudget||0),
+        balanceWithVat,
+        expiry:primary.expiry||"",
+        vat:Number(primary.vat??24),
+        files:mergedFiles
+      });
+    }
+
+    // Αφού ανακτήσουμε ID από παλιά αρχεία, τα αποθηκεύουμε και στο OneDrive.
+    await saveData();
+
+    const publicParalaves=(Array.isArray(par?.contracts)?par.contracts:[]).map(l=>({
+      contractId:l.contractId,
+      studyNo:toUpperText(l.studyNo||""),
+      title:toUpperText(l.title||""),
+      vat:Number(l.vat??24),
+      items:(l.items||[]).map(it=>({
+        id:it.id,
+        description:toUpperText(it.description||""),
+        unit:toUpperText(it.unit||""),
+        initialQty:Number(it.initialQty||0),
+        unitPrice:Number(it.unitPrice||0),
+        initialNet:Number(it.initialNet||0),
+        baseRemainingUnits:Number(it.baseRemainingUnits ?? it.initialQty ?? 0),
+        baseRemainingNet:Number(it.baseRemainingNet ?? it.initialNet ?? 0)
+      })),
+      receipts:(l.receipts||[]).map(x=>({
+        id:x.id,
+        itemId:x.itemId,
+        mode:x.mode,
+        units:Number(x.units||0),
+        netValue:Number(x.netValue||0),
+        date:x.date||"",
+        note:toUpperText(x.note||"")
+      })),
+      summary:{
+        initialNet:Number(l.summary?.initialNet||0),
+        remainingNet:Number(l.summary?.remainingNet||0),
+        remainingVat:Number(l.summary?.remainingVat||0),
+        remainingWithVat:Number(l.summary?.remainingWithVat||0),
+        updatedAt:l.summary?.updatedAt||""
+      }
+    }));
+
+    const payload={
+      version:1,
+      publishedAt:new Date().toISOString(),
+      contracts:publicContracts,
+      paralaves:publicParalaves
+    };
+
+    downloadTextFile("public-data.json",JSON.stringify(payload,null,2));
+    setStatus("ΕΤΟΙΜΟ. ΚΑΤΕΒΗΚΕ ΤΟ public-data.json ΣΤΙΣ ΛΗΨΕΙΣ.", "ok");
+
+    setTimeout(()=>{
+      alert("Η ΔΗΜΟΣΙΕΥΣΗ ΕΤΟΙΜΑΣΤΗΚΕ.\n\nΈγινε έλεγχος και των παλιών αρχείων OneDrive.\nΚατέβηκε το public-data.json.\nΑντικατάστησέ το στο GitHub.");
+    },100);
+
+  }catch(e){
+    console.error(e);
+    setStatus("ΣΦΑΛΜΑ ΔΗΜΟΣΙΕΥΣΗΣ:\n"+e.message,"error");
+    alert("Σφάλμα στη Δημοσίευση:\n"+e.message);
+  }
+}
+
+</script>
+<style>
+*{box-sizing:border-box} body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#eef2f6;color:#1f2937}
+header{background:#17365d;color:white;padding:22px 30px} header h1{margin:0;font-size:28px} header p{margin:6px 0 0;opacity:.85}
+.topbar{background:white;padding:14px 22px;display:flex;gap:9px;flex-wrap:wrap;align-items:center;border-bottom:1px solid #d8dee6;position:sticky;top:0;z-index:10}
+button,select,input{font:inherit} button{border:0;border-radius:7px;padding:10px 14px;cursor:pointer;font-weight:600}
+.btn-blue{background:#0078d4;color:white}.btn-green{background:#16833b;color:white}.btn-purple{background:#6d28d9;color:white}.btn-red{background:#c62828;color:white}.btn-gray{background:#e5e7eb;color:#222}
+button:hover{opacity:.88} select,input{border:1px solid #cbd5e1;border-radius:7px;padding:10px;background:white} #searchInput{min-width:260px}
+.container{max-width:1850px;margin:auto;padding:22px} #status{padding:12px 15px;border-radius:8px;margin-bottom:18px;background:#e8eef5;white-space:pre-wrap}
+.status-ok{background:#dcfce7!important;color:#166534}.status-error{background:#fee2e2!important;color:#991b1b}
+.cards{display:grid;grid-template-columns:repeat(4,minmax(190px,1fr));gap:15px;margin-bottom:20px}
+.card{background:white;border-radius:11px;padding:18px;box-shadow:0 2px 9px rgba(0,0,0,.08)} .card .label{color:#64748b;font-size:14px}.card .value{font-size:24px;font-weight:700;margin-top:8px}
+.panel{background:white;border-radius:12px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.08)} .table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:1780px} th{background:#17365d;color:white;padding:12px 9px;text-align:left;font-size:13px;white-space:nowrap}
+td{border-bottom:1px solid #e5e7eb;padding:9px;font-size:14px;vertical-align:middle} tbody tr:hover{background:#f8fafc}
+.num{text-align:right}.center{text-align:center}.badge{border-radius:20px;padding:5px 9px;font-size:12px;font-weight:bold;display:inline-block;white-space:nowrap}
+.active{background:#dcfce7;color:#166534}.soon{background:#fef3c7;color:#92400e}.expired{background:#fee2e2;color:#991b1b}.no-contract{background:#e5e7eb;color:#374151}
+.actions{display:flex;gap:5px;white-space:nowrap}.actions button{padding:7px 9px;font-size:12px}.file-link{color:#0067b8;text-decoration:underline}
+dialog{width:min(920px,96vw);border:0;border-radius:14px;padding:0;box-shadow:0 20px 60px rgba(0,0,0,.25)} dialog::backdrop{background:rgba(0,0,0,.45)}
+.dialog-head{background:#17365d;color:white;padding:18px 22px;display:flex;justify-content:space-between;align-items:center}.dialog-head h2{margin:0}.dialog-body{padding:22px}
+.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:15px}.form-grid label{display:flex;flex-direction:column;font-size:13px;font-weight:600;gap:6px}.wide{grid-column:1/-1}
+.help{font-size:12px;color:#64748b;font-weight:normal}.dialog-actions{padding:15px 22px 22px;display:flex;justify-content:flex-end;gap:10px}.hidden{display:none!important}
+@media(max-width:900px){.cards{grid-template-columns:1fr 1fr}.form-grid{grid-template-columns:1fr}.wide{grid-column:auto}}
+@media print{
+  body{background:white}.topbar,#status,.actions,.no-print{display:none!important}.container{max-width:none;padding:0}.panel,.card{box-shadow:none}
+  header{background:white!important;color:black!important;padding:0 0 14px;border-bottom:2px solid #000} header p{color:#333}
+  .cards{grid-template-columns:repeat(4,1fr);gap:8px}.card{border:1px solid #aaa;padding:10px}
+  .table-wrap{overflow:visible} table{min-width:0;font-size:9px} th,td{padding:5px;font-size:9px} th{background:#eee!important;color:black!important;border:1px solid #999} td{border:1px solid #ccc}
+  @page{size:landscape;margin:8mm}
+}
+
+input[type="text"], textarea, select {
+  text-transform: uppercase;
+}
+
+
+.file-group{display:flex;flex-direction:column;gap:4px;min-width:190px}
+.file-group-title{font-weight:700;font-size:12px;color:#475569}
+.file-group a{font-size:12px}
+.file-entry{display:flex;align-items:flex-start;gap:5px;margin:4px 0;max-width:300px}
+.file-entry .file-link{flex:1;min-width:0;overflow-wrap:anywhere}
+.file-remove{background:#b91c1c;color:#fff;border:0;border-radius:5px;padding:4px 6px;font-size:10px;font-weight:700;line-height:1.2;white-space:nowrap;cursor:pointer}
+.file-remove:disabled{opacity:.55;cursor:wait}
+@media print{.file-remove{display:none!important}}
+
+
+/* Πιο συμπαγής πίνακας και μεγαλύτερος χώρος για τον Τίτλο Μελέτης */
+table{
+  table-layout: auto;
+}
+
+th, td{
+  padding: 6px 7px;
+  line-height: 1.15;
+}
+
+th:nth-child(1),
+td:nth-child(1){
+  width: 150px;
+  min-width: 150px;
+  max-width: 150px;
+}
+
+th:nth-child(5),
+td:nth-child(5){
+  width: 420px;
+  min-width: 320px;
+}
+
+td:nth-child(5){
+  white-space: normal;
+  word-break: normal;
+}
+
+.actions{
+  display:grid;
+  grid-template-columns: 30px 1fr;
+  gap:4px;
+  align-items:center;
+  white-space:normal;
+}
+
+.actions button{
+  padding:5px 7px;
+  font-size:11px;
+  line-height:1.05;
+  min-height:26px;
+}
+
+.actions .btn-blue:first-child{
+  grid-row:1 / span 3;
+  align-self:stretch;
+  padding-left:5px;
+  padding-right:5px;
+}
+
+tbody tr{
+  height:auto;
+}
+
+.file-group{
+  gap:2px;
+}
+
+.file-group-title,
+.file-group a{
+  line-height:1.1;
+}
+
+
+.dept-filter{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  font-size:12px;
+  font-weight:700;
+  background:#f8fafc;
+  border:1px solid #cbd5e1;
+  border-radius:7px;
+  padding:7px 9px;
+}
+.dept-filter input{margin:0}
+
+</style>
+</head>
+<body>
+<header>
+  <h1>ΔΗΜΟΣ ΠΑΤΡΕΩΝ – Μελέτες και Συμβάσεις</h1>
+  <p>Κοινή διαχείριση συμβάσεων και παραλαβών μέσω OneDrive</p>
+</header>
+
+<div class="topbar">
+  <button class="btn-blue" onclick="signIn()">Σύνδεση Microsoft</button>
+  <button class="btn-gray" onclick="signOut()">Αποσύνδεση</button>
+  <select id="yearFilter" onchange="render()"></select>
+
+  <label class="dept-filter"><input type="checkbox" class="deptCheck" value="ΚΤΙΡΙΑΚΩΝ" checked onchange="render()"> ΚΤΙΡΙΑΚΩΝ</label>
+  <label class="dept-filter"><input type="checkbox" class="deptCheck" value="ΚΟΙΝΟΧΡΗΣΤΩΝ" checked onchange="render()"> ΚΟΙΝΟΧΡΗΣΤΩΝ</label>
+  <label class="dept-filter"><input type="checkbox" class="deptCheck" value="ΗΛΕΚΤΡΟΦΩΤΙΣΜΟΥ" checked onchange="render()"> ΗΛΕΚΤΡΟΦΩΤΙΣΜΟΥ</label>
+
+  <input id="searchInput" type="search" placeholder="Αναζήτηση σε όλες τις στήλες..." oninput="render()">
+  <button class="btn-green" onclick="refreshFromParalaves(true)">↻ Ανανέωση υπολοίπων</button>
+  <button class="btn-purple" onclick="openParalaves()">Παραλαβές</button>
+  <button class="btn-blue" onclick="openNewRecord()">+ Νέα εγγραφή</button>
+  <button class="btn-gray" onclick="window.print()">🖨 Εκτύπωση</button>
+  <button class="btn-purple" onclick="openPublicView()">👁 ΔΗΜΟΣΙΑ ΠΡΟΒΟΛΗ</button>
+  <button class="btn-green" onclick="publishPublicData()">🌐 ΔΗΜΟΣΙΕΥΣΗ</button>
+</div>
+
+<div class="container">
+  <div id="status">Πατήστε «Σύνδεση Microsoft».</div>
+  <div class="cards">
+    <div class="card"><div class="label">Εγγραφές έτους</div><div class="value" id="countCard">0</div></div>
+    <div class="card"><div class="label">Προϋπολογισμός μελετών</div><div class="value" id="studyCard">0,00 €</div></div>
+    <div class="card"><div class="label">Προϋπολογισμός συμβάσεων</div><div class="value" id="contractCard">0,00 €</div></div>
+    <div class="card"><div class="label">Υπόλοιπο συμβάσεων με ΦΠΑ</div><div class="value" id="balanceCard">0,00 €</div></div>
+  </div>
+  <div class="panel">
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Ενέργεια</th><th>Α/Α Μελέτης</th><th>Τμήμα</th><th>Φορέας</th><th>Τίτλος Μελέτης</th><th>Τρόπος Εκτέλεσης</th>
+          <th class="num">Προϋπ. Μελέτης</th><th>Ανάδοχος / Εταιρεία</th><th class="num">Προϋπ. Σύμβασης</th>
+          <th class="num">Υπόλοιπο με ΦΠΑ</th><th>Οριστική Λήξη</th><th class="center">Ημέρες</th><th>Κατάσταση</th><th>Online Αρχεία</th>
+        </tr></thead>
+        <tbody id="contractsBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+<input id="assignmentFilesInput" type="file" multiple class="hidden" onchange="handleCategoryUpload('assignment', this)">
+<input id="invoiceFilesInput" type="file" multiple class="hidden" onchange="handleCategoryUpload('invoice', this)">
+
+<dialog id="recordDialog">
+<form id="recordForm">
+  <div class="dialog-head"><h2 id="dialogTitle">Νέα εγγραφή</h2><button type="button" class="btn-gray" onclick="closeDialog()">✕</button></div>
+  <div class="dialog-body">
+    <input id="recordId" type="hidden">
+    <div class="form-grid">
+      <label>Έτος<input id="fYear" type="number" value="2026" required></label>
+      <label>Α/Α Μελέτης<input id="fStudyNo" placeholder="π.χ. 03/2026"></label>
+      <label>Τμήμα
+        <select id="fDepartment" required>
+          <option value="">ΕΠΙΛΟΓΗ ΤΜΗΜΑΤΟΣ</option>
+          <option value="ΚΤΙΡΙΑΚΩΝ">ΚΤΙΡΙΑΚΩΝ</option>
+          <option value="ΚΟΙΝΟΧΡΗΣΤΩΝ">ΚΟΙΝΟΧΡΗΣΤΩΝ</option>
+          <option value="ΗΛΕΚΤΡΟΦΩΤΙΣΜΟΥ">ΗΛΕΚΤΡΟΦΩΤΙΣΜΟΥ</option>
+        </select>
+      </label>
+      <label>Φορέας<input id="fAgency"></label>
+      <label>Τρόπος Εκτέλεσης<input id="fExecution"></label>
+      <label class="wide">Τίτλος Μελέτης<input id="fTitle" required></label>
+      <label>Προϋπολογισμός Μελέτης<input id="fStudyBudget" type="text" inputmode="decimal" placeholder="0,00 €"></label>
+      <label>Ανάδοχος / Εταιρεία<input id="fContractor"></label>
+      <label>Προϋπολογισμός Σύμβασης<input id="fContractBudget" type="text" inputmode="decimal" placeholder="0,00 €"></label>
+      <label>Ημερομηνία Οριστικής Λήξης<input id="fExpiry" type="date"></label>
+      <label>ΦΠΑ σύμβασης (%)<input id="fVat" type="number" step="0.01" value="24"></label>
+      <label class="wide">Διαδρομή Excel στο OneDrive
+        <input id="fExcelPath" placeholder="π.χ. ΣΥΜΒΑΣΕΙΣ/2026/Π_03_2026.xlsx">
+        <span class="help">Το πρόγραμμα Παραλαβών θα διαβάζει αυτόματα τον υπάρχοντα πίνακα.</span>
+      </label>
+      <label>Φύλλο Excel<input id="fExcelSheet" value="ΣΥΜΒΑΣΗ"></label>
+      <label>Αρχείο Σύμβασης<input id="fContractFile" type="file"></label>
+    </div>
+  </div>
+  <div class="dialog-actions">
+    <button type="button" id="deleteBtn" class="btn-red hidden" onclick="deleteCurrentRecord()">Διαγραφή</button>
+    <button type="button" class="btn-gray" onclick="closeDialog()">Ακύρωση</button>
+    <button type="submit" class="btn-blue">Αποθήκευση</button>
+  </div>
+</form>
+</dialog>
+
+<script>
+const CLIENT_ID="d15aa5e9-860e-4e0a-af14-283c401a08cc";
+const REDIRECT_URI="https://spirosdalianismech-art.github.io/symvaseis-onedrive/auth.html";
+const APP_FOLDER="SymvaseisApp", DATA_FILE="symvaseis-data.json", PAR_FILE="paralaves-data.json";
+
+const msalInstance=new msal.PublicClientApplication({
+  auth:{clientId:CLIENT_ID,authority:"https://login.microsoftonline.com/common",redirectUri:REDIRECT_URI},
+  cache:{cacheLocation:"localStorage",storeAuthStateInCookie:false}
+});
+const loginRequest={scopes:["User.Read","Files.ReadWrite"],prompt:"select_account"};
+let records=[],currentEditingId=null;
+
+function setStatus(m,t=""){const e=document.getElementById("status");e.className="";if(t==="ok")e.classList.add("status-ok");if(t==="error")e.classList.add("status-error");e.innerText=m}
+function euro(v){return new Intl.NumberFormat("el-GR",{style:"currency",currency:"EUR"}).format(Number(v||0))}
+function parseEuroInput(v){
+  let s=String(v??"").trim().replace(/\s/g,"").replace(/€/g,"");
+  if(!s)return 0;
+  if(s.includes(",")&&s.includes(".")){
+    if(s.lastIndexOf(",")>s.lastIndexOf(".")) s=s.replace(/\./g,"").replace(",",".");
+    else s=s.replace(/,/g,"");
+  } else if(s.includes(",")) {
+    s=s.replace(",",".");
+  }
+  return Number(s.replace(/[^\d.-]/g,""))||0;
+}
+function setupCurrencyInput(el){
+  el.addEventListener("focus",()=>{ const n=parseEuroInput(el.value); el.value=n?String(n).replace(".",","):""; });
+  el.addEventListener("blur",()=>{ el.value=euro(parseEuroInput(el.value)); });
+}
+
+function id(){return Date.now().toString()+"-"+Math.random().toString(36).slice(2,9)}
+function encPath(p){return p.split("/").filter(Boolean).map(encodeURIComponent).join("/")}
+function esc(v){const d=document.createElement("div");d.textContent=v??"";return d.innerHTML}
+function daysUntil(s){if(!s)return null;const a=new Date();a.setHours(0,0,0,0);const b=new Date(s+"T00:00:00");return Math.ceil((b-a)/86400000)}
+function statusFor(r){if(!Number(r.contractBudget||0))return{text:"ΧΩΡΙΣ ΣΥΜΒΑΣΗ",cls:"no-contract"};if(!r.expiry)return{text:"ΕΝΕΡΓΗ",cls:"active"};const d=daysUntil(r.expiry);if(d<0)return{text:"ΕΧΕΙ ΛΗΞΕΙ",cls:"expired"};if(d<=30)return{text:"ΛΗΓΕΙ ΣΥΝΤΟΜΑ",cls:"soon"};return{text:"ΕΝΕΡΓΗ",cls:"active"}}
+
+async function getAccount(){let a=msalInstance.getActiveAccount();if(!a){const xs=msalInstance.getAllAccounts();if(xs.length){a=xs[0];msalInstance.setActiveAccount(a)}}return a}
+async function getToken(){const a=await getAccount();if(!a)throw new Error("Πρέπει πρώτα να συνδεθείτε με Microsoft.");try{return (await msalInstance.acquireTokenSilent({scopes:["User.Read","Files.ReadWrite"],account:a})).accessToken}catch{return (await msalInstance.acquireTokenPopup({scopes:["User.Read","Files.ReadWrite"],account:a})).accessToken}}
+async function graph(url,opt={}){const tok=await getToken();opt.headers=opt.headers||{};opt.headers.Authorization="Bearer "+tok;return fetch(url,opt)}
+async function signIn(){try{const r=await msalInstance.loginPopup(loginRequest);msalInstance.setActiveAccount(r.account);setStatus("Συνδεθήκατε ως "+r.account.username,"ok");await loadData();await refreshFromParalaves(false)}catch(e){setStatus("Σφάλμα σύνδεσης:\n"+e.message,"error")}}
+async function signOut(){const a=await getAccount();if(a)await msalInstance.logoutPopup({account:a,postLogoutRedirectUri:REDIRECT_URI})}
+
+async function ensureRootFolder(){
+  const check=await graph("https://graph.microsoft.com/v1.0/me/drive/root:/"+encodeURIComponent(APP_FOLDER));
+  if(check.ok)return;
+  if(check.status!==404)throw new Error(await check.text());
+  const r=await graph("https://graph.microsoft.com/v1.0/me/drive/root/children",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:APP_FOLDER,folder:{},["@microsoft.graph.conflictBehavior"]:"fail"})});
+  if(!r.ok && r.status!==409)throw new Error(await r.text());
+}
+async function ensureSubFolder(name){
+  await ensureRootFolder();
+  const path=encPath(APP_FOLDER+"/"+name);
+  const check=await graph("https://graph.microsoft.com/v1.0/me/drive/root:/"+path);
+  if(check.ok)return;
+  if(check.status!==404)throw new Error(await check.text());
+  const r=await graph("https://graph.microsoft.com/v1.0/me/drive/root:/"+encodeURIComponent(APP_FOLDER)+":/children",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,folder:{},["@microsoft.graph.conflictBehavior"]:"fail"})});
+  if(!r.ok && r.status!==409)throw new Error(await r.text());
+}
+async function readJsonFile(name){
+  await ensureRootFolder();
+  const p=encPath(APP_FOLDER+"/"+name);
+  const r=await graph("https://graph.microsoft.com/v1.0/me/drive/root:/"+p+":/content");
+  if(r.status===404)return null;
+  if(!r.ok)throw new Error(await r.text());
+  return JSON.parse(await r.text());
+}
+async function writeJsonFile(name,obj){
+  await ensureRootFolder();
+  const p=encPath(APP_FOLDER+"/"+name);
+  const r=await graph("https://graph.microsoft.com/v1.0/me/drive/root:/"+p+":/content",{method:"PUT",headers:{"Content-Type":"application/json;charset=utf-8"},body:JSON.stringify(obj,null,2)});
+  if(!r.ok)throw new Error(await r.text());
+}
+async function loadData(){
+  setStatus("Φόρτωση δεδομένων από το OneDrive...");
+  const data=await readJsonFile(DATA_FILE);
+  records=Array.isArray(data?.records)?data.records:[];
+  const textWasNormalized=normalizeAllStoredText();
+  if(!data || textWasNormalized)await saveData();
+  populateYears();render();setStatus(
+    textWasNormalized
+      ? "Τα δεδομένα φορτώθηκαν και τα κείμενα μετατράπηκαν σε ΚΕΦΑΛΑΙΑ."
+      : "Τα δεδομένα φορτώθηκαν από το OneDrive.",
+    "ok"
+  )
+}
+async function saveData(){await writeJsonFile(DATA_FILE,{version:2,updatedAt:new Date().toISOString(),records})}
+
+async function refreshFromParalaves(showMessage=true){
+  try{
+    const p=await readJsonFile(PAR_FILE);
+    const ledgers=Array.isArray(p?.contracts)?p.contracts:[];
+    let n=0;
+    for(const r of records){
+      const l=ledgers.find(x=>x.contractId===r.id);
+      if(l?.summary){
+        r.balanceNet=Number(l.summary.remainingNet||0);
+        r.balanceWithVat=Number(l.summary.remainingWithVat||0);
+        r.balanceUpdatedAt=l.summary.updatedAt||p.updatedAt||new Date().toISOString();
+        n++;
+      }
+    }
+    if(n)await saveData();
+    render();
+    if(showMessage)setStatus(n?`Ενημερώθηκαν ${n} υπόλοιπα από το πρόγραμμα Παραλαβών.`:"Δεν βρέθηκαν ακόμη υπολογισμένα υπόλοιπα στο πρόγραμμα Παραλαβών.","ok");
+  }catch(e){if(showMessage)setStatus("Σφάλμα ενημέρωσης υπολοίπων:\n"+e.message,"error")}
+}
+
+function populateYears(){
+  const s=document.getElementById("yearFilter"),old=s.value;
+  const ys=[...new Set(records.map(x=>Number(x.year)).filter(Boolean))];if(!ys.includes(2026))ys.push(2026);ys.sort((a,b)=>b-a);
+  s.innerHTML=ys.map(y=>`<option value="${y}">${y}</option>`).join("");s.value=ys.includes(Number(old))?old:"2026"
+}
+
+let pendingUploadRecordId=null;
+
+function renderOnlineFiles(r){
+  const parts=[];
+  const recordId=esc(String(r.id));
+
+  // Το κουμπί αφαιρεί μόνο το συγκεκριμένο αρχείο, όχι όλη την εγγραφή.
+  function fileEntry(f,type,index,defaultName){
+    const name=esc(f?.name||defaultName);
+    const url=esc(f?.webUrl||"");
+    const link=url
+      ? `<a class="file-link" href="${url}" target="_blank" rel="noopener noreferrer">${name}</a>`
+      : `<span>${name}</span>`;
+    return `<div class="file-entry">
+      ${link}
+      <button type="button" class="file-remove no-print"
+        data-record-id="${recordId}" data-file-type="${type}" data-file-index="${index}"
+        onclick="removeStoredFile(this)" title="Αφαίρεση αυτού του εγγράφου">✕ ΔΙΑΓΡΑΦΗ</button>
+    </div>`;
+  }
+
+  if(r.contractFileUrl){
+    parts.push(`<div class="file-group">
+      <span class="file-group-title">ΣΥΜΒΑΣΗ</span>
+      ${fileEntry({name:r.contractFileName||"ΑΝΟΙΓΜΑ",webUrl:r.contractFileUrl},"contract",0,"ΣΥΜΒΑΣΗ")}
+    </div>`);
+  }
+
+  if(Array.isArray(r.assignmentFiles) && r.assignmentFiles.length){
+    const links=r.assignmentFiles.map((f,i)=>
+      fileEntry(f,"assignment",i,"ΑΡΧΕΙΟ "+(i+1))
+    ).join("");
+    parts.push(`<div class="file-group">
+      <span class="file-group-title">ΔΙΑΔΙΚΑΣΙΕΣ ΑΝΑΘΕΣΗΣ</span>
+      ${links}
+    </div>`);
+  }
+
+  if(Array.isArray(r.invoiceFiles) && r.invoiceFiles.length){
+    const links=r.invoiceFiles.map((f,i)=>
+      fileEntry(f,"invoice",i,"ΤΙΜΟΛΟΓΙΟ "+(i+1))
+    ).join("");
+    parts.push(`<div class="file-group">
+      <span class="file-group-title">ΤΙΜΟΛΟΓΙΑ</span>
+      ${links}
+    </div>`);
+  }
+
+  return parts.length ? parts.join("") : "—";
+}
+
+// Διαγραφή από τη λίστα και προαιρετικά και από το πραγματικό αρχείο OneDrive.
+async function removeStoredFile(button){
+  const record=records.find(r=>String(r.id)===button.dataset.recordId);
+  const type=button.dataset.fileType;
+  const index=Number(button.dataset.fileIndex);
+  const field=type==="assignment" ? "assignmentFiles" :
+              type==="invoice" ? "invoiceFiles" : null;
+
+  if(!record || (type!=="contract" && !field)){
+    alert("Δεν βρέθηκε η εγγραφή ή η κατηγορία αρχείου.");
+    return;
+  }
+  const file=type==="contract"
+    ? {id:record.contractFileId||null,name:record.contractFileName||"ΣΥΜΒΑΣΗ",webUrl:record.contractFileUrl}
+    : (Array.isArray(record[field]) ? record[field][index] : null);
+  if(!file || (type==="contract" && !record.contractFileUrl)){
+    alert("Το αρχείο δεν βρέθηκε. Ανανεώστε τη σελίδα.");
+    return;
+  }
+
+  const filename=file.name||"ΑΡΧΕΙΟ";
+  if(!confirm("Να αφαιρεθεί το αρχείο «"+filename+"» από την εφαρμογή;\n\nΗ μελέτη και τα υπόλοιπα έγγραφα θα διατηρηθούν."))return;
+
+  const deleteFromOneDrive=Boolean(file.id) && confirm(
+    "Θέλετε ΕΠΙΣΗΣ να διαγραφεί οριστικά το αρχείο από το OneDrive;\n\n"+
+    "OK = Διαγραφή και από το OneDrive\n"+
+    "Ακύρωση = Μόνο αφαίρεση από την εφαρμογή (το αρχείο μένει στο OneDrive)"
+  );
+  if(deleteFromOneDrive && !confirm("ΤΕΛΙΚΗ ΕΠΙΒΕΒΑΙΩΣΗ: Να διαγραφεί το «"+filename+"» από το OneDrive;"))return;
+
+  // Άλλες εγγραφές μπορεί να έχουν σύνδεσμο προς το ίδιο αρχείο.
+  if(deleteFromOneDrive){
+    const usedElsewhere=records.some(r=>{
+      if(r===record)return false;
+      return r.contractFileId===file.id ||
+        (r.assignmentFiles||[]).some(f=>f.id===file.id) ||
+        (r.invoiceFiles||[]).some(f=>f.id===file.id);
+    });
+    if(usedElsewhere){
+      alert("Το αρχείο χρησιμοποιείται και από άλλη εγγραφή. Δεν θα διαγραφεί από το OneDrive.");
+      return;
+    }
+  }
+
+  button.disabled=true;
+  const oldFiles=field ? [...record[field]] : null;
+  const oldContract={
+    contractFileId:record.contractFileId,
+    contractFileName:record.contractFileName,
+    contractFileUrl:record.contractFileUrl
+  };
+  try{
+    if(type==="contract"){
+      delete record.contractFileId;
+      delete record.contractFileName;
+      delete record.contractFileUrl;
+    }else{
+      record[field].splice(index,1);
+    }
+
+    // Πρώτα αποθηκεύουμε τη νέα λίστα. Σε αποτυχία αποκαθιστούμε τα δεδομένα.
+    try{
+      await saveData();
+    }catch(saveError){
+      if(type==="contract"){
+        for(const key of Object.keys(oldContract)){
+          if(oldContract[key]===undefined)delete record[key];
+          else record[key]=oldContract[key];
+        }
+      }else record[field]=oldFiles;
+      throw saveError;
+    }
+    render();
+
+    if(deleteFromOneDrive){
+      const response=await graph(
+        "https://graph.microsoft.com/v1.0/me/drive/items/"+encodeURIComponent(file.id),
+        {method:"DELETE"}
+      );
+      if(!response.ok && response.status!==404){
+        throw new Error("Η αφαίρεση από την εφαρμογή αποθηκεύτηκε, αλλά η διαγραφή στο OneDrive απέτυχε (HTTP "+response.status+"). Το αρχείο ίσως παραμένει στο OneDrive.");
+      }
+      _publicDriveFilesCache=null;
+      setStatus("Το αρχείο «"+filename+"» αφαιρέθηκε από την εφαρμογή και διαγράφηκε από το OneDrive. Για τη δημόσια προβολή, εκτελέστε ξανά ΔΗΜΟΣΙΕΥΣΗ.","ok");
+    }else{
+      setStatus("Το αρχείο «"+filename+"» αφαιρέθηκε από τη λίστα. Το αρχείο διατηρείται στο OneDrive. Για τη δημόσια προβολή, εκτελέστε ξανά ΔΗΜΟΣΙΕΥΣΗ.","ok");
+    }
+  }catch(error){
+    console.error("Αποτυχία διαγραφής αρχείου",error);
+    setStatus("Σφάλμα: "+error.message,"error");
+    alert(error.message);
+  }finally{
+    button.disabled=false;
+  }
+}
+
+function selectFilesForRecord(recordId,type){
+  pendingUploadRecordId=recordId;
+  const input=type==="assignment"
+    ? document.getElementById("assignmentFilesInput")
+    : document.getElementById("invoiceFilesInput");
+
+  input.value="";
+  input.click();
+}
+
+async function handleCategoryUpload(type,input){
+  const record=records.find(r=>r.id===pendingUploadRecordId);
+  const files=[...(input.files||[])];
+
+  if(!record || !files.length)return;
+
+  try{
+    setStatus(`ΑΝΕΒΑΣΜΑ ${files.length} ΑΡΧΕΙΩΝ ΣΤΟ ONEDRIVE...`);
+
+    const uploaded=[];
+
+    for(const file of files){
+      const meta=await uploadCategoryFile(record,file,type);
+      uploaded.push({
+        name:toUpperText(meta.name||file.name),
+        webUrl:meta.webUrl,
+        id:meta.id
+      });
+    }
+
+    if(type==="assignment"){
+      record.assignmentFiles=[...(record.assignmentFiles||[]),...uploaded];
+    }else{
+      record.invoiceFiles=[...(record.invoiceFiles||[]),...uploaded];
+    }
+
+    await saveData();
+    render();
+
+    setStatus(
+      type==="assignment"
+        ? "ΟΙ ΔΙΑΔΙΚΑΣΙΕΣ ΑΝΑΘΕΣΗΣ ΑΠΟΘΗΚΕΥΤΗΚΑΝ ΣΤΟ ONEDRIVE."
+        : "ΤΑ ΤΙΜΟΛΟΓΙΑ ΑΠΟΘΗΚΕΥΤΗΚΑΝ ΣΤΟ ONEDRIVE.",
+      "ok"
+    );
+
+  }catch(err){
+    console.error(err);
+    setStatus("ΣΦΑΛΜΑ ΑΝΕΒΑΣΜΑΤΟΣ ΑΡΧΕΙΩΝ:\\n"+err.message,"error");
+  }finally{
+    pendingUploadRecordId=null;
+    input.value="";
+  }
+}
+
+async function ensureRecordCategoryFolder(record,type){
+  await ensureSubFolder("Files");
+
+  const baseName=(record.studyNo||record.id).replace(/[\\/:*?"<>|]/g,"_");
+  const categoryName=type==="assignment"
+    ? "ΔΙΑΔΙΚΑΣΙΕΣ ΑΝΑΘΕΣΗΣ"
+    : "ΤΙΜΟΛΟΓΙΑ";
+
+  const recordPath=encPath(APP_FOLDER+"/Files/"+baseName);
+
+  let chk=await graph(
+    "https://graph.microsoft.com/v1.0/me/drive/root:/"+recordPath
+  );
+
+  if(chk.status===404){
+    const parent=encPath(APP_FOLDER+"/Files");
+
+    const r=await graph(
+      "https://graph.microsoft.com/v1.0/me/drive/root:/"+parent+":/children",
+      {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          name:baseName,
+          folder:{},
+          ["@microsoft.graph.conflictBehavior"]:"fail"
+        })
+      }
+    );
+
+    if(!r.ok && r.status!==409)throw new Error(await r.text());
+  }
+
+  const catPath=encPath(
+    APP_FOLDER+"/Files/"+baseName+"/"+categoryName
+  );
+
+  chk=await graph(
+    "https://graph.microsoft.com/v1.0/me/drive/root:/"+catPath
+  );
+
+  if(chk.status===404){
+    const parent=encPath(APP_FOLDER+"/Files/"+baseName);
+
+    const r=await graph(
+      "https://graph.microsoft.com/v1.0/me/drive/root:/"+parent+":/children",
+      {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          name:categoryName,
+          folder:{},
+          ["@microsoft.graph.conflictBehavior"]:"fail"
+        })
+      }
+    );
+
+    if(!r.ok && r.status!==409)throw new Error(await r.text());
+  }
+
+  return APP_FOLDER+"/Files/"+baseName+"/"+categoryName;
+}
+
+async function uploadCategoryFile(record,file,type){
+  const folder=await ensureRecordCategoryFolder(record,type);
+  const path=encPath(folder+"/"+file.name);
+
+  const resp=await graph(
+    "https://graph.microsoft.com/v1.0/me/drive/root:/"+path+":/content",
+    {
+      method:"PUT",
+      headers:{
+        "Content-Type":file.type||"application/octet-stream"
+      },
+      body:file
+    }
+  );
+
+  if(!resp.ok)throw new Error(await resp.text());
+  return resp.json();
+}
+
+
+
+function selectedDepartments(){
+  return [...document.querySelectorAll(".deptCheck:checked")].map(x=>x.value);
+}
+
+function render(){
+  const year=Number(document.getElementById("yearFilter").value||2026),q=document.getElementById("searchInput").value.trim().toLowerCase();
+  const depts=selectedDepartments();
+  let list=records.filter(r=>Number(r.year)===year && depts.includes(toUpperText(r.department||"")));
+  if(q)list=list.filter(r=>JSON.stringify(r).toLowerCase().includes(q));
+  document.getElementById("countCard").textContent=list.length;
+  document.getElementById("studyCard").textContent=euro(list.reduce((s,r)=>s+Number(r.studyBudget||0),0));
+  document.getElementById("contractCard").textContent=euro(list.reduce((s,r)=>s+Number(r.contractBudget||0),0));
+  document.getElementById("balanceCard").textContent=euro(list.reduce((s,r)=>s+Number(r.balanceWithVat ?? r.contractBudget ?? 0),0));
+  const body=document.getElementById("contractsBody");body.innerHTML="";
+  if(!list.length){body.innerHTML='<tr><td colspan="14" style="padding:35px;text-align:center">Δεν υπάρχουν εγγραφές για το επιλεγμένο έτος.</td></tr>';return}
+  for(const r of list){
+    const st=statusFor(r),days=r.expiry?daysUntil(r.expiry):"",bal=r.balanceWithVat ?? r.contractBudget ?? 0;
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td><div class="actions">
+        <button class="btn-blue" onclick="editRecord('${r.id}')">✎</button>
+        <button class="btn-purple" onclick="openParalaves('${r.id}')">ΠΑΡΑΛΑΒΕΣ</button>
+        <button class="btn-green" onclick="selectFilesForRecord('${r.id}','assignment')">ΑΝΑΘΕΣΗ</button>
+        <button class="btn-orange" onclick="selectFilesForRecord('${r.id}','invoice')">ΤΙΜΟΛΟΓΙΑ</button>
+      </div></td>
+      <td>${esc(toUpperText(r.studyNo||""))}</td><td>${esc(toUpperText(r.department||""))}</td><td>${esc(toUpperText(r.agency||""))}</td><td>${esc(toUpperText(r.title||""))}</td><td>${esc(toUpperText(r.execution||""))}</td>
+      <td class="num">${euro(r.studyBudget)}</td><td>${esc(toUpperText(r.contractor||""))}</td><td class="num">${euro(r.contractBudget)}</td>
+      <td class="num"><strong>${euro(bal)}</strong></td><td>${r.expiry||""}</td><td class="center">${days===null?"":days}</td>
+      <td><span class="badge ${st.cls}">${st.text}</span></td>
+      <td>${renderOnlineFiles(r)}</td>`;
+    body.appendChild(tr)
+  }
+}
+function openParalaves(contractId=""){window.location.href="paralaves.html"+(contractId?`?contractId=${encodeURIComponent(contractId)}`:"")}
+function openNewRecord(){currentEditingId=null;document.getElementById("dialogTitle").textContent="Νέα εγγραφή";document.getElementById("recordForm").reset();document.getElementById("fYear").value=document.getElementById("yearFilter").value||2026;document.getElementById("fVat").value="24";document.getElementById("fDepartment").value="";document.getElementById("fExcelSheet").value="ΣΥΜΒΑΣΗ";document.getElementById("deleteBtn").classList.add("hidden");document.getElementById("recordDialog").showModal()}
+function editRecord(x){
+  const r=records.find(a=>a.id===x);if(!r)return;currentEditingId=x;document.getElementById("dialogTitle").textContent="Επεξεργασία εγγραφής";
+  const vals={fYear:r.year||2026,fStudyNo:r.studyNo||"",fDepartment:r.department||"",fAgency:r.agency||"",fExecution:r.execution||"",fTitle:r.title||"",fStudyBudget:euro(r.studyBudget||0),fContractor:r.contractor||"",fContractBudget:euro(r.contractBudget||0),fExpiry:r.expiry||"",fVat:r.vat??24,fExcelPath:r.excelPath||"",fExcelSheet:r.excelSheet||"ΣΥΜΒΑΣΗ"};
+  Object.entries(vals).forEach(([k,v])=>document.getElementById(k).value=v);document.getElementById("deleteBtn").classList.remove("hidden");document.getElementById("recordDialog").showModal()
+}
+function closeDialog(){document.getElementById("recordDialog").close()}
+document.getElementById("recordForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  try{
+    let r=currentEditingId?records.find(x=>x.id===currentEditingId):{id:id()};
+    if(!currentEditingId)records.push(r);
+    r.year=Number(fYear.value);r.studyNo=toUpperText(fStudyNo.value.trim());r.department=toUpperText(fDepartment.value.trim());r.agency=toUpperText(fAgency.value.trim());r.execution=toUpperText(fExecution.value.trim());r.title=toUpperText(fTitle.value.trim());
+    r.studyBudget=parseEuroInput(fStudyBudget.value);r.contractor=toUpperText(fContractor.value.trim());r.contractBudget=parseEuroInput(fContractBudget.value);r.expiry=fExpiry.value;
+    r.vat=Number(fVat.value||24);r.excelPath=fExcelPath.value.trim();r.excelSheet=toUpperText(fExcelSheet.value.trim())||"ΣΥΜΒΑΣΗ";
+    const file=fContractFile.files[0];if(file){
+      const uploadedContract=await uploadContractFile(r,file);
+      r.contractFileUrl=uploadedContract.webUrl;
+      r.contractFileId=uploadedContract.id;
+      r.contractFileName=toUpperText(uploadedContract.name||file.name);
+    }
+    await saveData();populateYears();yearFilter.value=String(r.year);closeDialog();render();setStatus("Η εγγραφή αποθηκεύτηκε στο OneDrive.","ok")
+  }catch(err){setStatus("Σφάλμα αποθήκευσης:\n"+err.message,"error")}
+});
+async function uploadContractFile(r,file){
+  await ensureSubFolder("Files");const safe=(r.studyNo||r.id).replace(/[\\/:*?"<>|]/g,"_")+" - "+file.name;
+  const p=encPath(APP_FOLDER+"/Files/"+safe);const resp=await graph("https://graph.microsoft.com/v1.0/me/drive/root:/"+p+":/content",{method:"PUT",headers:{"Content-Type":file.type||"application/octet-stream"},body:file});
+  if(!resp.ok)throw new Error(await resp.text());return resp.json()
+}
+async function deleteCurrentRecord(){
+  if(!currentEditingId)return;const r=records.find(x=>x.id===currentEditingId);if(!confirm(`Να διαγραφεί η εγγραφή "${r?.title||""}";`))return;
+  records=records.filter(x=>x.id!==currentEditingId);await saveData();closeDialog();populateYears();render();setStatus("Η εγγραφή διαγράφηκε.","ok")
+}
+
+function toUpperText(v){
+  return String(v ?? "").toLocaleUpperCase("el-GR");
+}
+function enableUppercaseInputs(){
+  document.querySelectorAll('input[type="text"], textarea').forEach(el=>{
+    el.addEventListener("input",()=>{
+      const start=el.selectionStart, end=el.selectionEnd;
+      el.value=toUpperText(el.value);
+      try{el.setSelectionRange(start,end)}catch{}
+    });
+    el.addEventListener("blur",()=>{ el.value=toUpperText(el.value); });
+  });
+}
+
+function normalizeRecordText(record){
+  const fields=["studyNo","department","agency","execution","title","contractor","excelSheet"];
+  let changed=false;
+  for(const f of fields){
+    if(record[f]!==undefined && record[f]!==null){
+      const upper=toUpperText(record[f]);
+      if(record[f]!==upper){
+        record[f]=upper;
+        changed=true;
+      }
+    }
+  }
+  return changed;
+}
+function normalizeAllStoredText(){
+  let changed=false;
+  for(const record of records){
+    if(normalizeRecordText(record)) changed=true;
+  }
+  return changed;
+}
+
+window.addEventListener("load",async()=>{
+  enableUppercaseInputs();
+  setupCurrencyInput(document.getElementById("fStudyBudget"));
+  setupCurrencyInput(document.getElementById("fContractBudget"));
+  try{const a=await getAccount();if(a){setStatus("Συνδεδεμένος ως "+a.username,"ok");await loadData();await refreshFromParalaves(false)}else{populateYears();render()}}catch(e){setStatus(e.message,"error")}
+});
+</script>
+</body>
+</html>
