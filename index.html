@@ -444,6 +444,45 @@ tbody tr{
 }
 .dept-filter input{margin:0}
 
+
+/* ΠΛΗΡΕΣ ΠΛΑΤΟΣ ΟΘΟΝΗΣ — ΚΕΝΤΡΙΚΟΣ ΠΙΝΑΚΑΣ ΣΥΜΒΑΣΕΩΝ */
+@media screen {
+  .container {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 10px 8px !important;
+  }
+  .panel, .table-wrap { width: 100%; max-width: 100%; }
+  .table-wrap { overflow-x: auto; }
+  .table-wrap > table {
+    width: 100% !important;
+    min-width: 1500px;
+    table-layout: auto;
+  }
+  .table-wrap th, .table-wrap td {
+    font-size: 11px;
+    padding: 5px 4px;
+    line-height: 1.15;
+  }
+  .table-wrap th:nth-child(1), .table-wrap td:nth-child(1) {
+    width: 114px; min-width: 114px; max-width: 114px;
+  }
+  .table-wrap th:nth-child(5), .table-wrap td:nth-child(5) {
+    width: 300px; min-width: 250px; max-width: 350px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .actions { grid-template-columns: 22px 1fr; gap: 3px; }
+  .actions button { padding: 4px 3px; font-size: 10px; min-height: 23px; }
+  .file-group { min-width: 115px; }
+  .file-entry { max-width: 145px; }
+  .file-remove { font-size: 9px; padding: 3px 4px; }
+  .badge { padding: 4px 6px; font-size: 10px; }
+  .cards { gap: 10px; margin-bottom: 12px; }
+  .card { padding: 12px; }
+  #status { margin-bottom: 12px; }
+}
 </style>
 </head>
 <body>
