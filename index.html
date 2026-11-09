@@ -451,6 +451,28 @@ tbody tr{
 .table-wrap th:nth-child(14), .table-wrap td:nth-child(14),
 .table-wrap th:nth-child(15), .table-wrap td:nth-child(15) { min-width: 145px; max-width: 230px; overflow-wrap: anywhere; }
 
+/* Ομοιόμορφη διάταξη κεφαλίδων σε δύο σειρές. */
+.table-wrap thead th {
+  vertical-align: middle;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: normal;
+  line-height: 1.35 !important;
+  font-weight: 700;
+  letter-spacing: .12px;
+  height: 55px;
+  border-right: 1px solid rgba(255,255,255,.16);
+}
+.table-wrap thead th.num { text-align: right; }
+.table-wrap tbody td.num { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.table-wrap tbody tr:nth-child(even) { background: #f8fafc; }
+.table-wrap tbody tr:hover { background: #eaf3ff; }
+.table-wrap tbody td { border-right: 1px solid #eef1f5; }
+.table-wrap th:nth-child(7), .table-wrap td:nth-child(7),
+.table-wrap th:nth-child(9), .table-wrap td:nth-child(9),
+.table-wrap th:nth-child(10), .table-wrap td:nth-child(10) { min-width: 125px; }
+.table-wrap th:nth-child(12), .table-wrap td:nth-child(12) { min-width: 72px; }
+
 /* ΠΛΗΡΕΣ ΠΛΑΤΟΣ ΟΘΟΝΗΣ — ΚΕΝΤΡΙΚΟΣ ΠΙΝΑΚΑΣ ΣΥΜΒΑΣΕΩΝ */
 @media screen {
   .container {
@@ -527,9 +549,22 @@ tbody tr{
     <div class="table-wrap">
       <table>
         <thead><tr>
-          <th>Ενέργεια</th><th>Α/Α Μελέτης</th><th>Τμήμα</th><th>Φορέας</th><th>Τίτλος Μελέτης</th><th>Τρόπος Εκτέλεσης</th>
-          <th class="num">Προϋπ. Μελέτης</th><th>Ανάδοχος / Εταιρεία</th><th class="num">Προϋπ. Σύμβασης</th>
-          <th class="num">Υπόλοιπο με ΦΠΑ</th><th>Οριστική Λήξη</th><th class="center">Ημέρες</th><th>Κατάσταση</th><th>Συντάξας Μελέτης</th><th>Αρμόδια Δ/νση</th><th>Online Αρχεία</th>
+          <th>ΕΝΕΡΓΕΙΕΣ</th>
+          <th>Α/Α<br>ΜΕΛΕΤΗΣ</th>
+          <th>ΤΜΗΜΑ</th>
+          <th>ΦΟΡΕΑΣ</th>
+          <th>ΤΙΤΛΟΣ<br>ΜΕΛΕΤΗΣ</th>
+          <th>ΤΡΟΠΟΣ<br>ΕΚΤΕΛΕΣΗΣ</th>
+          <th class="num">ΠΡΟΫΠΟΛΟΓΙΣΜΟΣ<br>ΜΕΛΕΤΗΣ</th>
+          <th>ΑΝΑΔΟΧΟΣ /<br>ΕΤΑΙΡΕΙΑ</th>
+          <th class="num">ΠΡΟΫΠΟΛΟΓΙΣΜΟΣ<br>ΣΥΜΒΑΣΗΣ</th>
+          <th class="num">ΥΠΟΛΟΙΠΟ<br>ΜΕ ΦΠΑ</th>
+          <th>ΟΡΙΣΤΙΚΗ<br>ΛΗΞΗ</th>
+          <th class="center">ΗΜΕΡΕΣ<br>ΕΩΣ ΛΗΞΗ</th>
+          <th>ΚΑΤΑΣΤΑΣΗ</th>
+          <th>ΣΥΝΤΑΞΑΣ<br>ΜΕΛΕΤΗΣ</th>
+          <th>ΑΡΜΟΔΙΑ<br>Δ/ΝΣΗ</th>
+          <th>ONLINE<br>ΑΡΧΕΙΑ</th>
         </tr></thead>
         <tbody id="contractsBody"></tbody>
       </table>
