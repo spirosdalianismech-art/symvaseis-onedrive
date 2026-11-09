@@ -251,6 +251,8 @@ async function publishPublicData(){
         year:Number(primary.year||0),
         studyNo:toUpperText(primary.studyNo||""),
         department:toUpperText(primary.department||""),
+         studyAuthor:toUpperText(primary.studyAuthor||""),
+         responsibleDirectorate:toUpperText(primary.responsibleDirectorate||""),
         agency:toUpperText(primary.agency||""),
         title:toUpperText(primary.title||""),
         execution:toUpperText(primary.execution||""),
@@ -445,6 +447,10 @@ tbody tr{
 .dept-filter input{margin:0}
 
 
+/* Τα πρόσθετα στοιχεία σύμβασης εμφανίζονται και στον πίνακα. */
+.table-wrap th:nth-child(14), .table-wrap td:nth-child(14),
+.table-wrap th:nth-child(15), .table-wrap td:nth-child(15) { min-width: 145px; max-width: 230px; overflow-wrap: anywhere; }
+
 /* ΠΛΗΡΕΣ ΠΛΑΤΟΣ ΟΘΟΝΗΣ — ΚΕΝΤΡΙΚΟΣ ΠΙΝΑΚΑΣ ΣΥΜΒΑΣΕΩΝ */
 @media screen {
   .container {
@@ -523,7 +529,7 @@ tbody tr{
         <thead><tr>
           <th>Ενέργεια</th><th>Α/Α Μελέτης</th><th>Τμήμα</th><th>Φορέας</th><th>Τίτλος Μελέτης</th><th>Τρόπος Εκτέλεσης</th>
           <th class="num">Προϋπ. Μελέτης</th><th>Ανάδοχος / Εταιρεία</th><th class="num">Προϋπ. Σύμβασης</th>
-          <th class="num">Υπόλοιπο με ΦΠΑ</th><th>Οριστική Λήξη</th><th class="center">Ημέρες</th><th>Κατάσταση</th><th>Online Αρχεία</th>
+          <th class="num">Υπόλοιπο με ΦΠΑ</th><th>Οριστική Λήξη</th><th class="center">Ημέρες</th><th>Κατάσταση</th><th>Συντάξας Μελέτης</th><th>Αρμόδια Δ/νση</th><th>Online Αρχεία</th>
         </tr></thead>
         <tbody id="contractsBody"></tbody>
       </table>
@@ -552,6 +558,8 @@ tbody tr{
         </select>
       </label>
       <label>Φορέας<input id="fAgency"></label>
+       <label>Συντάξας Μελέτης<input id="fStudyAuthor" type="text" placeholder="ΟΝΟΜΑΤΕΠΩΝΥΜΟ"></label>
+       <label>Αρμόδια Δ/νση<input id="fResponsibleDirectorate" type="text" placeholder="ΑΡΜΟΔΙΑ ΔΙΕΥΘΥΝΣΗ"></label>
       <label>Τρόπος Εκτέλεσης<input id="fExecution"></label>
       <label class="wide">Τίτλος Μελέτης<input id="fTitle" required></label>
       <label>Προϋπολογισμός Μελέτης<input id="fStudyBudget" type="text" inputmode="decimal" placeholder="0,00 €"></label>
@@ -991,7 +999,7 @@ function render(){
   document.getElementById("contractCard").textContent=euro(list.reduce((s,r)=>s+Number(r.contractBudget||0),0));
   document.getElementById("balanceCard").textContent=euro(list.reduce((s,r)=>s+Number(r.balanceWithVat ?? r.contractBudget ?? 0),0));
   const body=document.getElementById("contractsBody");body.innerHTML="";
-  if(!list.length){body.innerHTML='<tr><td colspan="14" style="padding:35px;text-align:center">Δεν υπάρχουν εγγραφές για το επιλεγμένο έτος.</td></tr>';return}
+  if(!list.length){body.innerHTML='<tr><td colspan="16" style="padding:35px;text-align:center">Δεν υπάρχουν εγγραφές για το επιλεγμένο έτος.</td></tr>';return}
   for(const r of list){
     const st=statusFor(r),days=r.expiry?daysUntil(r.expiry):"",bal=r.balanceWithVat ?? r.contractBudget ?? 0;
     const tr=document.createElement("tr");
@@ -1006,7 +1014,9 @@ function render(){
       <td class="num">${euro(r.studyBudget)}</td><td>${esc(toUpperText(r.contractor||""))}</td><td class="num">${euro(r.contractBudget)}</td>
       <td class="num"><strong>${euro(bal)}</strong></td><td>${r.expiry||""}</td><td class="center">${days===null?"":days}</td>
       <td><span class="badge ${st.cls}">${st.text}</span></td>
-      <td>${renderOnlineFiles(r)}</td>`;
+       <td>${esc(toUpperText(r.studyAuthor||""))}</td>
+       <td>${esc(toUpperText(r.responsibleDirectorate||""))}</td>
+       <td>${renderOnlineFiles(r)}</td>`;
     body.appendChild(tr)
   }
 }
@@ -1014,7 +1024,7 @@ function openParalaves(contractId=""){window.location.href="paralaves.html"+(con
 function openNewRecord(){currentEditingId=null;document.getElementById("dialogTitle").textContent="Νέα εγγραφή";document.getElementById("recordForm").reset();document.getElementById("fYear").value=document.getElementById("yearFilter").value||2026;document.getElementById("fVat").value="24";document.getElementById("fDepartment").value="";document.getElementById("fExcelSheet").value="ΣΥΜΒΑΣΗ";document.getElementById("deleteBtn").classList.add("hidden");document.getElementById("recordDialog").showModal()}
 function editRecord(x){
   const r=records.find(a=>a.id===x);if(!r)return;currentEditingId=x;document.getElementById("dialogTitle").textContent="Επεξεργασία εγγραφής";
-  const vals={fYear:r.year||2026,fStudyNo:r.studyNo||"",fDepartment:r.department||"",fAgency:r.agency||"",fExecution:r.execution||"",fTitle:r.title||"",fStudyBudget:euro(r.studyBudget||0),fContractor:r.contractor||"",fContractBudget:euro(r.contractBudget||0),fExpiry:r.expiry||"",fVat:r.vat??24,fExcelPath:r.excelPath||"",fExcelSheet:r.excelSheet||"ΣΥΜΒΑΣΗ"};
+  const vals={fYear:r.year||2026,fStudyNo:r.studyNo||"",fDepartment:r.department||"",fAgency:r.agency||"",fStudyAuthor:r.studyAuthor||"",fResponsibleDirectorate:r.responsibleDirectorate||"",fExecution:r.execution||"",fTitle:r.title||"",fStudyBudget:euro(r.studyBudget||0),fContractor:r.contractor||"",fContractBudget:euro(r.contractBudget||0),fExpiry:r.expiry||"",fVat:r.vat??24,fExcelPath:r.excelPath||"",fExcelSheet:r.excelSheet||"ΣΥΜΒΑΣΗ"};
   Object.entries(vals).forEach(([k,v])=>document.getElementById(k).value=v);document.getElementById("deleteBtn").classList.remove("hidden");document.getElementById("recordDialog").showModal()
 }
 function closeDialog(){document.getElementById("recordDialog").close()}
@@ -1023,7 +1033,7 @@ document.getElementById("recordForm").addEventListener("submit",async e=>{
   try{
     let r=currentEditingId?records.find(x=>x.id===currentEditingId):{id:id()};
     if(!currentEditingId)records.push(r);
-    r.year=Number(fYear.value);r.studyNo=toUpperText(fStudyNo.value.trim());r.department=toUpperText(fDepartment.value.trim());r.agency=toUpperText(fAgency.value.trim());r.execution=toUpperText(fExecution.value.trim());r.title=toUpperText(fTitle.value.trim());
+    r.year=Number(fYear.value);r.studyNo=toUpperText(fStudyNo.value.trim());r.department=toUpperText(fDepartment.value.trim());r.agency=toUpperText(fAgency.value.trim());r.studyAuthor=toUpperText(document.getElementById("fStudyAuthor").value.trim());r.responsibleDirectorate=toUpperText(document.getElementById("fResponsibleDirectorate").value.trim());r.execution=toUpperText(fExecution.value.trim());r.title=toUpperText(fTitle.value.trim());
     r.studyBudget=parseEuroInput(fStudyBudget.value);r.contractor=toUpperText(fContractor.value.trim());r.contractBudget=parseEuroInput(fContractBudget.value);r.expiry=fExpiry.value;
     r.vat=Number(fVat.value||24);r.excelPath=fExcelPath.value.trim();r.excelSheet=toUpperText(fExcelSheet.value.trim())||"ΣΥΜΒΑΣΗ";
     const file=fContractFile.files[0];if(file){
@@ -1060,7 +1070,7 @@ function enableUppercaseInputs(){
 }
 
 function normalizeRecordText(record){
-  const fields=["studyNo","department","agency","execution","title","contractor","excelSheet"];
+  const fields=["studyNo","department","agency","studyAuthor","responsibleDirectorate","execution","title","contractor","excelSheet"];
   let changed=false;
   for(const f of fields){
     if(record[f]!==undefined && record[f]!==null){
