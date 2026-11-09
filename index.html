@@ -511,6 +511,74 @@ tbody tr{
   .card { padding: 12px; }
   #status { margin-bottom: 12px; }
 }
+
+/* Βελτιωμένη στοίχιση προϋπολογισμών και αναδόχου */
+.table-wrap thead th.budget-heading,
+.table-wrap thead th.contractor-heading {
+  text-align: center !important;
+  vertical-align: middle;
+  padding: 10px 9px !important;
+  line-height: 1.55 !important;
+  white-space: nowrap;
+}
+.table-wrap thead th.budget-heading span,
+.table-wrap thead th.contractor-heading span { display: inline-block; font-weight: 700; }
+.table-wrap th:nth-child(7), .table-wrap td:nth-child(7),
+.table-wrap th:nth-child(9), .table-wrap td:nth-child(9) {
+  min-width: 153px !important;
+  width: 153px;
+}
+.table-wrap th:nth-child(8), .table-wrap td:nth-child(8) {
+  min-width: 205px !important;
+  width: 220px;
+  max-width: 290px;
+}
+.table-wrap tbody td:nth-child(8) {
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: break-word;
+  font-weight: 600;
+}
+.table-wrap tbody td:nth-child(7),
+.table-wrap tbody td:nth-child(9) { text-align: right; }
+
+/* ΚΕΝΤΡΙΚΗ ΣΤΟΙΧΙΣΗ: ΑΠΟ «ΤΡΟΠΟΣ ΕΚΤΕΛΕΣΗΣ» ΕΩΣ ΤΕΛΟΣ */
+.table-wrap thead th:nth-child(n+6),
+.table-wrap tbody td:nth-child(n+6) {
+  text-align: center !important;
+  vertical-align: middle;
+}
+/* Κεντράρισμα και των ποσών, παρά τις παλιές κλάσεις .num */
+.table-wrap tbody td:nth-child(n+6).num,
+.table-wrap thead th:nth-child(n+6).num {
+  text-align: center !important;
+}
+/* Στοίχιση συνδέσμων και ομάδων αρχείων στο κέντρο της στήλης */
+.table-wrap tbody td:nth-child(16) .file-group {
+  align-items: center;
+  text-align: center;
+}
+.table-wrap tbody td:nth-child(16) .file-entry {
+  justify-content: center;
+  align-items: center;
+}
+
+/* ΕΝΙΑΙΕΣ ΣΕΙΡΕΣ: ΧΩΡΙΣ ΚΟΥΤΑΚΙΑ ΚΑΙ ΚΑΘΕΤΟΥΣ ΔΙΑΧΩΡΙΣΜΟΥΣ */
+@media screen {
+  .table-wrap thead th { border-right: none !important; border-left: none !important; }
+  .table-wrap tbody td {
+    border-right: none !important;
+    border-left: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
+  }
+  /* Διακριτική οριζόντια διαχωριστική γραμμή μόνο ανά σύμβαση. */
+  .table-wrap tbody tr + tr { border-top: 1px solid #e6ebf2; }
+  .table-wrap tbody tr:nth-child(even) { background: #ffffff; }
+  .table-wrap tbody tr:hover { background: #eef5ff; }
+  .table-wrap tbody td:nth-child(n+6),
+  .table-wrap thead th:nth-child(n+6) { text-align: center !important; vertical-align: middle; }
+}
 </style>
 </head>
 <body>
@@ -555,9 +623,9 @@ tbody tr{
           <th>ΦΟΡΕΑΣ</th>
           <th>ΤΙΤΛΟΣ<br>ΜΕΛΕΤΗΣ</th>
           <th>ΤΡΟΠΟΣ<br>ΕΚΤΕΛΕΣΗΣ</th>
-          <th class="num">ΠΡΟΫΠΟΛΟΓΙΣΜΟΣ<br>ΜΕΛΕΤΗΣ</th>
-          <th>ΑΝΑΔΟΧΟΣ /<br>ΕΤΑΙΡΕΙΑ</th>
-          <th class="num">ΠΡΟΫΠΟΛΟΓΙΣΜΟΣ<br>ΣΥΜΒΑΣΗΣ</th>
+          <th class="num budget-heading">ΠΡΟΫΠΟΛΟΓΙΣΜΟΣ<br><span>ΜΕΛΕΤΗΣ</span></th>
+          <th class="contractor-heading">ΑΝΑΔΟΧΟΣ<br><span>/ ΕΤΑΙΡΕΙΑ</span></th>
+          <th class="num budget-heading">ΠΡΟΫΠΟΛΟΓΙΣΜΟΣ<br><span>ΣΥΜΒΑΣΗΣ</span></th>
           <th class="num">ΥΠΟΛΟΙΠΟ<br>ΜΕ ΦΠΑ</th>
           <th>ΟΡΙΣΤΙΚΗ<br>ΛΗΞΗ</th>
           <th class="center">ΗΜΕΡΕΣ<br>ΕΩΣ ΛΗΞΗ</th>
