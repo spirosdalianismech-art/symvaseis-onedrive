@@ -261,6 +261,7 @@ async function publishPublicData(){
         contractBudget:Number(primary.contractBudget||0),
         balanceWithVat,
         expiry:primary.expiry||"",
+        extensionExpiry:primary.extensionExpiry||"",
         vat:Number(primary.vat??24),
         files:mergedFiles
       });
