@@ -733,6 +733,11 @@ function encPath(p){return p.split("/").filter(Boolean).map(encodeURIComponent).
 function esc(v){const d=document.createElement("div");d.textContent=v??"";return d.innerHTML}
 function daysUntil(s){if(!s)return null;const a=new Date();a.setHours(0,0,0,0);const b=new Date(s+"T00:00:00");return Math.ceil((b-a)/86400000)}
 function effectiveExpiry(r){return r.extensionExpiry||r.expiry||""}
+function formatDateGR(value){
+  const s=String(value||"").trim();
+  const m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : s;
+}
 function statusFor(r){
   const hasContract=Number(r.contractBudget||0)>0;
   if(!hasContract)return {text:"ΧΩΡΙΣ ΣΥΜΒΑΣΗ",cls:"no-contract"};
@@ -1146,7 +1151,7 @@ function render(){
       </div></td>
       <td>${esc(toUpperText(r.studyNo||""))}</td><td>${esc(toUpperText(r.department||""))}</td><td>${esc(toUpperText(r.agency||""))}</td><td>${esc(toUpperText(r.title||""))}</td><td>${esc(toUpperText(r.execution||""))}</td>
       <td class="num">${euro(r.studyBudget)}</td><td>${esc(toUpperText(r.contractor||""))}</td><td class="num">${euro(r.contractBudget)}</td>
-      <td class="num"><strong>${euro(bal)}</strong></td><td title="${r.extensionExpiry ? "ΠΑΡΑΤΑΣΗ ΑΠΟ " + (r.expiry||"—") : "ΑΡΧΙΚΗ ΛΗΞΗ"}">${expiry ? esc(expiry) + (r.extensionExpiry ? "<div style=\"font-size:10px;color:#64748b\">ΠΑΡΑΤΑΣΗ</div>" : "") : ""}</td><td class="center">${days===null?"":days}</td>
+      <td class="num"><strong>${euro(bal)}</strong></td><td title="${r.extensionExpiry ? "ΠΑΡΑΤΑΣΗ ΑΠΟ " + (r.expiry ? formatDateGR(r.expiry) : "—") : "ΑΡΧΙΚΗ ΛΗΞΗ"}">${expiry ? esc(formatDateGR(expiry)) + (r.extensionExpiry ? "<div style=\"font-size:10px;color:#64748b\">ΠΑΡΑΤΑΣΗ</div>" : "") : ""}</td><td class="center">${days===null?"":days}</td>
       <td><span class="badge ${st.cls}">${st.text}</span></td>
        <td>${esc(toUpperText(r.studyAuthor||""))}</td>
        <td>${esc(toUpperText(r.responsibleDirectorate||""))}</td>
