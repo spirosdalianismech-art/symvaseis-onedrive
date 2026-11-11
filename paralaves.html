@@ -198,9 +198,16 @@ function getLedger(create=true){
  return l
 }
 function computeLine(item,ledger){
+ // Το Excel μπορεί να περιέχει ήδη το υπόλοιπο μετά τις παραλαβές.
+ // Δεν αφαιρούμε δεύτερη φορά τις εισαγμένες από Excel παραλαβές.
+ // Οι χειροκίνητες παραλαβές εξακολουθούν να αφαιρούνται κανονικά.
  const receipts=ledger.receipts.filter(r=>r.itemId===item.id);
- const appUnits=receipts.filter(r=>r.mode==="units").reduce((s,r)=>s+Number(r.units||0),0);
- const appNet=receipts.reduce((s,r)=>s+Number(r.netValue||0),0);
+ const unitReceipts=receipts.filter(r=>r.mode==="units" &&
+   !(item.excelRemainingUnitsProvided && r.source==="excel"));
+ const netReceipts=receipts.filter(r=>
+   !(item.excelRemainingNetProvided && r.source==="excel"));
+ const appUnits=unitReceipts.reduce((s,r)=>s+Number(r.units||0),0);
+ const appNet=netReceipts.reduce((s,r)=>s+Number(r.netValue||0),0);
  const baseUnits=Number(item.baseRemainingUnits ?? item.initialQty ?? 0);
  const baseNet=Number(item.baseRemainingNet ?? item.initialNet ?? 0);
  return {remainingUnits:baseUnits-appUnits,remainingNet:baseNet-appNet}
@@ -588,10 +595,12 @@ async function syncFromExcel(showMessage=true){
     if(!desc&&!qty&&!price&&!expense){blanks++;if(blanks>=8&&newItems.length)break;continue}else blanks=0;
     if(!desc||(!(qty||price||expense)))continue;
     const unit=cUnit>=0?toUpperText(String(row[cUnit]??"").trim()):"";
-    const baseUnits=cRemUnits>=0&&String(row[cRemUnits]??"").trim()!==""?num(row[cRemUnits]):qty;
-    const baseNet=cRemValue>=0&&String(row[cRemValue]??"").trim()!==""?num(row[cRemValue]):expense;
+    const excelRemainingUnitsProvided=cRemUnits>=0&&String(row[cRemUnits]??"").trim()!=="";
+    const excelRemainingNetProvided=cRemValue>=0&&String(row[cRemValue]??"").trim()!=="";
+    const baseUnits=excelRemainingUnitsProvided?num(row[cRemUnits]):qty;
+    const baseNet=excelRemainingNetProvided?num(row[cRemValue]):expense;
     const itemId=hash(norm(desc)+"|"+norm(unit)+"|"+price.toFixed(6));
-    newItems.push({id:itemId,sourceRow:rr+1,description:desc,unit,initialQty:qty,unitPrice:price,initialNet:expense||qty*price,baseRemainingUnits:baseUnits,baseRemainingNet:baseNet});
+    newItems.push({id:itemId,sourceRow:rr+1,description:desc,unit,initialQty:qty,unitPrice:price,initialNet:expense||qty*price,baseRemainingUnits:baseUnits,baseRemainingNet:baseNet,excelRemainingUnitsProvided,excelRemainingNetProvided});
   }
   if(!newItems.length)throw new Error("Δεν βρέθηκαν γραμμές ειδών στον πίνακα.");
 
