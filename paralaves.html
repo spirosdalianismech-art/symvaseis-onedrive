@@ -20,6 +20,10 @@ button:hover{opacity:.88}select,input{border:1px solid #cbd5e1;border-radius:7px
 .panel{background:white;border-radius:12px;box-shadow:0 2px 9px rgba(0,0,0,.08);margin-bottom:18px;overflow:hidden}.panel-title{padding:14px 16px;font-weight:700;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center}
 .table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:1300px}th{background:#4c1d95;color:white;text-align:left;padding:10px;font-size:13px;white-space:nowrap}td{padding:9px;border-bottom:1px solid #e5e7eb;font-size:13px;vertical-align:middle}
 .num{text-align:right}.center{text-align:center}.receipt-form{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 2fr auto;gap:8px;padding:15px;align-items:end}.receipt-form label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600}
+#excelAudit{border-radius:8px;padding:12px 15px;margin-bottom:15px;white-space:pre-wrap;font-size:14px;font-weight:600}
+#excelAudit.audit-ok{background:#dcfce7;color:#166534}
+#excelAudit.audit-warn{background:#fff3cd;color:#854d0e}
+#excelAudit.audit-error{background:#fee2e2;color:#991b1b}
 .history-table{min-width:900px}.negative{color:#b91c1c;font-weight:700}.positive{color:#166534;font-weight:700}.hidden{display:none!important}
 @media(max-width:950px){.cards{grid-template-columns:1fr 1fr}.source-grid,.receipt-form{grid-template-columns:1fr}}
 @media print{
@@ -73,6 +77,7 @@ input[type="text"], textarea, select {
 
 <div class="container">
   <div id="status">Σύνδεση με Microsoft για φόρτωση δεδομένων.</div>
+  <div id="excelAudit" class="hidden" role="status" aria-live="polite"></div>
 
   <section class="contract-head">
     <h2 id="contractTitle">Δεν έχει επιλεγεί σύμβαση</h2>
@@ -561,10 +566,70 @@ function findExcelReceiptColumns(rows, startCol, sheet){
   return cols;
 }
 
+// Έλεγχος εσωτερικής συμφωνίας του Excel, χωρίς καμία τροποποίηση στο ίδιο το αρχείο.
+function locateExcelGrandTotal(rows){
+ const matches=[];
+ for(let ri=0;ri<rows.length;ri++){
+  const row=rows[ri]||[];
+  for(let ci=0;ci<row.length;ci++){
+   const label=norm(row[ci]);
+   if(label.includes("ΥΠΟΛΟΙΠ") && label.includes("ΠΑΡΑΛΑΒ") && label.includes("ΦΠΑ")){
+    // Η σύνοψη μπορεί να έχει συγχωνευμένα κελιά. Το ποσό είναι δεξιότερα.
+    const right=row.slice(ci+1).map(x=>({raw:x,value:num(x)}))
+      .filter(x=>String(x.raw??"").trim()!=="" &&
+        (typeof x.raw==="number" || /[0-9]/.test(String(x.raw))));
+    if(right.length)matches.push({value:right[0].value,row:ri+1});
+   }
+  }
+ }
+ return matches[0]||null;
+}
+function setExcelAudit(message,kind){
+ const el=document.getElementById("excelAudit");
+ if(!el)return;
+ el.textContent=message||"";
+ el.className=message?"audit-"+(kind||"warn"):"hidden";
+}
+function auditExcelBalance(rows,ledger,receiptCols){
+ const errors=[];
+ const vat=Number(ledger.vat??24);
+ let itemsNet=0;
+ const historyPresent=receiptCols.length>0;
+ for(const item of ledger.items){
+  const row=rows[item.sourceRow-1]||[];
+  const historyQty=receiptCols.reduce((sum,hc)=>sum+Math.max(0,num(row[hc.col])),0);
+  if(historyPresent && item.excelRemainingUnitsProvided){
+   const theoretical=Number(item.initialQty||0)-historyQty;
+   const actual=Number(item.baseRemainingUnits||0);
+   // Απόκλιση από στρογγυλοποίηση μέχρι 0,01 μονάδας.
+   if(Math.abs(theoretical-actual)>0.011){
+    errors.push(`Γραμμή Excel ${item.sourceRow}: υπόλοιπο ποσοτήτων ${actual.toLocaleString("el-GR")} αντί ${theoretical.toLocaleString("el-GR")}.`);
+   }
+  }
+  if(!Number.isFinite(item.baseRemainingNet)||item.baseRemainingNet< -0.01){
+   errors.push(`Γραμμή Excel ${item.sourceRow}: μη έγκυρο υπόλοιπο αξίας.`);
+  }
+  const computed=computeLine(item,ledger);
+  if(computed.remainingNet < -0.01){
+   errors.push(`Γραμμή Excel ${item.sourceRow}: αρνητικό υπόλοιπο λόγω παραλαβών.`);
+  }
+  itemsNet+=computed.remainingNet;
+ }
+ const grand=locateExcelGrandTotal(rows);
+ const computedTotal=Math.max(0,itemsNet)*(1+vat/100);
+ if(grand && Math.abs(grand.value-computedTotal)>0.05){
+  errors.push(`Σύνολο Excel: ${euro(grand.value)} — εφαρμογής: ${euro(computedTotal)} (διαφορά ${euro(Math.abs(grand.value-computedTotal))}).`);
+ }
+ return {errors,grand,computedTotal,checkedRows:ledger.items.length};
+}
+
 async function syncFromExcel(showMessage=true){
  const c=getContract(),l=getLedger(true);if(!c||!l)return;
  l.excelPath=excelPath.value.trim()||l.excelPath||c.excelPath||"";l.excelSheet=excelSheet.value.trim()||l.excelSheet||c.excelSheet||"ΣΥΜΒΑΣΗ";
  if(!l.excelPath){if(showMessage)setStatus("Δεν έχει δηλωθεί διαδρομή Excel.","err");return}
+ const originalItems=l.items;
+ const originalReceipts=l.receipts;
+ const originalSummary=l.summary;
  try{
   if(showMessage)setStatus("Διαβάζω τον υπάρχοντα πίνακα Excel...");
   const r=await graph("https://graph.microsoft.com/v1.0/me/drive/root:/"+encPath(l.excelPath)+":/content");
@@ -640,6 +705,25 @@ async function syncFromExcel(showMessage=true){
     }
   }
 
+  const audit=auditExcelBalance(rows,l,excelReceiptCols);
+  if(audit.errors.length){
+   // Απόρριψη: μην αλλοιωθεί το αποθηκευμένο υπόλοιπο ή το ιστορικό.
+   l.items=originalItems;
+   l.receipts=originalReceipts;
+   l.summary=originalSummary;
+   render();
+   const details=audit.errors.slice(0,8).join("\n");
+   const more=audit.errors.length>8?`\n…και ${audit.errors.length-8} ακόμη.`:"";
+   const warning="⚠ ΑΣΥΜΦΩΝΙΑ EXCEL — ΔΕΝ ΑΠΟΘΗΚΕΥΤΗΚΑΝ ΝΕΑ ΥΠΟΛΟΙΠΑ.\n"+details+more;
+   setExcelAudit(warning,"error");
+   setStatus(warning,"err");
+   return;
+  }
+  if(audit.grand){
+   setExcelAudit(`✓ ΕΛΕΓΧΟΣ OK — Υπόλοιπο Excel ${euro(audit.grand.value)} · Υπόλοιπο εφαρμογής ${euro(audit.computedTotal)}.`,"ok");
+  }else{
+   setExcelAudit("⚠ ΔΕΝ ΒΡΕΘΗΚΕ ΤΟ ΚΕΛΙ ΤΟΥ ΣΥΝΟΛΙΚΟΥ ΥΠΟΛΟΙΠΟΥ ΣΤΟ EXCEL. Έγινε έλεγχος γραμμών όπου ήταν δυνατό, όχι διασταύρωση τελικού ποσού.","warn");
+  }
   l.lastExcelSync=new Date().toISOString();
   recompute();
   await saveAll();
