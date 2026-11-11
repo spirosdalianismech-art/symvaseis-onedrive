@@ -1,1900 +1,1624 @@
 {
   "version": 1,
-  "publishedAt": "2026-10-07T08:24:40.603Z",
+  "publishedAt": "2026-11-11T18:57:10.476Z",
   "contracts": [
     {
-      "id": "1791355477941-e0ommwh",
+      "id": "1793876201652-fxk3r51",
       "year": 2026,
-      "studyNo": "13",
-      "department": "",
+      "studyNo": "46",
+      "department": "ΚΟΙΝΟΧΡΗΣΤΩΝ",
+      "studyAuthor": "ΑΓΓΕΛΕΤΟΥ",
+      "responsibleDirectorate": "ΣΥΝΤΗΡΗΣΗΣ & ΑΥΤΕΠΙΣΤΑΣΙΑΣ",
       "agency": "ΔΗΜΟΣ ΠΑΤΡΕΩΝ",
-      "title": "ΠΡΟΜΗΘΕΙΑ ΗΛΕΚΤΡΟΛΟΓΙΚΟΥ ΥΛΙΚΟΥ ΓΙΑ ΕΡΓΑΣΙΕΣ ΣΥΝΤΗΡΗΣΗΣ ΗΛΕΚΤΡΙΚΩΝ ΕΓΚΑΤΑΣΤΑΣΕΩΝ ΣΧΟΛΙΚΩΝ ΣΥΓΚΡΟΤΗΜΑΤΩΝ ΔΕΥΤΕΡΟΒΑΘΜΙΑΣ ΕΚΠΑΙΔΕΥΣΗΣ ΤΟΥ ΔΗΜΟΥ ΠΑΤΡΕΩΝ",
-      "execution": "ΑΠ' ΕΥΘΕΙΑΣ ΑΝΑΘΕΣΗ",
-      "studyBudget": 19941.68,
-      "contractor": "ΝΙΚΟΛΑΟΣ ΔΗΜ. ΑΘΑΝΑΣΟΠΟΥΛΟΣ",
-      "contractBudget": 15213.06,
-      "balanceWithVat": 0,
-      "expiry": "2026-09-05",
+      "title": "ΠΡΟΜΗΘΕΙΑ ΕΤΟΙΜΟΥ ΣΚΥΡΟΔΕΜΑΤΟΣ ΓΙΑ ΤΗΝ Δ.Ε. ΡΙΟΥ ΤΟΥ ΔΗΜΟΥ ΠΑΤΡΕΩΝ",
+      "execution": "ΕΡΕΥΝΑ ΑΓΟΡΑΣ",
+      "studyBudget": 37200,
+      "contractor": "INTERBETON",
+      "contractBudget": 37200,
+      "balanceWithVat": 37200,
+      "expiry": "2027-11-04",
+      "extensionExpiry": "",
       "vat": 24,
       "files": {
         "contract": {
-          "name": "13 - Π_13_2026.XLSX",
-          "url": "https://1drv.ms/x/c/9bd14135b1164825/IQCWf-rr7_ElSL28zY5vy5AvAdhA-OgCKO2FwOsx7tir638"
+          "name": "46 - ΠΡΟΜΗΘΕΙΑ ΕΤΟΙΜΟΥ ΣΚΥΡΟΔΕΜΑΤΟΣ ΓΙΑ ΤΗΝ Δ.Ε. ΡΙΟΥ ΤΟΥ ΔΗΜΟΥ ΠΑΤΡΕΩΝ.PDF",
+          "url": "https://1drv.ms/b/c/9bd14135b1164825/IQBBh9ZtRDLPTqI_Wc_sQykZAagPXZq-6z948N-N2VARJBY"
         },
-        "assignmentFiles": [
-          {
-            "name": "ΜΕΛΕΤΗ.DOCX",
-            "url": "https://1drv.ms/w/c/9bd14135b1164825/IQBuiDnDmMaeRognm-uFTt7XAdbMwyizz55Dm7rCQtkGB-g"
-          },
-          {
-            "name": "ΠΡΟΣΚΛΗΣΗ ΕΚΔΗΛΩΣΗΣ ΕΝΔΙΑΦΕΡΟΝΤΟΣ ΠΡΟΜΗΘΕΙΑΣ ΗΛΕΚΤΡΟΛΟΓΙΚΟΥ ΥΛΙΚΟΥ.PDF",
-            "url": "https://1drv.ms/b/c/9bd14135b1164825/IQBqBthSCnRPSYECTUa0v8vOAQAtc3oRiJKcZy3MnIFzWI0"
-          }
-        ],
-        "invoiceFiles": [
-          {
-            "name": "ΤΔ3-ΑΘ-1496 20260520_1-1.PDF",
-            "url": "https://1drv.ms/b/c/9bd14135b1164825/IQBpzzumwDuvQr7RbL26URhWAauB0Rfj1hGSRNxyC4Cw7ls"
-          }
-        ]
+        "assignmentFiles": [],
+        "invoiceFiles": []
+      }
+    },
+    {
+      "id": "1793876591756-txqd5px",
+      "year": 2026,
+      "studyNo": "14",
+      "department": "ΚΤΙΡΙΑΚΩΝ",
+      "studyAuthor": "ΚΑΡΠΑΝΟΥ",
+      "responsibleDirectorate": "ΤΟΠΙΚΗ ΟΙΚΟΝΟΜΙΑ",
+      "agency": "ΔΗΜΟΣ ΠΑΤΡΕΩΝ",
+      "title": "ΠΡΟΜΗΘΕΙΑ ΚΑΙ ΤΟΠΟΘΕΤΗΣΗ ΘΩΡΑΚΙΣΗΣ ΑΚΤΙΝΟΠΡΟΣΤΑΣΙΑΣ ΣΤΟ ΧΩΡΟ ΤΟΥ ΑΚΤΙΝΟΛΟΓΙΚΟΥ ΕΡΓΑΣΤΗΡΙΟΥ ΤΟΥ ΚΑΤΑΦΥΓΙΟΥ ΦΙΛΟΞΕΝΙΑΣ ΑΔΕΣΠΟΤΩΝ ΖΩΩΝ ΔΗΜΟΥ ΠΑΤΡΕΩΝ",
+      "execution": "ΕΡΕΥΝΑ ΑΓΟΡΑΣ",
+      "studyBudget": 4296.55,
+      "contractor": "ΠΕΤΡΑΚΟΣ ΝΙΚΟΛΑΟΣ",
+      "contractBudget": 4296.55,
+      "balanceWithVat": 0,
+      "expiry": "2026-12-31",
+      "extensionExpiry": "",
+      "vat": 24,
+      "files": {
+        "contract": {
+          "name": "14 - ΠΡΟΜΗΘΕΙΑ ΚΑΙ ΤΟΠΟΘΕΤΗΣΗ ΘΩΡΑΚΙΣΗΣ ΑΚΤΙΝΟΠΡΟΣΤΑΣΙΑΣ ΣΤΟ ΧΩΡΟ ΤΟΥ.PDF",
+          "url": "https://1drv.ms/b/c/9bd14135b1164825/IQCiWG0xjIlaS545P1xBIxYFAS-qObp8akSzMAaQBB3vSvM"
+        },
+        "assignmentFiles": [],
+        "invoiceFiles": []
+      }
+    },
+    {
+      "id": "1793877953729-2xhd5r1",
+      "year": 2026,
+      "studyNo": "18",
+      "department": "ΚΟΙΝΟΧΡΗΣΤΩΝ",
+      "studyAuthor": "ΑΓΓΕΛΕΤΟΥ",
+      "responsibleDirectorate": "",
+      "agency": "ΔΗΜΟΣ ΠΑΤΡΕΩΝ",
+      "title": "ΕΡΓΑΣΙΕΣ ΑΠΟΚΑΤΑΣΤΑΣΗΣ ΟΔΩΝ ΛΟΓΩ ΦΥΣΙΚΩΝ ΚΑΤΑΣΤΡΟΦΩΝ ΓΙΑ ΤΗΝ ΠΡΟΣΒΑΣΗ ΠΥΡΟΣΒΕΣΤΙΚΩΝ ΟΧΗΜΑΤΩΝ ΠΡΟΣ ΠΡΟΛΗΨΗ-ΑΝΤΙΜΕΤΩΠΙΣΗ ΠΥΡΚΑΓΙΩΝ ΣΤΗ ΟΜΑΔΑ 2   Δ.Ε. ΡΙΟΥ -  ΜΕΛΕΤΗ ΕΤΟΥΣ 2026",
+      "execution": "ΕΡΕΥΝΑ ΑΓΟΡΑΣ",
+      "studyBudget": 24999.64,
+      "contractor": "EARTHWORKS SOFIANOS E.E.",
+      "contractBudget": 24999.64,
+      "balanceWithVat": 24999.64,
+      "expiry": "2027-01-02",
+      "extensionExpiry": "",
+      "vat": 24,
+      "files": {
+        "contract": {
+          "name": "18 - ΕΡΓΑΣΙΕΣ ΑΠΟΚΑΤΑΣΤΑΣΗΣ ΟΔΩΝ ΛΟΓΩ ΦΥΣΙΚΩΝ ΚΑΤΑΣΤΡΟΦΩΝ ΓΙΑ ΤΗΝ ΠΡΟΣΒΑΣΗ ΠΥΡΟΣΒΕΣΤΙΚΩΝ ΟΧΗΜΑΤΩΝ ΠΡΟΣ ΠΡΟΛΗΨΗ-ΑΝΤΙΜΕΤΩΠΙΣΗ ΠΥΡΚΑΓΙΩΝ ΣΤΗ ΟΜΑΔΑ 2   Δ.Ε. ΡΙΟΥ -  ΜΕΛΕΤΗ ΕΤΟΥΣ 2026.PDF",
+          "url": "https://1drv.ms/b/c/9bd14135b1164825/IQCkkVNglSlESLsrKiJS4Bu2AT6fhfcE2W1kZzclAkUmj9o"
+        },
+        "assignmentFiles": [],
+        "invoiceFiles": []
+      }
+    },
+    {
+      "id": "1793948763722-n0a6qrr",
+      "year": 2026,
+      "studyNo": "56",
+      "department": "ΚΤΙΡΙΑΚΩΝ",
+      "studyAuthor": "ΚΑΡΠΑΝΟΥ",
+      "responsibleDirectorate": "ΤΟΠΙΚΗ ΟΙΚΟΝΟΜΙΑ",
+      "agency": "ΔΗΜΟΣ ΠΑΤΡΕΩΝ",
+      "title": "ΥΠΗΡΕΣΙΑ ΕΠΙΣΚΕΥΗΣ – ΣΥΝΤΗΡΗΣΗΣ ΚΟΥΦΩΜΑΤΩΝ ΣΤΟ ΚΤΗΝΙΑΤΡΕΙΟ ΚΑΤΑΦΥΓΙΟΥ ΑΔΕΣΠΟΤΩΝ ΖΩΩΝ ΔΗΜΟΥ ΠΑΤΡΕΩΝ",
+      "execution": "ΕΡΕΥΝΑ ΑΓΟΡΑΣ",
+      "studyBudget": 3038,
+      "contractor": "ΤΖΟΛΑΣ - ΧΑΡΜΑΝΤΑΣ",
+      "contractBudget": 3038,
+      "balanceWithVat": 0,
+      "expiry": "2026-12-31",
+      "extensionExpiry": "",
+      "vat": 24,
+      "files": {
+        "contract": {
+          "name": "56 - ΥΠΗΡΕΣΙΑ ΕΠΙΣΚΕΥΗΣ – ΣΥΝΤΗΡΗΣΗΣ ΚΟΥΦΩΜΑΤΩΝ ΣΤΟ ΚΤΗΝΙΑΤΡΕΙΟ.PDF",
+          "url": "https://1drv.ms/b/c/9bd14135b1164825/IQDCQPepNyqpRrppPyrDnPcWAbP1CNSzdHXrCAlnDjSL6p0"
+        },
+        "assignmentFiles": [],
+        "invoiceFiles": []
+      }
+    },
+    {
+      "id": "1793949337811-i4q4o75",
+      "year": 2026,
+      "studyNo": "31",
+      "department": "ΚΤΙΡΙΑΚΩΝ",
+      "studyAuthor": "ΚΑΛΑΠΟΔΗΣ",
+      "responsibleDirectorate": "ΣΥΝΤΗΡΗΣΗΣ & ΑΥΤΕΠΙΣΤΑΣΙΑΣ",
+      "agency": "ΔΗΜΟΣ ΠΑΤΡΕΩΝ",
+      "title": "ΠΡΟΜΗΘΕΙΑ ΚΑΙ ΤΟΠΟΘΕΤΗΣΗ ΥΑΛΟΠΙΝΑΚΩΝ",
+      "execution": "ΕΡΕΥΝΑ ΑΓΟΡΑΣ",
+      "studyBudget": 37200,
+      "contractor": "ΑΝΕΣΙΑΔΗΣ",
+      "contractBudget": 37200,
+      "balanceWithVat": 30412.239999999998,
+      "expiry": "2027-10-01",
+      "extensionExpiry": "",
+      "vat": 24,
+      "files": {
+        "contract": {
+          "name": "31 - ΠΡΟΜΗΘΕΙΑ ΚΑΙ ΤΟΠΟΘΕΤΗΣΗ ΥΑΛΟΠΙΝΑΚΩΝ.PDF",
+          "url": "https://1drv.ms/b/c/9bd14135b1164825/IQDzNfBxusl1TLJCfsVQY27QAdusrQBtKznzJN6yddSPZdE"
+        },
+        "assignmentFiles": [],
+        "invoiceFiles": []
+      }
+    },
+    {
+      "id": "1793950167852-w0fs8nd",
+      "year": 2026,
+      "studyNo": "34-Α-ΑΑ1",
+      "department": "ΚΟΙΝΟΧΡΗΣΤΩΝ",
+      "studyAuthor": "ΑΓΓΕΛΕΤΟΥ",
+      "responsibleDirectorate": "ΣΥΝΤΗΡΗΣΗΣ & ΑΥΤΕΠΙΣΤΑΣΙΑΣ",
+      "agency": "ΔΗΜΟΣ ΠΑΤΡΕΩΝ",
+      "title": "ΒΕΛΤΙΩΣΕΙΣ – ΣΥΝΤΗΡΗΣΕΙΣ ΧΑΛΙΚΟΣΤΡΩΜΕΝΩΝ, ΑΣΦΑΛΤΟΣΤΡΩΜΕΝΩΝ & ΤΣΙΜΕΝΤΟΣΤΡΩΜΕΝΩΝ ΟΔΩΝ ΣΤΑ ΟΡΙΑ ΠΡΩΗΝ ΔΗΜΟΥ ΠΑΤΡΕΩΝ (ΜΕ ΜΙΣΘΩΜΕΝΑ ΜΗΧΑΝΗΜΑΤΑ) ΟΜΑΔΑ Α-ΑΑ1",
+      "execution": "ΑΝΟΙΚΤΟΣ",
+      "studyBudget": 0,
+      "contractor": "ΣΟΦΙΑΝΟΣ",
+      "contractBudget": 57288,
+      "balanceWithVat": 57288,
+      "expiry": "",
+      "extensionExpiry": "",
+      "vat": 24,
+      "files": {
+        "contract": {
+          "name": "34-Α-ΑΑ1 - ΒΕΛΤΙΩΣΕΙΣ , ΣΥΝΤΗΡΗΣΕΙΣ ΧΑΛΙΚΟΣΤΡΩΜΕΝΩΝ-ΟΜΑΔΑ Α-ΑΑ2,4,5,7,8.PDF",
+          "url": "https://1drv.ms/b/c/9bd14135b1164825/IQAch8n56amYTq_rZStaFiqyAdbuAwM1MtAsWkJUVEsNHi4"
+        },
+        "assignmentFiles": [],
+        "invoiceFiles": []
+      }
+    },
+    {
+      "id": "1793950177611-e7enqd5",
+      "year": 2026,
+      "studyNo": "34-Α-ΑΑ2,5,7,8",
+      "department": "ΚΟΙΝΟΧΡΗΣΤΩΝ",
+      "studyAuthor": "ΑΓΓΕΛΕΤΟΥ",
+      "responsibleDirectorate": "ΣΥΝΤΗΡΗΣΗΣ & ΑΥΤΕΠΙΣΤΑΣΙΑΣ",
+      "agency": "ΔΗΜΟΣ ΠΑΤΡΕΩΝ",
+      "title": "ΒΕΛΤΙΩΣΕΙΣ – ΣΥΝΤΗΡΗΣΕΙΣ ΧΑΛΙΚΟΣΤΡΩΜΕΝΩΝ, ΑΣΦΑΛΤΟΣΤΡΩΜΕΝΩΝ & ΤΣΙΜΕΝΤΟΣΤΡΩΜΕΝΩΝ ΟΔΩΝ ΣΤΑ ΟΡΙΑ ΠΡΩΗΝ ΔΗΜΟΥ ΠΑΤΡΕΩΝ (ΜΕ ΜΙΣΘΩΜΕΝΑ ΜΗΧΑΝΗΜΑΤΑ) ΟΜΑΔΑ Α-ΑΑ2,4,5,7,8",
+      "execution": "ΑΝΟΙΚΤΟΣ",
+      "studyBudget": 0,
+      "contractor": "ΣΑΜΑΡΗΣ",
+      "contractBudget": 183743.2,
+      "balanceWithVat": 183743.2,
+      "expiry": "2028-09-03",
+      "extensionExpiry": "",
+      "vat": 24,
+      "files": {
+        "contract": {
+          "name": "34-Α-ΑΑ2,5,7,8 - ΒΕΛΤΙΩΣΕΙΣ , ΣΥΝΤΗΡΗΣΕΙΣ ΧΑΛΙΚΟΣΤΡΩΜΕΝΩΝ-ΟΜΑΔΑ Α-ΑΑ2,4,5,7,8.PDF",
+          "url": "https://1drv.ms/b/c/9bd14135b1164825/IQByVpHJ0m5GS6NHbMM8mMkJAaAlDRaTmd8MAyNx_Tos7u4"
+        },
+        "assignmentFiles": [],
+        "invoiceFiles": []
+      }
+    },
+    {
+      "id": "1793950178371-y3d9i02",
+      "year": 2026,
+      "studyNo": "34-Β-ΑΑ1,2",
+      "department": "ΚΟΙΝΟΧΡΗΣΤΩΝ",
+      "studyAuthor": "ΑΓΓΕΛΕΤΟΥ",
+      "responsibleDirectorate": "ΣΥΝΤΗΡΗΣΗΣ & ΑΥΤΕΠΙΣΤΑΣΙΑΣ",
+      "agency": "ΔΗΜΟΣ ΠΑΤΡΕΩΝ",
+      "title": "ΒΕΛΤΙΩΣΕΙΣ – ΣΥΝΤΗΡΗΣΕΙΣ ΧΑΛΙΚΟΣΤΡΩΜΕΝΩΝ, ΑΣΦΑΛΤΟΣΤΡΩΜΕΝΩΝ & ΤΣΙΜΕΝΤΟΣΤΡΩΜΕΝΩΝ ΟΔΩΝ ΣΤΑ ΟΡΙΑ ΠΡΩΗΝ ΔΗΜΟΥ ΠΑΤΡΕΩΝ (ΜΕ ΜΙΣΘΩΜΕΝΑ ΜΗΧΑΝΗΜΑΤΑ)",
+      "execution": "ΑΝΟΙΚΤΟΣ",
+      "studyBudget": 0,
+      "contractor": "ΚΥΡΙΑΖΟΠΟΥΛΟΣ",
+      "contractBudget": 560480,
+      "balanceWithVat": 560480,
+      "expiry": "2028-09-03",
+      "extensionExpiry": "",
+      "vat": 24,
+      "files": {
+        "contract": {
+          "name": "34-Β-ΑΑ1,2 - ΒΕΛΤΙΩΣΕΙΣ , ΣΥΝΤΗΡΗΣΕΙΣ ΧΑΛΙΚΟΣΤΡΩΜΕΝΩΝ-ΟΜΑΔΑ Α-ΑΑ2,4,5,7,8.PDF",
+          "url": "https://1drv.ms/b/c/9bd14135b1164825/IQAQE6bvTeLaRY5vCghLkPVxAV4Xe3b_FkEKmuGKcng1vHw"
+        },
+        "assignmentFiles": [],
+        "invoiceFiles": []
+      }
+    },
+    {
+      "id": "1793950711267-gc39b67",
+      "year": 2026,
+      "studyNo": "34-Α&Β-",
+      "department": "ΚΟΙΝΟΧΡΗΣΤΩΝ",
+      "studyAuthor": "ΑΓΓΕΛΕΤΟΥ",
+      "responsibleDirectorate": "ΣΥΝΤΗΡΗΣΗΣ & ΑΥΤΕΠΙΣΤΑΣΙΑΣ",
+      "agency": "ΔΗΜΟΣ ΠΑΤΡΕΩΝ",
+      "title": "ΒΕΛΤΙΩΣΕΙΣ – ΣΥΝΤΗΡΗΣΕΙΣ ΧΑΛΙΚΟΣΤΡΩΜΕΝΩΝ, ΑΣΦΑΛΤΟΣΤΡΩΜΕΝΩΝ & ΤΣΙΜΕΝΤΟΣΤΡΩΜΕΝΩΝ ΟΔΩΝ ΣΤΑ ΟΡΙΑ ΠΡΩΗΝ ΔΗΜΟΥ ΠΑΤΡΕΩΝ (ΜΕ ΜΙΣΘΩΜΕΝΑ ΜΗΧΑΝΗΜΑΤΑ)",
+      "execution": "ΑΝΟΙΚΤΟΣ",
+      "studyBudget": 0,
+      "contractor": "ΠΕΤΤΑΣ",
+      "contractBudget": 125736,
+      "balanceWithVat": 125736,
+      "expiry": "2028-09-03",
+      "extensionExpiry": "",
+      "vat": 24,
+      "files": {
+        "contract": {
+          "name": "34-Α&Β- - ΒΕΛΤΙΩΣΕΙΣ – ΣΥΝΤΗΡΗΣΕΙΣ ΧΑΛΙΚΟΣΤΡΩΜΕΝΩΝ,Α ΟΜΑΔΑ ΑΑ3,6 ΚΑΙ Β ΟΜΑΔΑ ΑΑ3.PDF",
+          "url": "https://1drv.ms/b/c/9bd14135b1164825/IQDJhwq1_11vTLvu3GPtUh4lAbS4oyccbU4bofgez2AVSGw"
+        },
+        "assignmentFiles": [],
+        "invoiceFiles": []
+      }
+    },
+    {
+      "id": "1794219397893-ldtnulk",
+      "year": 2026,
+      "studyNo": "11",
+      "department": "ΚΤΙΡΙΑΚΩΝ",
+      "studyAuthor": "ΚΑΡΠΑΝΟΥ",
+      "responsibleDirectorate": "ΤΟΠΙΚΗ ΟΙΚΟΝΟΜΙΑ",
+      "agency": "ΔΗΜΟΣ ΠΑΤΡΕΩΝ",
+      "title": "ΠΡΟΜΗΘΕΙΑ ΧΡΩΜΑΤΩΝ ΓΙΑ ΤΙΣ ΑΝΑΓΚΕΣ ΤΟΥ ΚΑΤΑΦΥΓΙΟΥ ΦΙΛΟΞΕΝΙΑΣ ΑΔΕΣΠΟΤΩΝ ΖΩΩΝ ΔΗΜΟΥ ΠΑΤΡΕΩΝ",
+      "execution": "ΑΠ' ΕΥΘΕΙΑΣ ΑΝΑΘΕΣΗ",
+      "studyBudget": 2916.18,
+      "contractor": "ΜΠΑΚΑΣ",
+      "contractBudget": 2916.18,
+      "balanceWithVat": 0,
+      "expiry": "2026-12-31",
+      "extensionExpiry": "",
+      "vat": 24,
+      "files": {
+        "contract": {
+          "name": "11 - ΠΡΟΜΗΘΕΙΑ ΧΡΩΜΑΤΩΝ ΓΙΑ ΤΙΣ ΑΝΑΓΚΕΣ ΤΟΥ ΚΑΤΑΦΥΓΙΟΥ ΦΙΛΟΞΕΝΙΑΣ ΑΔΕΣΠΟΤΩΝ ΖΩΩΝ ΔΗΜΟΥ ΠΑΤΡΕΩΝ.PDF",
+          "url": "https://1drv.ms/b/c/9bd14135b1164825/IQDLztxusk9zRrd1bR_ggJBzAZfFasiLB8WbzuhcOVpg1sk"
+        },
+        "assignmentFiles": [],
+        "invoiceFiles": []
+      }
+    },
+    {
+      "id": "1794222987976-shpmqv5",
+      "year": 2026,
+      "studyNo": "58",
+      "department": "ΚΤΙΡΙΑΚΩΝ",
+      "studyAuthor": "ΚΑΡΠΑΝΟΥ",
+      "responsibleDirectorate": "ΣΥΝΤΗΡΗΣΗΣ & ΑΥΤΕΠΙΣΤΑΣΙΑΣ",
+      "agency": "ΔΗΜΟΣ ΠΑΤΡΕΩΝ",
+      "title": "ΠΡΟΜΗΘΕΙΑ ΣΙΔΗΡΩΝ ΥΛΙΚΩΝ– ΟΜΑΔΑ 3-Δ.Ε. ΜΕΣΣΑΤΙΔΑΣ",
+      "execution": "ΕΡΕΥΝΑ ΑΓΟΡΑΣ",
+      "studyBudget": 23436,
+      "contractor": "AMBIENTE",
+      "contractBudget": 23436,
+      "balanceWithVat": 29060.64,
+      "expiry": "2026-12-31",
+      "extensionExpiry": "",
+      "vat": 24,
+      "files": {
+        "contract": {
+          "name": "58 - ΠΡΟΜΗΘΕΙΑ ΣΙΔΗΡΩΝ ΥΛΙΚΩΝ– ΟΜΑΔΑ 3-Δ.Ε. ΜΕΣΣΑΤΙΔΑΣ.PDF",
+          "url": "https://1drv.ms/b/c/9bd14135b1164825/IQDIRMm85gyMQrTDW8GbmcP1AbhApXLUy-jO_6LJIcNfwlA"
+        },
+        "assignmentFiles": [],
+        "invoiceFiles": []
+      }
+    },
+    {
+      "id": "1794315602002-tt6zwcb",
+      "year": 2026,
+      "studyNo": "9",
+      "department": "ΚΟΙΝΟΧΡΗΣΤΩΝ",
+      "studyAuthor": "ΑΓΓΕΛΕΤΟΥ",
+      "responsibleDirectorate": "ΣΥΝΤΗΡΗΣΗΣ & ΑΥΤΕΠΙΣΤΑΣΙΑΣ",
+      "agency": "ΔΗΜΟΣ ΠΑΤΡΕΩΝ",
+      "title": "ΠΡΟΜΗΘΕΙΑ ΑΔΡΑΝΩΝ ΥΛΙΚΩΝ ΓΙΑ ΤΗΝ Δ.Ε. ΠΑΡΑΛΙΑΣ ΤΟΥ Δ. ΠΑΤΡΕΩΝ",
+      "execution": "ΕΡΕΥΝΑ ΑΓΟΡΑΣ",
+      "studyBudget": 37200,
+      "contractor": "ΘΑΝΟΠΟΥΛΟΣ",
+      "contractBudget": 37200,
+      "balanceWithVat": 0,
+      "expiry": "2027-01-16",
+      "extensionExpiry": "",
+      "vat": 24,
+      "files": {
+        "contract": {
+          "name": "9 - ΠΡΟΜΗΘΕΙΑ ΑΔΡΑΝΩΝ ΥΛΙΚΩΝ ΓΙΑ ΤΗΝ Δ.Ε. ΠΑΡΑΛΙΑΣ ΤΟΥ Δ. ΠΑΤΡΕΩΝ.PDF",
+          "url": "https://1drv.ms/b/c/9bd14135b1164825/IQBqlstNQL_tTblZGeNIn5S2AcGOLEXLeq9O0v5TJAmGruk"
+        },
+        "assignmentFiles": [],
+        "invoiceFiles": []
+      }
+    },
+    {
+      "id": "1794421879988-8wi5laj",
+      "year": 2026,
+      "studyNo": "56",
+      "department": "ΚΤΙΡΙΑΚΩΝ",
+      "studyAuthor": "ΚΑΡΠΑΝΟΥ",
+      "responsibleDirectorate": "ΤΟΠΙΚΗ ΟΙΚΟΝΟΜΙΑ",
+      "agency": "ΔΗΜΟΣ ΠΑΤΡΕΩΝ",
+      "title": "ΥΠΗΡΕΣΙΑ ΕΠΙΣΚΕΥΗΣ-ΣΥΝΤΗΡΗΣΗΣ ΚΟΥΦΩΜΑΤΩΝ ΣΤΟ ΚΤΗΝΙΑΤΡΕΙΟ ΚΑΤΑΦΥΓΙΟΥ ΑΔΕΣΠΟΤΩΝ ΖΩΩΝ ΔΗΜΟΥ ΠΑΤΡΕΩΝ",
+      "execution": "ΕΡΕΥΝΑ ΑΓΟΡΑΣ",
+      "studyBudget": 3038,
+      "contractor": "ΤΖΟΛΑΣ ΓΕΩΡΓΙΟΣ – ΧΑΡΜΑΝΤΑΣ ΓΕΩΡΓΙΟΣ Ο.Ε.",
+      "contractBudget": 3038,
+      "balanceWithVat": 3038,
+      "expiry": "2026-12-31",
+      "extensionExpiry": "",
+      "vat": 24,
+      "files": {
+        "contract": {
+          "name": "56 - ΥΠΗΡΕΣΊΑ ΕΠΙΣΚΕΥΉΣ – ΣΥΝΤΉΡΗΣΗΣ ΚΟΥΦΩΜΆΤΩΝ ΣΤΟ ΚΤΗΝΙΑΤΡΕΊΟ.PDF",
+          "url": "https://1drv.ms/b/c/9bd14135b1164825/IQDCQPepNyqpRrppPyrDnPcWAbP1CNSzdHXrCAlnDjSL6p0"
+        },
+        "assignmentFiles": [],
+        "invoiceFiles": []
       }
     }
   ],
   "paralaves": [
     {
-      "contractId": "1791355477941-e0ommwh",
-      "studyNo": "13",
-      "title": "ΠΡΟΜΗΘΕΙΑ ΗΛΕΚΤΡΟΛΟΓΙΚΟΥ ΥΛΙΚΟΥ ΓΙΑ ΕΡΓΑΣΙΕΣ ΣΥΝΤΗΡΗΣΗΣ ΗΛΕΚΤΡΙΚΩΝ ΕΓΚΑΤΑΣΤΑΣΕΩΝ ΣΧΟΛΙΚΩΝ ΣΥΓΚΡΟΤΗΜΑΤΩΝ ΔΕΥΤΕΡΟΒΑΘΜΙΑΣ ΕΚΠΑΙΔΕΥΣΗΣ ΤΟΥ ΔΗΜΟΥ ΠΑΤΡΕΩΝ",
+      "contractId": "1793876199127-i2btzgb",
+      "studyNo": "46",
+      "title": "ΠΡΟΜΗΘΕΙΑ ΕΤΟΙΜΟΥ ΣΚΥΡΟΔΕΜΑΤΟΣ ΓΙΑ ΤΗΝ Δ.Ε. ΡΙΟΥ ΤΟΥ ΔΗΜΟΥ ΠΑΤΡΕΩΝ",
       "vat": 24,
       "items": [
         {
-          "id": "i1416037014",
-          "description": "ΠΡΙΖΑ ΣΟΥΚΟ ΜΕ ΚΑΠΑΚΙ ΕΠΙΤΟΙΧΗ 16A/230V ΒΑΘΜΟΣ ΠΡΟΣΤΑΣΙΑΣ: ≥IP44 ΥΛΙΚΟ: ΠΛΑΣΤΙΚΟ ΟΝΟΜΑΣΤΙΚΟ ΡΕΥΜΑ: 16A ΟΝΟΜΑΣΤΙΚΗ ΤΑΣΗ: ~230V",
-          "unit": "ΤΕΜ.",
-          "initialQty": 20,
-          "unitPrice": 1.61,
-          "initialNet": 32.2,
-          "baseRemainingUnits": 20,
-          "baseRemainingNet": 0
+          "id": "i928976126",
+          "description": "ΣΚΥΡΟΔΕΜΑ C16/20",
+          "unit": "Μ3",
+          "initialQty": 180,
+          "unitPrice": 88,
+          "initialNet": 15840,
+          "baseRemainingUnits": 180,
+          "baseRemainingNet": 15840
         },
         {
-          "id": "i522218401",
-          "description": "ΔΙΑΚΟΠΤΗΣ ΦΩΤΙΣΜΟΥ ΚΟΜΜΟΥΤΑΤΕΡ ΕΠΙΤΟΙΧΟΣ 10A/250V ΒΑΘΜΟΣ ΠΡΟΣΤΑΣΙΑΣ: ≥IP44",
-          "unit": "ΤΕΜ.",
-          "initialQty": 20,
-          "unitPrice": 1.87,
-          "initialNet": 37.400000000000006,
-          "baseRemainingUnits": 20,
-          "baseRemainingNet": 0
+          "id": "i1741134143",
+          "description": "ΣΚΥΡΟΔΕΜΑ C20/25",
+          "unit": "Μ3",
+          "initialQty": 60,
+          "unitPrice": 90,
+          "initialNet": 5400,
+          "baseRemainingUnits": 60,
+          "baseRemainingNet": 5400
         },
         {
-          "id": "i528226245",
-          "description": "ΔΙΑΚΟΠΤΗΣ ΦΩΤΙΣΜΟΥ A/R ΕΠΙΤΟΙΧΟΣ 10A/250V ΒΑΘΜΟΣ ΠΡΟΣΤΑΣΙΑΣ: ≥IP44",
-          "unit": "ΤΕΜ.",
-          "initialQty": 20,
-          "unitPrice": 1.7,
-          "initialNet": 34,
-          "baseRemainingUnits": 20,
-          "baseRemainingNet": 0
+          "id": "i474662291",
+          "description": "ΣΚΥΡΟΔΕΜΑ C16/20 ΜΕ\r\nΓΑΡΜΠΙΛΙ",
+          "unit": "Μ3",
+          "initialQty": 79,
+          "unitPrice": 91,
+          "initialNet": 7189,
+          "baseRemainingUnits": 79,
+          "baseRemainingNet": 7189
         },
         {
-          "id": "i1993204382",
-          "description": "ΠΡΙΖΑ ΣΟΥΚΟ ΧΩΝΕΥΤΗ ΚΟΜΠΛΕ 16A/250V (ΕΝΑ ΣΩΜΑ Ο ΜΗΧΑΝΙΣΜΟΣ ΚΑΙ ΤΟ ΠΛΑΙΣΙΟ) ΧΡΩΜΑ: ΛΕΥΚΟ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 20,
-          "unitPrice": 1.7,
-          "initialNet": 34,
-          "baseRemainingUnits": 20,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1299644860",
-          "description": "ΔΙΑΚΟΠΤΗΣ ΦΩΤΙΣΜΟΥ Α/R ΜΕΣΑΙΟΣ ΧΩΝΕΥΤΟΣ ΚΟΜΠΛΕ 10A/250V (ΕΝΑ ΣΩΜΑ Ο ΜΗΧΑΝΙΣΜΟΣ ΚΑΙ ΤΟ ΠΛΑΙΣΙΟ) ΧΡΩΜΑ: ΛΕΥΚΟ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 20,
-          "unitPrice": 2.15,
-          "initialNet": 43,
-          "baseRemainingUnits": 20,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i199789384",
-          "description": "ΜΙΚΡΟΑΥΤΟΜΑΤΟΣ ΡΑΓΑΣ ΜΟΝΟΠΟΛΙΚΟΣ C10A – 230VAC/6KA",
-          "unit": "ΤΕΜ.",
-          "initialQty": 20,
-          "unitPrice": 1.44,
-          "initialNet": 28.799999999999997,
-          "baseRemainingUnits": 20,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1662189250",
-          "description": "ΜΙΚΡΟΑΥΤΟΜΑΤΟΣ ΡΑΓΑΣ ΜΟΝΟΠΟΛΙΚΟΣ C32A – 230VAC/6KA",
-          "unit": "ΤΕΜ.",
-          "initialQty": 20,
-          "unitPrice": 1.6,
-          "initialNet": 32,
-          "baseRemainingUnits": 20,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i64355791",
-          "description": "ΜΙΚΡΟΑΥΤΟΜΑΤΟΣ ΡΑΓΑΣ ΜΟΝΟΠΟΛΙΚΟΣ C16A – 230VAC/6KA",
-          "unit": "ΤΕΜ.",
-          "initialQty": 20,
-          "unitPrice": 1.45,
-          "initialNet": 29,
-          "baseRemainingUnits": 20,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i212029032",
-          "description": "ΜΙΚΡΟΑΥΤΟΜΑΤΟΣ ΡΑΓΑΣ ΜΟΝΟΠΟΛΙΚΟΣ C20A – 230VAC/6KA",
-          "unit": "ΤΕΜ.",
-          "initialQty": 20,
-          "unitPrice": 1.45,
-          "initialNet": 29,
-          "baseRemainingUnits": 20,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1967623625",
-          "description": "ΡΕΛΕ ΔΙΑΡΡΟΗΣ ΡΑΓΑΣ ΤΥΠΟΥ Α - 1 MODULE C16A/230VAC/6KA, 30MA 2 ΧΡΟΝΙΑ ΕΓΓΥΗΣΗ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 30,
-          "unitPrice": 13,
-          "initialNet": 390,
-          "baseRemainingUnits": 30,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i232617378",
-          "description": "ΡΕΛΕ ΔΙΑΡΡΟΗΣ ΡΑΓΑΣ ΤΥΠΟΥ Α - 1 MODULE C20A/230VAC/6KA, 30MA 2 ΧΡΟΝΙΑ ΕΓΓΥΗΣΗ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 30,
-          "unitPrice": 13,
-          "initialNet": 390,
-          "baseRemainingUnits": 30,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i554265200",
-          "description": "ΡΕΛΕ ΔΙΑΡΡΟΗΣ ΡΑΓΑΣ ΤΡΙΦΑΣΙΚΟ ΤΥΠΟΥ Α ΑΡΙΘΜΟΣ ΠΟΛΩΝ: 4 ΟΝΟΜΑΣΤΙΚΗ ΕΝΤΑΣΗ: 40A ΟΝΟΜΑΣΤΙΚΗ ΤΑΣΗ: ~400V ΟΝΟΜ. ΡΕΥΜΑ ΣΦΑΛΜΑΤΟΣ: 0,3A ΤΥΠΟΣ ΡΕΥΜ. ΔΙΑΡΡΟΗΣ: A 2 ΧΡΟΝΙΑ ΕΓΓΥΗΣΗ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 10,
-          "unitPrice": 18.4,
-          "initialNet": 184,
-          "baseRemainingUnits": 10,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1723915733",
-          "description": "ΡΕΛΕ ΔΙΑΡΡΟΗΣ ΡΑΓΑΣ ΜΟΝΟΦΑΣΙΚΟ ΤΥΠΟΥ Α ΑΡΙΘΜΟΣ ΠΟΛΩΝ: 2 ΟΝΟΜΑΣΤΙΚΗ ΕΝΤΑΣΗ: 40A ΟΝΟΜΑΣΤΙΚΗ ΤΑΣΗ: ~230V ΟΝΟΜ. ΡΕΥΜΑ ΣΦΑΛΜΑΤΟΣ: 0,3A ΤΥΠΟΣ ΡΕΥΜ. ΔΙΑΡΡΟΗΣ: A 2 ΧΡΟΝΙΑ ΕΓΓΥΗΣΗ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 10,
-          "unitPrice": 15.8,
-          "initialNet": 158,
-          "baseRemainingUnits": 10,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1874955819",
-          "description": "ΡΕΛΕ ΙΣΧΥΟΣ ΡΑΓΑΣ ΜΟΝΟΦΑΣΙΚΟ ΡΕΥΜΑ ΛΕΙΤΟΥΡΓΙΑΣ: 25A ΤΑΣΗ ΛΕΙΤΟΥΡΓΙΑΣ: ~230VAC ΣΥΧΝΟΤΗΤΑ: 50/60HZ ΑΡΙΘΜΟΣ ΕΠΑΦΩΝ: 2 NO 2 ΧΡΟΝΙΑ ΕΓΓΥΗΣΗ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 10,
-          "unitPrice": 7.89,
-          "initialNet": 78.89999999999999,
-          "baseRemainingUnits": 10,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i776184462",
-          "description": "ΡΕΛΕ ΙΣΧΥΟΣ ΡΑΓΑΣ ΤΡΙΦΑΣΙΚΟ ΡΕΥΜΑ ΛΕΙΤΟΥΡΓΙΑΣ: 25A ΤΑΣΗ ΛΕΙΤΟΥΡΓΙΑΣ: ~230VAC ΣΥΧΝΟΤΗΤΑ: 50/60HZ ΑΡΙΘΜΟΣ ΕΠΑΦΩΝ: ≥3 NO 2 ΧΡΟΝΙΑ ΕΓΓΥΗΣΗ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 10,
-          "unitPrice": 11.75,
-          "initialNet": 117.5,
-          "baseRemainingUnits": 10,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1870001956",
-          "description": "ΑΙΣΘΗΤΗΡΑΣ - ΦΩΤΟΚΥΤΤΑΡΟ ΗΜΕΡΑΣ – ΝΥΚΤΑΣ (ΛΥΚΟΦΩΤΟΣ) ΣΥΜΠΑΓΗΣ (COMPACT) ΣΤΗΡΙΞΗ: ΕΠΙΤΟΙΧΗ ΤΑΣΗ ΛΕΙΤΟΥΡΓΙΑΣ: ~230V ΟΝΟΜΑΣΤΙΚΟ ΡΕΥΜΑ: ~16A ΕΛΕΓΧΟΣ ΛΑΜΠΤ. ΦΘΟΡΙΣΜΟΥ: ~2000W ΕΛΕΓΧΟΣ ΛΑΜΠ. ΠΥΡΑΚΤΩΣΕΩΣ: ~2300W ΕΥΡΟΣ ΦΩΤΕΙΝΟΤΗΤΑΣ: 2-1000 LUX ΒΑΘΜΟΣ ΣΤΕΓΑΝΟΤΗΤΑΣ: ≥IP55 ΡΥΘΜΙΣΤΗΣ ΚΑΘΥΣΤΕΡΗΣΗΣ: ΝΑΙ (ΤΥΠΟΥ HAGER EE702) 2 ΧΡΟΝΙΑ ΕΓΓΥΗΣΗ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 5,
-          "unitPrice": 24.96,
-          "initialNet": 124.80000000000001,
-          "baseRemainingUnits": 5,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i84472955",
-          "description": "ΑΙΣΘΗΤΗΡΑΣ - ΦΩΤΟΚΥΤΤΑΡΟ ΗΜΕΡΑΣ – ΝΥΚΤΑΣ ΣΤΗΡΙΞΗ: ΕΠΙΤΟΙΧΗ ΤΑΣΗ ΛΕΙΤΟΥΡΓΙΑΣ: ~230V ΟΝΟΜΑΣΤΙΚΟ ΡΕΥΜΑ: ~20A ΕΥΡΟΣ ΦΩΤΕΙΝΟΤΗΤΑΣ: ~(5-50) LUX ΒΑΘΜΟΣ ΣΤΕΓΑΝΟΤΗΤΑΣ: ≥IP44 ΡΥΘΜΙΣΤΗΣ ΚΑΘΥΣΤΕΡΗΣΗΣ: ΝΑΙ 2 ΧΡΟΝΙΑ ΕΓΓΥΗΣΗ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 10,
-          "unitPrice": 4.05,
-          "initialNet": 40.5,
-          "baseRemainingUnits": 10,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i728834278",
-          "description": "ΦΩΤΟΚΥΤΤΑΡΟ ΡΑΓΑΣ ΜΕ ΕΞΩΤΕΡΙΚΟ ΑΙΣΘΗΤΗΡΙΟ ΣΤΗΡΙΞΗ: ΡΑΓΑ ΤΑΣΗ ΛΕΙΤΟΥΡΓΙΑΣ: ~230V ΟΝΟΜΑΣΤΙΚΟ ΡΕΥΜΑ: 20A ΕΥΡΟΣ ΦΩΤΕΙΝΟΤΗΤΑΣ: ~(2-100) LUX ΡΥΘΜΙΣΤΗΣ ΦΩΤΕΙΝΟΤΗΤΑΣ: ΝΑΙ ΒΑΘΜΟΣ ΣΤΕΓΑΝΟΤΗΤΑΣ: ≥IP65 (ΤΥΠΟΥ ELMARK 99DS302) 3 ΧΡΟΝΙΑ ΕΓΓΥΗΣΗ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 10,
-          "unitPrice": 7.6,
-          "initialNet": 76,
-          "baseRemainingUnits": 10,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i2128793779",
-          "description": "ΠΡΟΒΟΛΕΑΣ LED SMD ΙΣΧΥΣ: 50W ΤΑΣΗ: 220-240V ΒΑΘΜΟΣ ΣΤΕΓΑΝΟΤΗΤΑΣ: IP65 ΦΩΤΕΙΝΟΤΗΤΑ: ≥4.600 LM ΧΡΩΜΑ ΦΩΤΙΣΜΟΥ: ~4.000K ΓΩΝΙΑ ΔΕΣΜΗΣ: ≥120° CRI: RA≥80 2 ΧΡΟΝΙΑ ΕΓΓΥΗΣΗ",
-          "unit": "ΜΕΤΡΑ",
+          "id": "i491414594",
+          "description": "ΕΠΙΒΑΡΥΝΣΗ ΣΚΥΡΟΔΕΤΗΣΗΣ\r\nΜΕ ΧΡΗΣΗ ΑΝΤΛΙΑΣ",
+          "unit": "Μ3",
           "initialQty": 50,
-          "unitPrice": 5.45,
-          "initialNet": 272.5,
+          "unitPrice": 7.5,
+          "initialNet": 375,
           "baseRemainingUnits": 50,
-          "baseRemainingNet": 0
+          "baseRemainingNet": 375
         },
         {
-          "id": "i1062942967",
-          "description": "ΠΡΟΒΟΛΕΑΣ LED SMD ΙΣΧΥΣ: 100W ΤΑΣΗ: 220-240V ΒΑΘΜΟΣ ΣΤΕΓΑΝΟΤΗΤΑΣ: IP65 ΦΩΤΕΙΝΟΤΗΤΑ: ≥11.000 LM ΧΡΩΜΑ ΦΩΤΙΣΜΟΥ: ~4.000K ΓΩΝΙΑ ΔΕΣΜΗΣ: ≥120° ΓΩΝΙΑ ΔΕΣΜΗΣ: ≥120° CRI: RA≥80 2 ΧΡΟΝΙΑ ΕΓΓΥΗΣΗ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 30,
-          "unitPrice": 10.35,
-          "initialNet": 310.5,
-          "baseRemainingUnits": 30,
-          "baseRemainingNet": 0
+          "id": "i1798809879",
+          "description": "ΣΚΥΡΟΔΕΤΗΣΗ ΜΕ ΧΡΗΣΗ\r\nΑΝΤΛΙΑΣ ΠΟΣΟΤΗΤΑΣ ΚΑΤΩ\r\nΤΩΝ 25 Μ3",
+          "unit": "ΤΕΜ",
+          "initialQty": 3,
+          "unitPrice": 220,
+          "initialNet": 660,
+          "baseRemainingUnits": 3,
+          "baseRemainingNet": 660
         },
         {
-          "id": "i274681820",
-          "description": "ΠΡΟΒΟΛΕΑΣ LED SMD ΙΣΧΥΣ: 200W ΤΑΣΗ: 220-240V ΒΑΘΜΟΣ ΣΤΕΓΑΝΟΤΗΤΑΣ: IP65 ΦΩΤΕΙΝΟΤΗΤΑ: ≥18.000 LM ΧΡΩΜΑ ΦΩΤΙΣΜΟΥ: ~4.000K ΓΩΝΙΑ ΔΕΣΜΗΣ: ≥120° CRI: RA≥80 2 ΧΡΟΝΙΑ ΕΓΓΥΗΣΗ",
-          "unit": "ΤΕΜ.",
+          "id": "i896029192",
+          "description": "ΕΠΙΒΑΡΥΝΣΗ ΚΕΝΟΥ ΦΟΡΤΙΟΥ\r\nΚΑΤΩ ΤΩΝ 5 Μ3",
+          "unit": "Μ3",
           "initialQty": 20,
-          "unitPrice": 22.1,
-          "initialNet": 442,
+          "unitPrice": 8,
+          "initialNet": 160,
           "baseRemainingUnits": 20,
-          "baseRemainingNet": 0
+          "baseRemainingNet": 160
         },
         {
-          "id": "i1995824753",
-          "description": "ΦΩΤΙΣΤΙΚΟ ΔΡΟΜΟΥ ΒΡΑΧΙΟΝΟΣ LED SMD ΙΣΧΥΣ: 50W ΤΑΣΗ: 220-240V ΒΑΘΜΟΣ ΣΤΕΓΑΝΟΤΗΤΑΣ: ≥IP65 ΦΩΤΕΙΝΟΤΗΤΑ: ≥6.000 LUMEN ΘΕΡΜΟΚΡΑΣΙΑ: ~4.000K ΓΩΝΙΑ ΔΕΣΜΗΣ: ≥120° ΓΙΑ ΒΡΑΧΙΟΝΑ ~Φ40MM 2 ΧΡΟΝΙΑ ΕΓΓΥΗΣΗ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 100,
-          "unitPrice": 20.4,
-          "initialNet": 2039.9999999999998,
-          "baseRemainingUnits": 100,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i305430678",
-          "description": "ΦΩΤΙΣΤΙΚΟ ΚΑΜΠΑΝΑ (ΚΡΕΜΑΣΤΟ) LED SMD ΤΥΠΟΥ UFO ΙΣΧΥΣ: 100W ΤΑΣΗ: ~(100-240V) ΒΑΘΜΟΣ ΣΤΕΓΑΝΟΤΗΤΑΣ: IP65 ΦΩΤΕΙΝΟΤΗΤΑ: ≥11.000 LUMENS ΘΕΡΜΟΚΡΑΣΙΑ: ~4.000K ΓΩΝΙΑ ΔΕΣΜΗΣ: ≥120° CRI: RA≥80 ΔΙΑΜΕΤΡΟΣ: ~Φ250MM ΔΙΑΡΚΕΙΑ ΖΩΗΣ: ≥30.000 H 2 ΧΡΟΝΙΑ ΕΓΓΥΗΣΗ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 30,
-          "unitPrice": 14.45,
-          "initialNet": 433.5,
-          "baseRemainingUnits": 30,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i219013048",
-          "description": "ΤΑΙΝΙΑ ΜΟΝΩΤΙΚΗ ΥΛΙΚΟ: PVC ΠΛΑΤΟΣ: 19MM ΠΑΧΟΣ: 0,13MM ΜΗΚΟΣ: ~18M ΜΕ ΕΙΔΙΚΗ ΚΟΛΛΑ ΠΟΥ ΔΕΝ ΛΕΡΩΝΕΙ ΚΑΙ ΔΕΝ ΞΕΚΟΛΛΑΕΙ ΧΡΩΜΑ: ΑΣΠΡΟ ΚΑΙ ΜΑΥΡΟ ΠΙΣΤΟΠΟΙΗΣΗ: VDE, ROHS, REACH SVHC ΣΥΜΦΩΝΗ ΜΕ IEC 60454-3-1/F-PVCP/60 (ΤΥΠΟΥ WONDER)",
-          "unit": "ΤΕΜ.",
-          "initialQty": 200,
-          "unitPrice": 0.45,
-          "initialNet": 90,
-          "baseRemainingUnits": 200,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i807860338",
-          "description": "ΤΑΙΝΙΑ ΑΥΤΟΒΟΥΛΚΑΝΙΖΟΜΕΝΗ (ΧΩΡΙΣ ΚΟΛΛΑ) ΥΛΙΚΟ: EPR ΠΛΑΤΟΣ: ~19MM ΠΑΧΟΣ: ~0,756MM ΜΗΚΟΣ: 9,15M",
-          "unit": "ΤΕΜ.",
-          "initialQty": 30,
-          "unitPrice": 1.4,
-          "initialNet": 42,
-          "baseRemainingUnits": 30,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i962278556",
-          "description": "ΚΛΕΜΜΟΣΕΙΡΑ ΠΛΑΣΤΙΚΗ 12X6MM (ΣΕΙΡΑ 12 ΤΕΜ.)",
-          "unit": "ΤΕΜ.",
-          "initialQty": 50,
-          "unitPrice": 0.3,
-          "initialNet": 15,
-          "baseRemainingUnits": 50,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i76939273",
-          "description": "ΚΛΕΜΜΟΣΕΙΡΑ ΠΛΑΣΤΙΚΗ 12X2,5MM (ΣΕΙΡΑ 12 ΤΕΜ.)",
-          "unit": "ΤΕΜ.",
-          "initialQty": 50,
-          "unitPrice": 0.27,
-          "initialNet": 13.5,
-          "baseRemainingUnits": 50,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1537679881",
-          "description": "ΗΛΕΚΤΡΟΛΟΓΙΚΟ ΚΟΥΤΙ ΔΙΑΚΛΑΔΩΣΕΩΝ ΣΤΡΟΓΓΥΛΟ ΕΠΙΤΟΙΧΟ ΣΤΕΓΑΝΟ Φ80MM ΔΙΑΜΕΤΡΟΣ: ~80MM ΒΑΘΟΣ: ≥40MM ΒΑΘΜΟΣ ΣΤΕΓΑΝΟΤΗΤΑΣ: ≥IP55 ΚΛΕΙΣΙΜΟ ΚΑΛΥΜΜΑΤΟΣ: ΚΟΥΜΠΩΤΟ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 50,
-          "unitPrice": 0.88,
-          "initialNet": 44,
-          "baseRemainingUnits": 50,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i726074127",
-          "description": "ΗΛΕΚΤΡΟΛΟΓΙΚΟ ΚΟΥΤΙ ΔΙΑΚΛΑΔΩΣΕΩΝ ΣΤΡΟΓΓΥΛΟ ΕΠΙΤΟΙΧΟ ΣΤΕΓΑΝΟ Φ60MM ΔΙΑΜΕΤΡΟΣ: ~60MM ΒΑΘΟΣ: ≥40MM ΒΑΘΜΟΣ ΣΤΕΓΑΝΟΤΗΤΑΣ: ≥IP55 ΚΛΕΙΣΙΜΟ ΚΑΛΥΜΜΑΤΟΣ: ΚΟΥΜΠΩΤΟ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 50,
-          "unitPrice": 0.6,
-          "initialNet": 30,
-          "baseRemainingUnits": 50,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1968945084",
-          "description": "ΗΛΕΚΤΡΟΛΟΓΙΚΟ ΚΟΥΤΙ ΣΥΝΔΕΣΗΣ ΚΑΛΩΔΙΩΝ ΔΙΑΣΤΑΣΕΙΣ: ~(160 X 67 X 38)MM ΟΝΟΜΑΣΤΙΚΗ ΤΑΣΗ: 450V ΑΡΙΘΜΟΣ ΟΠΩΝ: 2 ΒΑΘΜΟΣ ΣΤΕΓΑΝΟΤΗΤΑΣ: ≥IP68 ΥΛΙΚΟ: ΑΦΛΕΚΤΟ ΠΛΑΣΤΙΚΟ ΜΕ ΚΛΕΜΜΑ ΓΙΑ ΚΑΛΩΔΙΟ 0,50-2,50MM²",
-          "unit": "ΤΕΜ.",
-          "initialQty": 50,
-          "unitPrice": 3.1,
-          "initialNet": 155,
-          "baseRemainingUnits": 50,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1866157207",
-          "description": "ΗΛΕΚΤΡΟΛΟΓΙΚΟ ΚΟΥΤΙ ΔΙΑΚΛΑΔΩΣΕΩΝ ΕΠΙΤΟΙΧΟ, ΤΕΤΡΑΓΩΝΟ, ΑΝΘΥΓΡΟ ΜΕ ΕΙΔΙΚΕΣ ΒΑΘΜΙΔΩΤΕΣ ΤΑΠΕΣ ΔΙΑΣΤΑΣΕΙΣ: ~(100 X 100 X 70)MM ΒΑΘΜΟΣ ΣΤΕΓΑΝΟΤΗΤΑΣ: ≥IP55 ΥΛΙΚΟ: ΠΛΑΣΤΙΚΟ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 200,
-          "unitPrice": 1.78,
-          "initialNet": 356,
-          "baseRemainingUnits": 200,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i870829358",
-          "description": "ΗΛΕΚΤΡΟΛΟΓΙΚΟ ΚΟΥΤΙ ΔΙΑΚΛΑΔΩΣΕΩΝ ΕΠΙΤΟΙΧΟ, ΑΝΘΥΓΡΟ ΜΕ ΕΙΔΙΚΕΣ ΒΑΘΜΙΔΩΤΕΣ ΤΑΠΕΣ ΔΙΑΣΤΑΣΕΙΣ: ~(150 X 110 X 70)MM ΒΑΘΜΟΣ ΣΤΕΓΑΝΟΤΗΤΑΣ: ≥IP65 ΥΛΙΚΟ: ΠΛΑΣΤΙΚΟ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 100,
-          "unitPrice": 2.96,
-          "initialNet": 296,
-          "baseRemainingUnits": 100,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1398113380",
-          "description": "ΚΑΠΑΚΙ ΧΩΝΕΥΤΟΥ ΣΤΡΟΓΓΥΛΟΥ ΚΟΥΤΙΟΥ ΔΙΑΚΛΑΔΩΣΗΣ ΜΕ ΑΥΤΙΑ ΔΙΑΣΤΑΣΗ: ~Φ80MM ΧΡΩΜΑ: ΛΕΥΚΟ ΥΛΙΚΟ: ΠΛΑΣΤΙΚΟ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 300,
-          "unitPrice": 0.1,
-          "initialNet": 30,
-          "baseRemainingUnits": 300,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i568498953",
-          "description": "ΚΟΥΔΟΥΝΙ ΣΥΝΑΓΕΡΜΟΥ (ΔΙΑΛΕΙΜΜΑΤΟΣ) ΕΠΙΤΟΙΧΟ ΜΕΤΑΛΛΙΚΟ ΔΙΑΜΕΤΡΟΣ ΚΑΛΥΜΜΑΤΟΣ: 200MM ΕΝΤΑΣΗ ΗΧΟΥ: 100DB ΤΑΣΗ: ~230V (ΤΥΠΟΥ ALIBERTI P-200)",
-          "unit": "ΤΕΜ.",
-          "initialQty": 10,
-          "unitPrice": 26.45,
-          "initialNet": 264.5,
-          "baseRemainingUnits": 10,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i782557026",
-          "description": "ΤΡΟΦΟΔΟΤΙΚΟ ΓΙΑ ΦΩΤΙΣΜΟ LED ΙΣΧΥΣ: ≥600W ΤΑΣΗ ΕΙΣΟΔΟΥ: ~(85…264VAC) ΤΑΣΗ ΕΞΟΔΟΥ: ~36V DC ΡΕΥΜΑ ΕΞΟΔΟΥ: ≥17,5A ΠΡΟΣΤΑΣΙΑ: ΥΠΕΡΤΑΣΗ, ΧΑΜΗΛΗ ΤΑΣΗ, ΒΡΑΧΥΚΥΚΛΩΜΑ, ΥΠΕΡΘΕΡΜΑΝΣΗ ΜΕ ΕΝΣΩΜΑΤΩΜΕΝΟ ΑΝΕΜΙΣΤΗΡΑ 3 ΧΡΟΝΙΑ ΕΓΓΥΗΣΗ (ΤΥΠΟΥ MEANWELL MSP-600-36)",
-          "unit": "ΤΕΜ.",
-          "initialQty": 1,
-          "unitPrice": 180,
+          "id": "i1154191852",
+          "description": "ΣΤΑΛΙΑ ΑΥΤΟΚΙΝΗΤΟΥ\r\nΠΛΕΟΝ ΤΗΣ ΜΙΑΣ ΩΡΑΣ",
+          "unit": "ΤΕΜ",
+          "initialQty": 6,
+          "unitPrice": 30,
           "initialNet": 180,
-          "baseRemainingUnits": 1,
-          "baseRemainingNet": 0
+          "baseRemainingUnits": 6,
+          "baseRemainingNet": 180
         },
         {
-          "id": "i1346857137",
-          "description": "ΠΟΛΥΠΡΙΖΟ ΑΣΦΑΛΕΙΑΣ 4 ΘΕΣΕΩΝ ΣΟΥΚΟ FLAT ΠΡΙΖΕΣ ΣΟΥΚΟ ΣΕ ΓΩΝΙΑ 45° ΚΑΙ ΔΥΝΑΤΟΤΗΤΑ ΠΕΡΙΣΤΡΟΦΗΣ ΔΙΑΚΟΠΤΗΣ ON/OFF: ΝΑΙ ΕΝΣΩΜΑΤΩΜΕΝΗ ΠΡΟΣΤΑΣΙΑ ΥΠΕΡΤΑΣΗΣ: ΝΑΙ ΦΩΤΕΙΝΗ ΕΝΔΕΙΞΗ: ΝΑΙ ΧΡΩΜΑ: ΜΑΥΡΟ ΜΗΚΟΣ ΚΑΛΩΔΙΟΥ: ~1,5M",
-          "unit": "ΤΕΜ.",
-          "initialQty": 10,
-          "unitPrice": 8.95,
-          "initialNet": 89.5,
-          "baseRemainingUnits": 10,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i682153398",
-          "description": "ΛΑΜΠΤΗΡΑΣ LED E27 2700K - 4000K, 230V, ≤10W, ≥1.055LM",
-          "unit": "ΤΕΜ.",
-          "initialQty": 100,
-          "unitPrice": 0.8,
-          "initialNet": 80,
-          "baseRemainingUnits": 100,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1536042595",
-          "description": "ΛΑΜΠΤΗΡΑΣ LED E27 ΤΥΠΟΥ HQL (ΑΠΟ ΕΛΛΕΙΨΟΕΙΔΕΣ ΓΥΑΛΙ) 4000K, 230V, ≤38W, ≥6.000LM",
-          "unit": "ΜΕΤΡΑ",
-          "initialQty": 200,
-          "unitPrice": 16,
-          "initialNet": 3200,
-          "baseRemainingUnits": 200,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1877911974",
-          "description": "ΛΑΜΠΤΗΡΑΣ LED E27 4000K, 42VAC, ≤12W, ≥1.560LM",
-          "unit": "ΤΕΜ.",
-          "initialQty": 150,
-          "unitPrice": 1.95,
-          "initialNet": 292.5,
-          "baseRemainingUnits": 150,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i866131552",
-          "description": "ΚΥΜΑΤΟΕΙΔΗΣ (ΣΠΙΡΑΛ) ΔΙΑΜΟΡΦΩΣΙΜΟΣ ΣΩΛΗΝΑΣ ΒΑΡΕΩΣ ΤΥΠΟΥ ΔΙΑΜΕΤΡΟΣ: Φ32MM ΑΝΤΟΧΗ ΣΤΗ ΣΥΜΠΙΕΣΗ: 1250NT ΑΝΤΟΧΗ ΣΤΗΝ ΚΡΟΥΣΗ: 6J ΒΑΘΜΟΣ ΠΡΟΣΤΑΣΙΑΣ: IP66 (ΤΥΠΟΥ KOUVIDIS CONFLEX)",
-          "unit": "ΤΕΜ.",
-          "initialQty": 100,
-          "unitPrice": 1.16,
-          "initialNet": 115.99999999999999,
-          "baseRemainingUnits": 100,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i247751319",
-          "description": "ΚΥΜΑΤΟΕΙΔΗΣ (ΣΠΙΡΑΛ) ΔΙΑΜΟΡΦΩΣΙΜΟΣ ΣΩΛΗΝΑΣ ΒΑΡΕΩΣ ΤΥΠΟΥ ΔΙΑΜΕΤΡΟΣ: Φ25MM ΑΝΤΟΧΗ ΣΤΗ ΣΥΜΠΙΕΣΗ: 1250NT ΑΝΤΟΧΗ ΣΤΗΝ ΚΡΟΥΣΗ: 6J ΒΑΘΜΟΣ ΠΡΟΣΤΑΣΙΑΣ: IP66 (ΤΥΠΟΥ KOUVIDIS CONFLEX)",
-          "unit": "ΤΕΜ.",
-          "initialQty": 100,
-          "unitPrice": 0.9,
-          "initialNet": 90,
-          "baseRemainingUnits": 100,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i172230246",
-          "description": "ΚΥΜΑΤΟΕΙΔΗΣ (ΣΠΙΡΑΛ) ΔΙΑΜΟΡΦΩΣΙΜΟΣ ΣΩΛΗΝΑΣ ΒΑΡΕΩΣ ΤΥΠΟΥ ΔΙΑΜΕΤΡΟΣ: Φ16MM ΑΝΤΟΧΗ ΣΤΗ ΣΥΜΠΙΕΣΗ: 1250NT ΑΝΤΟΧΗ ΣΤΗΝ ΚΡΟΥΣΗ: 6J ΒΑΘΜΟΣ ΠΡΟΣΤΑΣΙΑΣ: IP66 (ΤΥΠΟΥ KOUVIDIS CONFLEX)",
-          "unit": "ΤΕΜ.",
-          "initialQty": 100,
-          "unitPrice": 0.48,
-          "initialNet": 48,
-          "baseRemainingUnits": 100,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1996821346",
-          "description": "ΚΥΜΑΤΟΕΙΔΗΣ (ΣΠΙΡΑΛ) ΔΙΑΜΟΡΦΩΣΙΜΟΣ ΣΩΛΗΝΑΣ ΒΑΡΕΩΣ ΤΥΠΟΥ ΔΙΑΜΕΤΡΟΣ: Φ20MM ΑΝΤΟΧΗ ΣΤΗ ΣΥΜΠΙΕΣΗ: 1250NT ΑΝΤΟΧΗ ΣΤΗΝ ΚΡΟΥΣΗ: 6J ΒΑΘΜΟΣ ΠΡΟΣΤΑΣΙΑΣ: IP66 (ΤΥΠΟΥ KOUVIDIS CONFLEX)",
-          "unit": "ΤΕΜ.",
-          "initialQty": 100,
-          "unitPrice": 0.58,
-          "initialNet": 57.99999999999999,
-          "baseRemainingUnits": 100,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1543323528",
-          "description": "ΚΑΛΩΔΙΟ ΡΕΥΜΑΤΟΣ ΕΣΩΤΕΡΙΚΩΝ ΕΓΚΑΤΑΣΤΑΣΕΩΝ ΛΕΥΚΟ ΜΟΝΟΚΛΩΝΟ ΣΤΡΟΓΓΥΛΟ (NYM) A05VV-U 3X1,5MM²",
-          "unit": "ΤΕΜ.",
-          "initialQty": 400,
-          "unitPrice": 0.74,
-          "initialNet": 296,
-          "baseRemainingUnits": 400,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1593126648",
-          "description": "ΚΑΛΩΔΙΟ ΡΕΥΜΑΤΟΣ ΕΣΩΤΕΡΙΚΩΝ ΕΓΚΑΤΑΣΤΑΣΕΩΝ ΛΕΥΚΟ ΜΟΝΟΚΛΩΝΟ ΣΤΡΟΓΓΥΛΟ (NYM) A05VV-U 3X2,5MM²",
-          "unit": "ΤΕΜ.",
-          "initialQty": 400,
-          "unitPrice": 1.1,
-          "initialNet": 440.00000000000006,
-          "baseRemainingUnits": 400,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i514420834",
-          "description": "ΚΑΛΩΔΙΟ ΡΕΥΜΑΤΟΣ ΕΣΩΤΕΡΙΚΩΝ ΕΓΚΑΤΑΣΤΑΣΕΩΝ ΕΥΚΑΜΠΤΟ ΛΕΥΚΟ ΠΟΛΥΚΛΩΝΟ ΣΤΡΟΓΓΥΛΟ (NYMHY) H05VV-F 3X1,5MM²",
-          "unit": "ΤΕΜ.",
-          "initialQty": 400,
-          "unitPrice": 0.75,
-          "initialNet": 300,
-          "baseRemainingUnits": 400,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1672014433",
-          "description": "ΚΑΛΩΔΙΟ ΡΕΥΜΑΤΟΣ ΕΣΩΤΕΡΙΚΩΝ ΕΓΚΑΤΑΣΤΑΣΕΩΝ ΕΥΚΑΜΠΤΟ ΛΕΥΚΟ ΠΟΛΥΚΛΩΝΟ ΣΤΡΟΓΓΥΛΟ (NYMHY) H05VV-F 3X2,5MM²",
-          "unit": "ΤΕΜ.",
-          "initialQty": 350,
-          "unitPrice": 1.1,
-          "initialNet": 385.00000000000006,
-          "baseRemainingUnits": 350,
-          "baseRemainingNet": 0
+          "id": "i2120285107",
+          "description": "ΧΡΗΣΗ ΡΕΥΣΤΟΠΟΙΗΤΗ",
+          "unit": "ΚΙΛΑ",
+          "initialQty": 98,
+          "unitPrice": 2,
+          "initialNet": 196,
+          "baseRemainingUnits": 98,
+          "baseRemainingNet": 196
         }
       ],
-      "receipts": [
-        {
-          "id": "excel-i271688430",
-          "itemId": "i1416037014",
-          "mode": "units",
-          "units": 20,
-          "netValue": 32.2,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i861113354",
-          "itemId": "i522218401",
-          "mode": "units",
-          "units": 20,
-          "netValue": 37.400000000000006,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1988709361",
-          "itemId": "i528226245",
-          "mode": "units",
-          "units": 20,
-          "netValue": 34,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i273408572",
-          "itemId": "i1993204382",
-          "mode": "units",
-          "units": 20,
-          "netValue": 34,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i164023096",
-          "itemId": "i1299644860",
-          "mode": "units",
-          "units": 20,
-          "netValue": 43,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1475419329",
-          "itemId": "i199789384",
-          "mode": "units",
-          "units": 20,
-          "netValue": 28.799999999999997,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1499180839",
-          "itemId": "i1662189250",
-          "mode": "units",
-          "units": 20,
-          "netValue": 32,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1854318971",
-          "itemId": "i64355791",
-          "mode": "units",
-          "units": 20,
-          "netValue": 29,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i261217308",
-          "itemId": "i212029032",
-          "mode": "units",
-          "units": 20,
-          "netValue": 29,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i659964266",
-          "itemId": "i1967623625",
-          "mode": "units",
-          "units": 30,
-          "netValue": 390,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i332238882",
-          "itemId": "i232617378",
-          "mode": "units",
-          "units": 30,
-          "netValue": 390,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i26561650",
-          "itemId": "i554265200",
-          "mode": "units",
-          "units": 10,
-          "netValue": 184,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i114446516",
-          "itemId": "i1723915733",
-          "mode": "units",
-          "units": 10,
-          "netValue": 158,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1061943498",
-          "itemId": "i1874955819",
-          "mode": "units",
-          "units": 10,
-          "netValue": 78.89999999999999,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i65645166",
-          "itemId": "i776184462",
-          "mode": "units",
-          "units": 10,
-          "netValue": 117.5,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i273910036",
-          "itemId": "i1870001956",
-          "mode": "units",
-          "units": 5,
-          "netValue": 124.80000000000001,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i810133073",
-          "itemId": "i84472955",
-          "mode": "units",
-          "units": 10,
-          "netValue": 40.5,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1055536528",
-          "itemId": "i728834278",
-          "mode": "units",
-          "units": 10,
-          "netValue": 76,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1251061320",
-          "itemId": "i2128793779",
-          "mode": "units",
-          "units": 50,
-          "netValue": 272.5,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1473340247",
-          "itemId": "i1062942967",
-          "mode": "units",
-          "units": 30,
-          "netValue": 310.5,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i25027217",
-          "itemId": "i274681820",
-          "mode": "units",
-          "units": 20,
-          "netValue": 442,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1790664682",
-          "itemId": "i1995824753",
-          "mode": "units",
-          "units": 100,
-          "netValue": 2039.9999999999998,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1639077225",
-          "itemId": "i305430678",
-          "mode": "units",
-          "units": 30,
-          "netValue": 433.5,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1635763851",
-          "itemId": "i219013048",
-          "mode": "units",
-          "units": 200,
-          "netValue": 90,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1238274562",
-          "itemId": "i807860338",
-          "mode": "units",
-          "units": 30,
-          "netValue": 42,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1061002641",
-          "itemId": "i962278556",
-          "mode": "units",
-          "units": 50,
-          "netValue": 15,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i2115023719",
-          "itemId": "i76939273",
-          "mode": "units",
-          "units": 50,
-          "netValue": 13.5,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i115726380",
-          "itemId": "i1537679881",
-          "mode": "units",
-          "units": 50,
-          "netValue": 44,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1880995709",
-          "itemId": "i726074127",
-          "mode": "units",
-          "units": 50,
-          "netValue": 30,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1840628231",
-          "itemId": "i1968945084",
-          "mode": "units",
-          "units": 50,
-          "netValue": 155,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i822792888",
-          "itemId": "i1866157207",
-          "mode": "units",
-          "units": 200,
-          "netValue": 356,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1007122945",
-          "itemId": "i870829358",
-          "mode": "units",
-          "units": 100,
-          "netValue": 296,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1372897660",
-          "itemId": "i1398113380",
-          "mode": "units",
-          "units": 300,
-          "netValue": 30,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i429727884",
-          "itemId": "i568498953",
-          "mode": "units",
-          "units": 10,
-          "netValue": 264.5,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i424753383",
-          "itemId": "i782557026",
-          "mode": "units",
-          "units": 1,
-          "netValue": 180,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i523261354",
-          "itemId": "i1346857137",
-          "mode": "units",
-          "units": 10,
-          "netValue": 89.5,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1001840108",
-          "itemId": "i682153398",
-          "mode": "units",
-          "units": 100,
-          "netValue": 80,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i105101909",
-          "itemId": "i1536042595",
-          "mode": "units",
-          "units": 200,
-          "netValue": 3200,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i883156657",
-          "itemId": "i1877911974",
-          "mode": "units",
-          "units": 150,
-          "netValue": 292.5,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1018551948",
-          "itemId": "i866131552",
-          "mode": "units",
-          "units": 100,
-          "netValue": 115.99999999999999,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1101305738",
-          "itemId": "i247751319",
-          "mode": "units",
-          "units": 100,
-          "netValue": 90,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i50726550",
-          "itemId": "i172230246",
-          "mode": "units",
-          "units": 100,
-          "netValue": 48,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1348425618",
-          "itemId": "i1996821346",
-          "mode": "units",
-          "units": 100,
-          "netValue": 57.99999999999999,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1332843477",
-          "itemId": "i1543323528",
-          "mode": "units",
-          "units": 400,
-          "netValue": 296,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i612581230",
-          "itemId": "i1593126648",
-          "mode": "units",
-          "units": 400,
-          "netValue": 440.00000000000006,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1553861656",
-          "itemId": "i514420834",
-          "mode": "units",
-          "units": 400,
-          "netValue": 300,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1488280620",
-          "itemId": "i1672014433",
-          "mode": "units",
-          "units": 350,
-          "netValue": 385.00000000000006,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        }
-      ],
+      "receipts": [],
       "summary": {
-        "initialNet": 12268.6,
-        "remainingNet": 0,
-        "remainingVat": 0,
-        "remainingWithVat": 0,
-        "updatedAt": "2026-10-07T07:13:47.276Z"
+        "initialNet": 30000,
+        "remainingNet": 30000,
+        "remainingVat": 7200,
+        "remainingWithVat": 37200,
+        "updatedAt": "2026-11-05T10:59:36.291Z"
       }
     },
     {
-      "contractId": "1791357867422-801twkl",
-      "studyNo": "13",
-      "title": "ΠΡΟΜΗΘΕΙΑ ΗΛΕΚΤΡΟΛΟΓΙΚΟΥ ΥΛΙΚΟΥ ΓΙΑ ΕΡΓΑΣΙΕΣ ΣΥΝΤΗΡΗΣΗΣ ΗΛΕΚΤΡΙΚΩΝ ΕΓΚΑΤΑΣΤΑΣΕΩΝ ΣΧΟΛΙΚΩΝ ΣΥΓΚΡΟΤΗΜΑΤΩΝ ΔΕΥΤΕΡΟΒΑΘΜΙΑΣ ΕΚΠΑΙΔΕΥΣΗΣ ΤΟΥ ΔΗΜΟΥ ΠΑΤΡΕΩΝ",
+      "contractId": "1793876591756-txqd5px",
+      "studyNo": "14",
+      "title": "ΠΡΟΜΗΘΕΙΑ ΚΑΙ ΤΟΠΟΘΕΤΗΣΗ ΘΩΡΑΚΙΣΗΣ ΑΚΤΙΝΟΠΡΟΣΤΑΣΙΑΣ ΣΤΟ ΧΩΡΟ ΤΟΥ ΑΚΤΙΝΟΛΟΓΙΚΟΥ ΕΡΓΑΣΤΗΡΙΟΥ ΤΟΥ ΚΑΤΑΦΥΓΙΟΥ ΦΙΛΟΞΕΝΙΑΣ ΑΔΕΣΠΟΤΩΝ ΖΩΩΝ ΔΗΜΟΥ ΠΑΤΡΕΩΝ",
       "vat": 24,
       "items": [
         {
-          "id": "i1416037014",
-          "description": "ΠΡΙΖΑ ΣΟΥΚΟ ΜΕ ΚΑΠΑΚΙ ΕΠΙΤΟΙΧΗ 16A/230V ΒΑΘΜΟΣ ΠΡΟΣΤΑΣΙΑΣ: ≥IP44 ΥΛΙΚΟ: ΠΛΑΣΤΙΚΟ ΟΝΟΜΑΣΤΙΚΟ ΡΕΥΜΑ: 16A ΟΝΟΜΑΣΤΙΚΗ ΤΑΣΗ: ~230V",
-          "unit": "ΤΕΜ.",
-          "initialQty": 20,
-          "unitPrice": 1.61,
-          "initialNet": 32.2,
-          "baseRemainingUnits": 20,
-          "baseRemainingNet": -3.219999999999999
-        },
-        {
-          "id": "i522218401",
-          "description": "ΔΙΑΚΟΠΤΗΣ ΦΩΤΙΣΜΟΥ ΚΟΜΜΟΥΤΑΤΕΡ ΕΠΙΤΟΙΧΟΣ 10A/250V ΒΑΘΜΟΣ ΠΡΟΣΤΑΣΙΑΣ: ≥IP44",
-          "unit": "ΤΕΜ.",
-          "initialQty": 20,
-          "unitPrice": 1.87,
-          "initialNet": 37.400000000000006,
-          "baseRemainingUnits": 20,
-          "baseRemainingNet": -9.349999999999994
-        },
-        {
-          "id": "i528226245",
-          "description": "ΔΙΑΚΟΠΤΗΣ ΦΩΤΙΣΜΟΥ A/R ΕΠΙΤΟΙΧΟΣ 10A/250V ΒΑΘΜΟΣ ΠΡΟΣΤΑΣΙΑΣ: ≥IP44",
-          "unit": "ΤΕΜ.",
-          "initialQty": 20,
-          "unitPrice": 1.7,
-          "initialNet": 34,
-          "baseRemainingUnits": 20,
-          "baseRemainingNet": -17
-        },
-        {
-          "id": "i1993204382",
-          "description": "ΠΡΙΖΑ ΣΟΥΚΟ ΧΩΝΕΥΤΗ ΚΟΜΠΛΕ 16A/250V (ΕΝΑ ΣΩΜΑ Ο ΜΗΧΑΝΙΣΜΟΣ ΚΑΙ ΤΟ ΠΛΑΙΣΙΟ) ΧΡΩΜΑ: ΛΕΥΚΟ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 20,
-          "unitPrice": 1.7,
-          "initialNet": 34,
-          "baseRemainingUnits": 20,
-          "baseRemainingNet": -34
-        },
-        {
-          "id": "i1299644860",
-          "description": "ΔΙΑΚΟΠΤΗΣ ΦΩΤΙΣΜΟΥ Α/R ΜΕΣΑΙΟΣ ΧΩΝΕΥΤΟΣ ΚΟΜΠΛΕ 10A/250V (ΕΝΑ ΣΩΜΑ Ο ΜΗΧΑΝΙΣΜΟΣ ΚΑΙ ΤΟ ΠΛΑΙΣΙΟ) ΧΡΩΜΑ: ΛΕΥΚΟ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 20,
-          "unitPrice": 2.15,
-          "initialNet": 43,
-          "baseRemainingUnits": 20,
+          "id": "i290071223",
+          "description": "ΠΡΟΜΗΘΕΙΑ ΥΛΙΚΩΝ ΚΑΙ ΜΙΚΡΟΫΛΙΚΩΝ ΓΙΑ\r\nΤΗΝ ΚΑΤΑΣΚΕΥΗ ΠΕΤΑΣΜΑΤΟΣ\r\nΓΥΨΟΣΑΝΙΔΑΣ, ΣΥΜΦΩΝΑ ΜΕ ΤΑ\r\nΑΝΑΦΕΡΟΜΕΝΑ ΣΤΙΣ ΤΕΧΝΙΚΕΣ\r\nΠΡΟΔΙΑΓΡΑΦΕΣ ΤΗΣ ΜΕΛΕΤΗΣ",
+          "unit": "Μ2",
+          "initialQty": 6,
+          "unitPrice": 100,
+          "initialNet": 600,
+          "baseRemainingUnits": 6,
           "baseRemainingNet": 0
         },
         {
-          "id": "i199789384",
-          "description": "ΜΙΚΡΟΑΥΤΟΜΑΤΟΣ ΡΑΓΑΣ ΜΟΝΟΠΟΛΙΚΟΣ C10A – 230VAC/6KA",
-          "unit": "ΤΕΜ.",
-          "initialQty": 20,
-          "unitPrice": 1.44,
-          "initialNet": 28.799999999999997,
-          "baseRemainingUnits": 20,
+          "id": "i2043971611",
+          "description": "ΠΡΟΜΗΘΕΙΑ ΥΛΙΚΩΝ ΚΑΙ ΜΙΚΡΟΫΛΙΚΩΝ ΓΙΑ\r\nΤΗΝ ΕΠΕΝΔΥΣΗ ΤΗΣ ΥΦΙΣΤΑΜΕΝΗΣ\r\nΤΟΥΒΛΙΝΗΣ ΤΟΙΧΟΠΟΙΙΑΣ ΜΕ ΓΥΨΟΣΑΝΙΔΑ\r\nΑΚΤΙΝΟΠΡΟΣΤΑΣΙΑΣ, ΣΥΜΦΩΝΑ ΜΕ ΤΑ\r\nΑΝΑΦΕΡΟΜΕΝΑ ΣΤΙΣ ΤΕΧΝΙΚΕΣ\r\nΠΡΟΔΙΑΓΡΑΦΕΣ ΤΗΣ ΜΕΛΕΤΗΣ",
+          "unit": "Μ2",
+          "initialQty": 14,
+          "unitPrice": 97.14,
+          "initialNet": 1359.96,
+          "baseRemainingUnits": 14,
           "baseRemainingNet": 0
         },
         {
-          "id": "i1662189250",
-          "description": "ΜΙΚΡΟΑΥΤΟΜΑΤΟΣ ΡΑΓΑΣ ΜΟΝΟΠΟΛΙΚΟΣ C32A – 230VAC/6KA",
-          "unit": "ΤΕΜ.",
-          "initialQty": 20,
-          "unitPrice": 1.6,
-          "initialNet": 32,
-          "baseRemainingUnits": 20,
+          "id": "i1239146850",
+          "description": "ΠΡΟΜΗΘΕΙΑ ΥΛΙΚΩΝ ΚΑΙ ΜΙΚΡΟΫΛΙΚΩΝ ΓΙΑ\r\nΤΗΝ ΕΠΕΝΔΥΣΗ ΤΩΝ ΚΟΥΦΩΜΑΤΩΝ ΜΕ\r\nΓΥΨΟΣΑΝΙΔΑ ΑΚΤΙΝΟΠΡΟΣΤΑΣΙΑΣ,\r\nΣΥΜΦΩΝΑ ΜΕ ΤΑ ΑΝΑΦΕΡΟΜΕΝΑ ΣΤΙΣ\r\nΤΕΧΝΙΚΕΣ ΠΡΟΔΙΑΓΡΑΦΕΣ ΤΗΣ ΜΕΛΕΤΗΣ",
+          "unit": "Μ2",
+          "initialQty": 4,
+          "unitPrice": 80,
+          "initialNet": 320,
+          "baseRemainingUnits": 4,
           "baseRemainingNet": 0
         },
         {
-          "id": "i64355791",
-          "description": "ΜΙΚΡΟΑΥΤΟΜΑΤΟΣ ΡΑΓΑΣ ΜΟΝΟΠΟΛΙΚΟΣ C16A – 230VAC/6KA",
-          "unit": "ΤΕΜ.",
-          "initialQty": 20,
-          "unitPrice": 1.45,
-          "initialNet": 29,
-          "baseRemainingUnits": 20,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i212029032",
-          "description": "ΜΙΚΡΟΑΥΤΟΜΑΤΟΣ ΡΑΓΑΣ ΜΟΝΟΠΟΛΙΚΟΣ C20A – 230VAC/6KA",
-          "unit": "ΤΕΜ.",
-          "initialQty": 20,
-          "unitPrice": 1.45,
-          "initialNet": 29,
-          "baseRemainingUnits": 20,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1967623625",
-          "description": "ΡΕΛΕ ΔΙΑΡΡΟΗΣ ΡΑΓΑΣ ΤΥΠΟΥ Α - 1 MODULE C16A/230VAC/6KA, 30MA 2 ΧΡΟΝΙΑ ΕΓΓΥΗΣΗ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 30,
-          "unitPrice": 13,
-          "initialNet": 390,
-          "baseRemainingUnits": 30,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i232617378",
-          "description": "ΡΕΛΕ ΔΙΑΡΡΟΗΣ ΡΑΓΑΣ ΤΥΠΟΥ Α - 1 MODULE C20A/230VAC/6KA, 30MA 2 ΧΡΟΝΙΑ ΕΓΓΥΗΣΗ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 30,
-          "unitPrice": 13,
-          "initialNet": 390,
-          "baseRemainingUnits": 30,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i554265200",
-          "description": "ΡΕΛΕ ΔΙΑΡΡΟΗΣ ΡΑΓΑΣ ΤΡΙΦΑΣΙΚΟ ΤΥΠΟΥ Α ΑΡΙΘΜΟΣ ΠΟΛΩΝ: 4 ΟΝΟΜΑΣΤΙΚΗ ΕΝΤΑΣΗ: 40A ΟΝΟΜΑΣΤΙΚΗ ΤΑΣΗ: ~400V ΟΝΟΜ. ΡΕΥΜΑ ΣΦΑΛΜΑΤΟΣ: 0,3A ΤΥΠΟΣ ΡΕΥΜ. ΔΙΑΡΡΟΗΣ: A 2 ΧΡΟΝΙΑ ΕΓΓΥΗΣΗ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 10,
-          "unitPrice": 18.4,
-          "initialNet": 184,
-          "baseRemainingUnits": 10,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1723915733",
-          "description": "ΡΕΛΕ ΔΙΑΡΡΟΗΣ ΡΑΓΑΣ ΜΟΝΟΦΑΣΙΚΟ ΤΥΠΟΥ Α ΑΡΙΘΜΟΣ ΠΟΛΩΝ: 2 ΟΝΟΜΑΣΤΙΚΗ ΕΝΤΑΣΗ: 40A ΟΝΟΜΑΣΤΙΚΗ ΤΑΣΗ: ~230V ΟΝΟΜ. ΡΕΥΜΑ ΣΦΑΛΜΑΤΟΣ: 0,3A ΤΥΠΟΣ ΡΕΥΜ. ΔΙΑΡΡΟΗΣ: A 2 ΧΡΟΝΙΑ ΕΓΓΥΗΣΗ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 10,
-          "unitPrice": 15.8,
-          "initialNet": 158,
-          "baseRemainingUnits": 10,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1874955819",
-          "description": "ΡΕΛΕ ΙΣΧΥΟΣ ΡΑΓΑΣ ΜΟΝΟΦΑΣΙΚΟ ΡΕΥΜΑ ΛΕΙΤΟΥΡΓΙΑΣ: 25A ΤΑΣΗ ΛΕΙΤΟΥΡΓΙΑΣ: ~230VAC ΣΥΧΝΟΤΗΤΑ: 50/60HZ ΑΡΙΘΜΟΣ ΕΠΑΦΩΝ: 2 NO 2 ΧΡΟΝΙΑ ΕΓΓΥΗΣΗ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 10,
-          "unitPrice": 7.89,
-          "initialNet": 78.89999999999999,
-          "baseRemainingUnits": 10,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i776184462",
-          "description": "ΡΕΛΕ ΙΣΧΥΟΣ ΡΑΓΑΣ ΤΡΙΦΑΣΙΚΟ ΡΕΥΜΑ ΛΕΙΤΟΥΡΓΙΑΣ: 25A ΤΑΣΗ ΛΕΙΤΟΥΡΓΙΑΣ: ~230VAC ΣΥΧΝΟΤΗΤΑ: 50/60HZ ΑΡΙΘΜΟΣ ΕΠΑΦΩΝ: ≥3 NO 2 ΧΡΟΝΙΑ ΕΓΓΥΗΣΗ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 10,
-          "unitPrice": 11.75,
-          "initialNet": 117.5,
-          "baseRemainingUnits": 10,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1870001956",
-          "description": "ΑΙΣΘΗΤΗΡΑΣ - ΦΩΤΟΚΥΤΤΑΡΟ ΗΜΕΡΑΣ – ΝΥΚΤΑΣ (ΛΥΚΟΦΩΤΟΣ) ΣΥΜΠΑΓΗΣ (COMPACT) ΣΤΗΡΙΞΗ: ΕΠΙΤΟΙΧΗ ΤΑΣΗ ΛΕΙΤΟΥΡΓΙΑΣ: ~230V ΟΝΟΜΑΣΤΙΚΟ ΡΕΥΜΑ: ~16A ΕΛΕΓΧΟΣ ΛΑΜΠΤ. ΦΘΟΡΙΣΜΟΥ: ~2000W ΕΛΕΓΧΟΣ ΛΑΜΠ. ΠΥΡΑΚΤΩΣΕΩΣ: ~2300W ΕΥΡΟΣ ΦΩΤΕΙΝΟΤΗΤΑΣ: 2-1000 LUX ΒΑΘΜΟΣ ΣΤΕΓΑΝΟΤΗΤΑΣ: ≥IP55 ΡΥΘΜΙΣΤΗΣ ΚΑΘΥΣΤΕΡΗΣΗΣ: ΝΑΙ (ΤΥΠΟΥ HAGER EE702) 2 ΧΡΟΝΙΑ ΕΓΓΥΗΣΗ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 5,
-          "unitPrice": 24.96,
-          "initialNet": 124.80000000000001,
-          "baseRemainingUnits": 5,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i84472955",
-          "description": "ΑΙΣΘΗΤΗΡΑΣ - ΦΩΤΟΚΥΤΤΑΡΟ ΗΜΕΡΑΣ – ΝΥΚΤΑΣ ΣΤΗΡΙΞΗ: ΕΠΙΤΟΙΧΗ ΤΑΣΗ ΛΕΙΤΟΥΡΓΙΑΣ: ~230V ΟΝΟΜΑΣΤΙΚΟ ΡΕΥΜΑ: ~20A ΕΥΡΟΣ ΦΩΤΕΙΝΟΤΗΤΑΣ: ~(5-50) LUX ΒΑΘΜΟΣ ΣΤΕΓΑΝΟΤΗΤΑΣ: ≥IP44 ΡΥΘΜΙΣΤΗΣ ΚΑΘΥΣΤΕΡΗΣΗΣ: ΝΑΙ 2 ΧΡΟΝΙΑ ΕΓΓΥΗΣΗ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 10,
-          "unitPrice": 4.05,
-          "initialNet": 40.5,
-          "baseRemainingUnits": 10,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i728834278",
-          "description": "ΦΩΤΟΚΥΤΤΑΡΟ ΡΑΓΑΣ ΜΕ ΕΞΩΤΕΡΙΚΟ ΑΙΣΘΗΤΗΡΙΟ ΣΤΗΡΙΞΗ: ΡΑΓΑ ΤΑΣΗ ΛΕΙΤΟΥΡΓΙΑΣ: ~230V ΟΝΟΜΑΣΤΙΚΟ ΡΕΥΜΑ: 20A ΕΥΡΟΣ ΦΩΤΕΙΝΟΤΗΤΑΣ: ~(2-100) LUX ΡΥΘΜΙΣΤΗΣ ΦΩΤΕΙΝΟΤΗΤΑΣ: ΝΑΙ ΒΑΘΜΟΣ ΣΤΕΓΑΝΟΤΗΤΑΣ: ≥IP65 (ΤΥΠΟΥ ELMARK 99DS302) 3 ΧΡΟΝΙΑ ΕΓΓΥΗΣΗ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 10,
-          "unitPrice": 7.6,
-          "initialNet": 76,
-          "baseRemainingUnits": 10,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i2128793779",
-          "description": "ΠΡΟΒΟΛΕΑΣ LED SMD ΙΣΧΥΣ: 50W ΤΑΣΗ: 220-240V ΒΑΘΜΟΣ ΣΤΕΓΑΝΟΤΗΤΑΣ: IP65 ΦΩΤΕΙΝΟΤΗΤΑ: ≥4.600 LM ΧΡΩΜΑ ΦΩΤΙΣΜΟΥ: ~4.000K ΓΩΝΙΑ ΔΕΣΜΗΣ: ≥120° CRI: RA≥80 2 ΧΡΟΝΙΑ ΕΓΓΥΗΣΗ",
-          "unit": "ΜΕΤΡΑ",
-          "initialQty": 50,
-          "unitPrice": 5.45,
-          "initialNet": 272.5,
-          "baseRemainingUnits": 50,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1062942967",
-          "description": "ΠΡΟΒΟΛΕΑΣ LED SMD ΙΣΧΥΣ: 100W ΤΑΣΗ: 220-240V ΒΑΘΜΟΣ ΣΤΕΓΑΝΟΤΗΤΑΣ: IP65 ΦΩΤΕΙΝΟΤΗΤΑ: ≥11.000 LM ΧΡΩΜΑ ΦΩΤΙΣΜΟΥ: ~4.000K ΓΩΝΙΑ ΔΕΣΜΗΣ: ≥120° ΓΩΝΙΑ ΔΕΣΜΗΣ: ≥120° CRI: RA≥80 2 ΧΡΟΝΙΑ ΕΓΓΥΗΣΗ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 30,
-          "unitPrice": 10.35,
-          "initialNet": 310.5,
-          "baseRemainingUnits": 30,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i274681820",
-          "description": "ΠΡΟΒΟΛΕΑΣ LED SMD ΙΣΧΥΣ: 200W ΤΑΣΗ: 220-240V ΒΑΘΜΟΣ ΣΤΕΓΑΝΟΤΗΤΑΣ: IP65 ΦΩΤΕΙΝΟΤΗΤΑ: ≥18.000 LM ΧΡΩΜΑ ΦΩΤΙΣΜΟΥ: ~4.000K ΓΩΝΙΑ ΔΕΣΜΗΣ: ≥120° CRI: RA≥80 2 ΧΡΟΝΙΑ ΕΓΓΥΗΣΗ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 20,
-          "unitPrice": 22.1,
-          "initialNet": 442,
-          "baseRemainingUnits": 20,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1995824753",
-          "description": "ΦΩΤΙΣΤΙΚΟ ΔΡΟΜΟΥ ΒΡΑΧΙΟΝΟΣ LED SMD ΙΣΧΥΣ: 50W ΤΑΣΗ: 220-240V ΒΑΘΜΟΣ ΣΤΕΓΑΝΟΤΗΤΑΣ: ≥IP65 ΦΩΤΕΙΝΟΤΗΤΑ: ≥6.000 LUMEN ΘΕΡΜΟΚΡΑΣΙΑ: ~4.000K ΓΩΝΙΑ ΔΕΣΜΗΣ: ≥120° ΓΙΑ ΒΡΑΧΙΟΝΑ ~Φ40MM 2 ΧΡΟΝΙΑ ΕΓΓΥΗΣΗ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 100,
-          "unitPrice": 20.4,
-          "initialNet": 2039.9999999999998,
-          "baseRemainingUnits": 100,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i305430678",
-          "description": "ΦΩΤΙΣΤΙΚΟ ΚΑΜΠΑΝΑ (ΚΡΕΜΑΣΤΟ) LED SMD ΤΥΠΟΥ UFO ΙΣΧΥΣ: 100W ΤΑΣΗ: ~(100-240V) ΒΑΘΜΟΣ ΣΤΕΓΑΝΟΤΗΤΑΣ: IP65 ΦΩΤΕΙΝΟΤΗΤΑ: ≥11.000 LUMENS ΘΕΡΜΟΚΡΑΣΙΑ: ~4.000K ΓΩΝΙΑ ΔΕΣΜΗΣ: ≥120° CRI: RA≥80 ΔΙΑΜΕΤΡΟΣ: ~Φ250MM ΔΙΑΡΚΕΙΑ ΖΩΗΣ: ≥30.000 H 2 ΧΡΟΝΙΑ ΕΓΓΥΗΣΗ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 30,
-          "unitPrice": 14.45,
-          "initialNet": 433.5,
-          "baseRemainingUnits": 30,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i219013048",
-          "description": "ΤΑΙΝΙΑ ΜΟΝΩΤΙΚΗ ΥΛΙΚΟ: PVC ΠΛΑΤΟΣ: 19MM ΠΑΧΟΣ: 0,13MM ΜΗΚΟΣ: ~18M ΜΕ ΕΙΔΙΚΗ ΚΟΛΛΑ ΠΟΥ ΔΕΝ ΛΕΡΩΝΕΙ ΚΑΙ ΔΕΝ ΞΕΚΟΛΛΑΕΙ ΧΡΩΜΑ: ΑΣΠΡΟ ΚΑΙ ΜΑΥΡΟ ΠΙΣΤΟΠΟΙΗΣΗ: VDE, ROHS, REACH SVHC ΣΥΜΦΩΝΗ ΜΕ IEC 60454-3-1/F-PVCP/60 (ΤΥΠΟΥ WONDER)",
-          "unit": "ΤΕΜ.",
-          "initialQty": 200,
-          "unitPrice": 0.45,
-          "initialNet": 90,
-          "baseRemainingUnits": 200,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i807860338",
-          "description": "ΤΑΙΝΙΑ ΑΥΤΟΒΟΥΛΚΑΝΙΖΟΜΕΝΗ (ΧΩΡΙΣ ΚΟΛΛΑ) ΥΛΙΚΟ: EPR ΠΛΑΤΟΣ: ~19MM ΠΑΧΟΣ: ~0,756MM ΜΗΚΟΣ: 9,15M",
-          "unit": "ΤΕΜ.",
-          "initialQty": 30,
-          "unitPrice": 1.4,
-          "initialNet": 42,
-          "baseRemainingUnits": 30,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i962278556",
-          "description": "ΚΛΕΜΜΟΣΕΙΡΑ ΠΛΑΣΤΙΚΗ 12X6MM (ΣΕΙΡΑ 12 ΤΕΜ.)",
-          "unit": "ΤΕΜ.",
-          "initialQty": 50,
-          "unitPrice": 0.3,
-          "initialNet": 15,
-          "baseRemainingUnits": 50,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i76939273",
-          "description": "ΚΛΕΜΜΟΣΕΙΡΑ ΠΛΑΣΤΙΚΗ 12X2,5MM (ΣΕΙΡΑ 12 ΤΕΜ.)",
-          "unit": "ΤΕΜ.",
-          "initialQty": 50,
-          "unitPrice": 0.27,
-          "initialNet": 13.5,
-          "baseRemainingUnits": 50,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1537679881",
-          "description": "ΗΛΕΚΤΡΟΛΟΓΙΚΟ ΚΟΥΤΙ ΔΙΑΚΛΑΔΩΣΕΩΝ ΣΤΡΟΓΓΥΛΟ ΕΠΙΤΟΙΧΟ ΣΤΕΓΑΝΟ Φ80MM ΔΙΑΜΕΤΡΟΣ: ~80MM ΒΑΘΟΣ: ≥40MM ΒΑΘΜΟΣ ΣΤΕΓΑΝΟΤΗΤΑΣ: ≥IP55 ΚΛΕΙΣΙΜΟ ΚΑΛΥΜΜΑΤΟΣ: ΚΟΥΜΠΩΤΟ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 50,
-          "unitPrice": 0.88,
-          "initialNet": 44,
-          "baseRemainingUnits": 50,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i726074127",
-          "description": "ΗΛΕΚΤΡΟΛΟΓΙΚΟ ΚΟΥΤΙ ΔΙΑΚΛΑΔΩΣΕΩΝ ΣΤΡΟΓΓΥΛΟ ΕΠΙΤΟΙΧΟ ΣΤΕΓΑΝΟ Φ60MM ΔΙΑΜΕΤΡΟΣ: ~60MM ΒΑΘΟΣ: ≥40MM ΒΑΘΜΟΣ ΣΤΕΓΑΝΟΤΗΤΑΣ: ≥IP55 ΚΛΕΙΣΙΜΟ ΚΑΛΥΜΜΑΤΟΣ: ΚΟΥΜΠΩΤΟ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 50,
-          "unitPrice": 0.6,
-          "initialNet": 30,
-          "baseRemainingUnits": 50,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1968945084",
-          "description": "ΗΛΕΚΤΡΟΛΟΓΙΚΟ ΚΟΥΤΙ ΣΥΝΔΕΣΗΣ ΚΑΛΩΔΙΩΝ ΔΙΑΣΤΑΣΕΙΣ: ~(160 X 67 X 38)MM ΟΝΟΜΑΣΤΙΚΗ ΤΑΣΗ: 450V ΑΡΙΘΜΟΣ ΟΠΩΝ: 2 ΒΑΘΜΟΣ ΣΤΕΓΑΝΟΤΗΤΑΣ: ≥IP68 ΥΛΙΚΟ: ΑΦΛΕΚΤΟ ΠΛΑΣΤΙΚΟ ΜΕ ΚΛΕΜΜΑ ΓΙΑ ΚΑΛΩΔΙΟ 0,50-2,50MM²",
-          "unit": "ΤΕΜ.",
-          "initialQty": 50,
-          "unitPrice": 3.1,
-          "initialNet": 155,
-          "baseRemainingUnits": 50,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1866157207",
-          "description": "ΗΛΕΚΤΡΟΛΟΓΙΚΟ ΚΟΥΤΙ ΔΙΑΚΛΑΔΩΣΕΩΝ ΕΠΙΤΟΙΧΟ, ΤΕΤΡΑΓΩΝΟ, ΑΝΘΥΓΡΟ ΜΕ ΕΙΔΙΚΕΣ ΒΑΘΜΙΔΩΤΕΣ ΤΑΠΕΣ ΔΙΑΣΤΑΣΕΙΣ: ~(100 X 100 X 70)MM ΒΑΘΜΟΣ ΣΤΕΓΑΝΟΤΗΤΑΣ: ≥IP55 ΥΛΙΚΟ: ΠΛΑΣΤΙΚΟ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 200,
-          "unitPrice": 1.78,
-          "initialNet": 356,
-          "baseRemainingUnits": 200,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i870829358",
-          "description": "ΗΛΕΚΤΡΟΛΟΓΙΚΟ ΚΟΥΤΙ ΔΙΑΚΛΑΔΩΣΕΩΝ ΕΠΙΤΟΙΧΟ, ΑΝΘΥΓΡΟ ΜΕ ΕΙΔΙΚΕΣ ΒΑΘΜΙΔΩΤΕΣ ΤΑΠΕΣ ΔΙΑΣΤΑΣΕΙΣ: ~(150 X 110 X 70)MM ΒΑΘΜΟΣ ΣΤΕΓΑΝΟΤΗΤΑΣ: ≥IP65 ΥΛΙΚΟ: ΠΛΑΣΤΙΚΟ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 100,
-          "unitPrice": 2.96,
-          "initialNet": 296,
-          "baseRemainingUnits": 100,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1398113380",
-          "description": "ΚΑΠΑΚΙ ΧΩΝΕΥΤΟΥ ΣΤΡΟΓΓΥΛΟΥ ΚΟΥΤΙΟΥ ΔΙΑΚΛΑΔΩΣΗΣ ΜΕ ΑΥΤΙΑ ΔΙΑΣΤΑΣΗ: ~Φ80MM ΧΡΩΜΑ: ΛΕΥΚΟ ΥΛΙΚΟ: ΠΛΑΣΤΙΚΟ",
-          "unit": "ΤΕΜ.",
-          "initialQty": 300,
-          "unitPrice": 0.1,
-          "initialNet": 30,
-          "baseRemainingUnits": 300,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i568498953",
-          "description": "ΚΟΥΔΟΥΝΙ ΣΥΝΑΓΕΡΜΟΥ (ΔΙΑΛΕΙΜΜΑΤΟΣ) ΕΠΙΤΟΙΧΟ ΜΕΤΑΛΛΙΚΟ ΔΙΑΜΕΤΡΟΣ ΚΑΛΥΜΜΑΤΟΣ: 200MM ΕΝΤΑΣΗ ΗΧΟΥ: 100DB ΤΑΣΗ: ~230V (ΤΥΠΟΥ ALIBERTI P-200)",
-          "unit": "ΤΕΜ.",
-          "initialQty": 10,
-          "unitPrice": 26.45,
-          "initialNet": 264.5,
-          "baseRemainingUnits": 10,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i782557026",
-          "description": "ΤΡΟΦΟΔΟΤΙΚΟ ΓΙΑ ΦΩΤΙΣΜΟ LED ΙΣΧΥΣ: ≥600W ΤΑΣΗ ΕΙΣΟΔΟΥ: ~(85…264VAC) ΤΑΣΗ ΕΞΟΔΟΥ: ~36V DC ΡΕΥΜΑ ΕΞΟΔΟΥ: ≥17,5A ΠΡΟΣΤΑΣΙΑ: ΥΠΕΡΤΑΣΗ, ΧΑΜΗΛΗ ΤΑΣΗ, ΒΡΑΧΥΚΥΚΛΩΜΑ, ΥΠΕΡΘΕΡΜΑΝΣΗ ΜΕ ΕΝΣΩΜΑΤΩΜΕΝΟ ΑΝΕΜΙΣΤΗΡΑ 3 ΧΡΟΝΙΑ ΕΓΓΥΗΣΗ (ΤΥΠΟΥ MEANWELL MSP-600-36)",
-          "unit": "ΤΕΜ.",
-          "initialQty": 1,
-          "unitPrice": 180,
-          "initialNet": 180,
-          "baseRemainingUnits": 1,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1346857137",
-          "description": "ΠΟΛΥΠΡΙΖΟ ΑΣΦΑΛΕΙΑΣ 4 ΘΕΣΕΩΝ ΣΟΥΚΟ FLAT ΠΡΙΖΕΣ ΣΟΥΚΟ ΣΕ ΓΩΝΙΑ 45° ΚΑΙ ΔΥΝΑΤΟΤΗΤΑ ΠΕΡΙΣΤΡΟΦΗΣ ΔΙΑΚΟΠΤΗΣ ON/OFF: ΝΑΙ ΕΝΣΩΜΑΤΩΜΕΝΗ ΠΡΟΣΤΑΣΙΑ ΥΠΕΡΤΑΣΗΣ: ΝΑΙ ΦΩΤΕΙΝΗ ΕΝΔΕΙΞΗ: ΝΑΙ ΧΡΩΜΑ: ΜΑΥΡΟ ΜΗΚΟΣ ΚΑΛΩΔΙΟΥ: ~1,5M",
-          "unit": "ΤΕΜ.",
-          "initialQty": 10,
-          "unitPrice": 8.95,
-          "initialNet": 89.5,
-          "baseRemainingUnits": 10,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i682153398",
-          "description": "ΛΑΜΠΤΗΡΑΣ LED E27 2700K - 4000K, 230V, ≤10W, ≥1.055LM",
-          "unit": "ΤΕΜ.",
-          "initialQty": 100,
-          "unitPrice": 0.8,
-          "initialNet": 80,
-          "baseRemainingUnits": 100,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1536042595",
-          "description": "ΛΑΜΠΤΗΡΑΣ LED E27 ΤΥΠΟΥ HQL (ΑΠΟ ΕΛΛΕΙΨΟΕΙΔΕΣ ΓΥΑΛΙ) 4000K, 230V, ≤38W, ≥6.000LM",
-          "unit": "ΜΕΤΡΑ",
-          "initialQty": 200,
-          "unitPrice": 16,
-          "initialNet": 3200,
-          "baseRemainingUnits": 200,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1877911974",
-          "description": "ΛΑΜΠΤΗΡΑΣ LED E27 4000K, 42VAC, ≤12W, ≥1.560LM",
-          "unit": "ΤΕΜ.",
-          "initialQty": 150,
-          "unitPrice": 1.95,
-          "initialNet": 292.5,
-          "baseRemainingUnits": 150,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i866131552",
-          "description": "ΚΥΜΑΤΟΕΙΔΗΣ (ΣΠΙΡΑΛ) ΔΙΑΜΟΡΦΩΣΙΜΟΣ ΣΩΛΗΝΑΣ ΒΑΡΕΩΣ ΤΥΠΟΥ ΔΙΑΜΕΤΡΟΣ: Φ32MM ΑΝΤΟΧΗ ΣΤΗ ΣΥΜΠΙΕΣΗ: 1250NT ΑΝΤΟΧΗ ΣΤΗΝ ΚΡΟΥΣΗ: 6J ΒΑΘΜΟΣ ΠΡΟΣΤΑΣΙΑΣ: IP66 (ΤΥΠΟΥ KOUVIDIS CONFLEX)",
-          "unit": "ΤΕΜ.",
-          "initialQty": 100,
-          "unitPrice": 1.16,
-          "initialNet": 115.99999999999999,
-          "baseRemainingUnits": 100,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i247751319",
-          "description": "ΚΥΜΑΤΟΕΙΔΗΣ (ΣΠΙΡΑΛ) ΔΙΑΜΟΡΦΩΣΙΜΟΣ ΣΩΛΗΝΑΣ ΒΑΡΕΩΣ ΤΥΠΟΥ ΔΙΑΜΕΤΡΟΣ: Φ25MM ΑΝΤΟΧΗ ΣΤΗ ΣΥΜΠΙΕΣΗ: 1250NT ΑΝΤΟΧΗ ΣΤΗΝ ΚΡΟΥΣΗ: 6J ΒΑΘΜΟΣ ΠΡΟΣΤΑΣΙΑΣ: IP66 (ΤΥΠΟΥ KOUVIDIS CONFLEX)",
-          "unit": "ΤΕΜ.",
-          "initialQty": 100,
-          "unitPrice": 0.9,
-          "initialNet": 90,
-          "baseRemainingUnits": 100,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i172230246",
-          "description": "ΚΥΜΑΤΟΕΙΔΗΣ (ΣΠΙΡΑΛ) ΔΙΑΜΟΡΦΩΣΙΜΟΣ ΣΩΛΗΝΑΣ ΒΑΡΕΩΣ ΤΥΠΟΥ ΔΙΑΜΕΤΡΟΣ: Φ16MM ΑΝΤΟΧΗ ΣΤΗ ΣΥΜΠΙΕΣΗ: 1250NT ΑΝΤΟΧΗ ΣΤΗΝ ΚΡΟΥΣΗ: 6J ΒΑΘΜΟΣ ΠΡΟΣΤΑΣΙΑΣ: IP66 (ΤΥΠΟΥ KOUVIDIS CONFLEX)",
-          "unit": "ΤΕΜ.",
-          "initialQty": 100,
-          "unitPrice": 0.48,
-          "initialNet": 48,
-          "baseRemainingUnits": 100,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1996821346",
-          "description": "ΚΥΜΑΤΟΕΙΔΗΣ (ΣΠΙΡΑΛ) ΔΙΑΜΟΡΦΩΣΙΜΟΣ ΣΩΛΗΝΑΣ ΒΑΡΕΩΣ ΤΥΠΟΥ ΔΙΑΜΕΤΡΟΣ: Φ20MM ΑΝΤΟΧΗ ΣΤΗ ΣΥΜΠΙΕΣΗ: 1250NT ΑΝΤΟΧΗ ΣΤΗΝ ΚΡΟΥΣΗ: 6J ΒΑΘΜΟΣ ΠΡΟΣΤΑΣΙΑΣ: IP66 (ΤΥΠΟΥ KOUVIDIS CONFLEX)",
-          "unit": "ΤΕΜ.",
-          "initialQty": 100,
-          "unitPrice": 0.58,
-          "initialNet": 57.99999999999999,
-          "baseRemainingUnits": 100,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1543323528",
-          "description": "ΚΑΛΩΔΙΟ ΡΕΥΜΑΤΟΣ ΕΣΩΤΕΡΙΚΩΝ ΕΓΚΑΤΑΣΤΑΣΕΩΝ ΛΕΥΚΟ ΜΟΝΟΚΛΩΝΟ ΣΤΡΟΓΓΥΛΟ (NYM) A05VV-U 3X1,5MM²",
-          "unit": "ΤΕΜ.",
-          "initialQty": 400,
-          "unitPrice": 0.74,
-          "initialNet": 296,
-          "baseRemainingUnits": 400,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i1593126648",
-          "description": "ΚΑΛΩΔΙΟ ΡΕΥΜΑΤΟΣ ΕΣΩΤΕΡΙΚΩΝ ΕΓΚΑΤΑΣΤΑΣΕΩΝ ΛΕΥΚΟ ΜΟΝΟΚΛΩΝΟ ΣΤΡΟΓΓΥΛΟ (NYM) A05VV-U 3X2,5MM²",
-          "unit": "ΤΕΜ.",
-          "initialQty": 400,
-          "unitPrice": 1.1,
-          "initialNet": 440.00000000000006,
-          "baseRemainingUnits": 400,
-          "baseRemainingNet": 0
-        },
-        {
-          "id": "i514420834",
-          "description": "ΚΑΛΩΔΙΟ ΡΕΥΜΑΤΟΣ ΕΣΩΤΕΡΙΚΩΝ ΕΓΚΑΤΑΣΤΑΣΕΩΝ ΕΥΚΑΜΠΤΟ ΛΕΥΚΟ ΠΟΛΥΚΛΩΝΟ ΣΤΡΟΓΓΥΛΟ (NYMHY) H05VV-F 3X1,5MM²",
-          "unit": "ΤΕΜ.",
-          "initialQty": 400,
-          "unitPrice": 0.75,
+          "id": "i1723373709",
+          "description": "ΕΡΓΑΣΙΑ ΤΟΠΟΘΕΤΗΣΗΣ ΥΛΙΚΩΝ ΚΑΙ\r\nΜΙΚΡΟΥΛΙΚΩΝ ΓΙΑ ΤΗΝ ΚΑΤΑΣΚΕΥΗ\r\nΠΕΤΑΣΜΑΤΟΣ ΓΥΨΟΣΑΝΙΔΑΣ ΣΥΜΦΩΝΑ ΜΕ\r\nΤΑ ΑΝΑΦΕΡΟΜΕΝΑ ΣΤΙΣ ΤΕΧΝΙΚΕΣ\r\nΠΡΟΔΙΑΓΡΑΦΕΣ ΤΗΣ ΜΕΛΕΤΗΣ",
+          "unit": "Μ2",
+          "initialQty": 6,
+          "unitPrice": 50,
           "initialNet": 300,
-          "baseRemainingUnits": 400,
+          "baseRemainingUnits": 6,
           "baseRemainingNet": 0
         },
         {
-          "id": "i1672014433",
-          "description": "ΚΑΛΩΔΙΟ ΡΕΥΜΑΤΟΣ ΕΣΩΤΕΡΙΚΩΝ ΕΓΚΑΤΑΣΤΑΣΕΩΝ ΕΥΚΑΜΠΤΟ ΛΕΥΚΟ ΠΟΛΥΚΛΩΝΟ ΣΤΡΟΓΓΥΛΟ (NYMHY) H05VV-F 3X2,5MM²",
-          "unit": "ΤΕΜ.",
-          "initialQty": 350,
-          "unitPrice": 1.1,
-          "initialNet": 385.00000000000006,
-          "baseRemainingUnits": 350,
+          "id": "i427646781",
+          "description": "ΕΡΓΑΣΙΑ ΕΠΕΝΔΥΣΗΣ ΤΗΣ ΥΦΙΣΤΑΜΕΝΗΣ\r\nΤΟΥΒΛΙΝΗΣ ΤΟΙΧΟΠΟΙΙΑΣ ΜΕ ΓΥΨΟΣΑΝΙΔΑ\r\nΑΚΤΙΝΟΠΡΟΣΤΑΣΙΑΣ, ΣΥΜΦΩΝΑ ΜΕ ΤΑ\r\nΑΝΑΦΕΡΟΜΕΝΑ ΣΤΙΣ ΤΕΧΝΙΚΕΣ\r\nΠΡΟΔΙΑΓΡΑΦΕΣ ΤΗΣ ΜΕΛΕΤΗΣ",
+          "unit": "Μ2",
+          "initialQty": 14,
+          "unitPrice": 50,
+          "initialNet": 700,
+          "baseRemainingUnits": 14,
+          "baseRemainingNet": 0
+        },
+        {
+          "id": "i1074270229",
+          "description": "ΕΡΓΑΣΙΑ ΕΠΕΝΔΥΣΗΣ ΚΟΥΦΩΜΑΤΩΝ ΜΕ\r\nΓΥΨΟΣΑΝΙΔΑ ΑΚΤΙΝΟΠΡΟΣΤΑΣΙΑΣ,\r\nΣΥΜΦΩΝΑ ΜΕ ΤΑ ΑΝΑΦΕΡΟΜΕΝΑ ΣΤΙΣ\r\nΤΕΧΝΙΚΕΣ ΠΡΟΔΙΑΓΡΑΦΕΣ ΤΗΣ ΜΕΛΕΤΗΣ",
+          "unit": "Μ2",
+          "initialQty": 4,
+          "unitPrice": 46.25,
+          "initialNet": 185,
+          "baseRemainingUnits": 4,
           "baseRemainingNet": 0
         }
       ],
       "receipts": [
         {
-          "id": "excel-i271688430",
-          "itemId": "i1416037014",
+          "id": "excel-i1876475637",
+          "itemId": "i290071223",
           "mode": "units",
-          "units": 20,
-          "netValue": 32.2,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
+          "units": 6,
+          "netValue": 600,
+          "date": "2026-11-03",
+          "note": "03/11/26"
         },
         {
-          "id": "excel-i1431593288",
-          "itemId": "i1416037014",
+          "id": "excel-i362834027",
+          "itemId": "i2043971611",
           "mode": "units",
-          "units": 2,
-          "netValue": 3.22,
-          "date": "2026-10-04",
-          "note": "SUN OCT 04 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
+          "units": 14,
+          "netValue": 1359.96,
+          "date": "2026-11-03",
+          "note": "03/11/26"
         },
         {
-          "id": "excel-i861113354",
-          "itemId": "i522218401",
+          "id": "excel-i795328782",
+          "itemId": "i1239146850",
           "mode": "units",
-          "units": 20,
-          "netValue": 37.400000000000006,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
+          "units": 4,
+          "netValue": 320,
+          "date": "2026-11-03",
+          "note": "03/11/26"
         },
         {
-          "id": "excel-i674476352",
-          "itemId": "i522218401",
+          "id": "excel-i1700896835",
+          "itemId": "i1723373709",
           "mode": "units",
-          "units": 5,
-          "netValue": 9.350000000000001,
-          "date": "2026-10-04",
-          "note": "SUN OCT 04 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1988709361",
-          "itemId": "i528226245",
-          "mode": "units",
-          "units": 20,
-          "netValue": 34,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i78738503",
-          "itemId": "i528226245",
-          "mode": "units",
-          "units": 10,
-          "netValue": 17,
-          "date": "2026-10-04",
-          "note": "SUN OCT 04 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i273408572",
-          "itemId": "i1993204382",
-          "mode": "units",
-          "units": 20,
-          "netValue": 34,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1484917690",
-          "itemId": "i1993204382",
-          "mode": "units",
-          "units": 20,
-          "netValue": 34,
-          "date": "2026-10-04",
-          "note": "SUN OCT 04 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i164023096",
-          "itemId": "i1299644860",
-          "mode": "units",
-          "units": 20,
-          "netValue": 43,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1475419329",
-          "itemId": "i199789384",
-          "mode": "units",
-          "units": 20,
-          "netValue": 28.799999999999997,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1499180839",
-          "itemId": "i1662189250",
-          "mode": "units",
-          "units": 20,
-          "netValue": 32,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1854318971",
-          "itemId": "i64355791",
-          "mode": "units",
-          "units": 20,
-          "netValue": 29,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i261217308",
-          "itemId": "i212029032",
-          "mode": "units",
-          "units": 20,
-          "netValue": 29,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i659964266",
-          "itemId": "i1967623625",
-          "mode": "units",
-          "units": 30,
-          "netValue": 390,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i332238882",
-          "itemId": "i232617378",
-          "mode": "units",
-          "units": 30,
-          "netValue": 390,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i26561650",
-          "itemId": "i554265200",
-          "mode": "units",
-          "units": 10,
-          "netValue": 184,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i114446516",
-          "itemId": "i1723915733",
-          "mode": "units",
-          "units": 10,
-          "netValue": 158,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1061943498",
-          "itemId": "i1874955819",
-          "mode": "units",
-          "units": 10,
-          "netValue": 78.89999999999999,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i65645166",
-          "itemId": "i776184462",
-          "mode": "units",
-          "units": 10,
-          "netValue": 117.5,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i273910036",
-          "itemId": "i1870001956",
-          "mode": "units",
-          "units": 5,
-          "netValue": 124.80000000000001,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i810133073",
-          "itemId": "i84472955",
-          "mode": "units",
-          "units": 10,
-          "netValue": 40.5,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1055536528",
-          "itemId": "i728834278",
-          "mode": "units",
-          "units": 10,
-          "netValue": 76,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1251061320",
-          "itemId": "i2128793779",
-          "mode": "units",
-          "units": 50,
-          "netValue": 272.5,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1473340247",
-          "itemId": "i1062942967",
-          "mode": "units",
-          "units": 30,
-          "netValue": 310.5,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i25027217",
-          "itemId": "i274681820",
-          "mode": "units",
-          "units": 20,
-          "netValue": 442,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1790664682",
-          "itemId": "i1995824753",
-          "mode": "units",
-          "units": 100,
-          "netValue": 2039.9999999999998,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1639077225",
-          "itemId": "i305430678",
-          "mode": "units",
-          "units": 30,
-          "netValue": 433.5,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1635763851",
-          "itemId": "i219013048",
-          "mode": "units",
-          "units": 200,
-          "netValue": 90,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1238274562",
-          "itemId": "i807860338",
-          "mode": "units",
-          "units": 30,
-          "netValue": 42,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1061002641",
-          "itemId": "i962278556",
-          "mode": "units",
-          "units": 50,
-          "netValue": 15,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i2115023719",
-          "itemId": "i76939273",
-          "mode": "units",
-          "units": 50,
-          "netValue": 13.5,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i115726380",
-          "itemId": "i1537679881",
-          "mode": "units",
-          "units": 50,
-          "netValue": 44,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1880995709",
-          "itemId": "i726074127",
-          "mode": "units",
-          "units": 50,
-          "netValue": 30,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1840628231",
-          "itemId": "i1968945084",
-          "mode": "units",
-          "units": 50,
-          "netValue": 155,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i822792888",
-          "itemId": "i1866157207",
-          "mode": "units",
-          "units": 200,
-          "netValue": 356,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1007122945",
-          "itemId": "i870829358",
-          "mode": "units",
-          "units": 100,
-          "netValue": 296,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1372897660",
-          "itemId": "i1398113380",
-          "mode": "units",
-          "units": 300,
-          "netValue": 30,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i429727884",
-          "itemId": "i568498953",
-          "mode": "units",
-          "units": 10,
-          "netValue": 264.5,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i424753383",
-          "itemId": "i782557026",
-          "mode": "units",
-          "units": 1,
-          "netValue": 180,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i523261354",
-          "itemId": "i1346857137",
-          "mode": "units",
-          "units": 10,
-          "netValue": 89.5,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1001840108",
-          "itemId": "i682153398",
-          "mode": "units",
-          "units": 100,
-          "netValue": 80,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i105101909",
-          "itemId": "i1536042595",
-          "mode": "units",
-          "units": 200,
-          "netValue": 3200,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i883156657",
-          "itemId": "i1877911974",
-          "mode": "units",
-          "units": 150,
-          "netValue": 292.5,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1018551948",
-          "itemId": "i866131552",
-          "mode": "units",
-          "units": 100,
-          "netValue": 115.99999999999999,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1101305738",
-          "itemId": "i247751319",
-          "mode": "units",
-          "units": 100,
-          "netValue": 90,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i50726550",
-          "itemId": "i172230246",
-          "mode": "units",
-          "units": 100,
-          "netValue": 48,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1348425618",
-          "itemId": "i1996821346",
-          "mode": "units",
-          "units": 100,
-          "netValue": 57.99999999999999,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1332843477",
-          "itemId": "i1543323528",
-          "mode": "units",
-          "units": 400,
-          "netValue": 296,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i612581230",
-          "itemId": "i1593126648",
-          "mode": "units",
-          "units": 400,
-          "netValue": 440.00000000000006,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
-        },
-        {
-          "id": "excel-i1553861656",
-          "itemId": "i514420834",
-          "mode": "units",
-          "units": 400,
+          "units": 6,
           "netValue": 300,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
+          "date": "2026-11-03",
+          "note": "03/11/26"
         },
         {
-          "id": "excel-i1488280620",
-          "itemId": "i1672014433",
+          "id": "excel-i1358861334",
+          "itemId": "i427646781",
           "mode": "units",
-          "units": 350,
-          "netValue": 385.00000000000006,
-          "date": "2026-05-19",
-          "note": "TUE MAY 19 2026 23:59:08 GMT+0300 (ΘΕΡΙΝΗ ΩΡΑ ΑΝΑΤΟΛΙΚΗΣ ΕΥΡΩΠΗΣ)"
+          "units": 14,
+          "netValue": 700,
+          "date": "2026-11-03",
+          "note": "03/11/26"
+        },
+        {
+          "id": "excel-i1614124373",
+          "itemId": "i1074270229",
+          "mode": "units",
+          "units": 4,
+          "netValue": 185,
+          "date": "2026-11-03",
+          "note": "03/11/26"
         }
       ],
       "summary": {
-        "initialNet": 12268.6,
+        "initialNet": 3464.96,
         "remainingNet": 0,
         "remainingVat": 0,
         "remainingWithVat": 0,
-        "updatedAt": "2026-10-07T07:59:47.386Z"
+        "updatedAt": "2026-11-10T10:09:38.535Z"
+      }
+    },
+    {
+      "contractId": "1793877953729-2xhd5r1",
+      "studyNo": "18",
+      "title": "ΕΡΓΑΣΙΕΣ ΑΠΟΚΑΤΑΣΤΑΣΗΣ ΟΔΩΝ ΛΟΓΩ ΦΥΣΙΚΩΝ ΚΑΤΑΣΤΡΟΦΩΝ ΓΙΑ ΤΗΝ ΠΡΟΣΒΑΣΗ ΠΥΡΟΣΒΕΣΤΙΚΩΝ ΟΧΗΜΑΤΩΝ ΠΡΟΣ ΠΡΟΛΗΨΗ-ΑΝΤΙΜΕΤΩΠΙΣΗ ΠΥΡΚΑΓΙΩΝ ΣΤΗ ΟΜΑΔΑ 2   Δ.Ε. ΡΙΟΥ -  ΜΕΛΕΤΗ ΕΤΟΥΣ 2026",
+      "vat": 24,
+      "items": [
+        {
+          "id": "i2001210425",
+          "description": "ΦΟΡΤΩΤΗΣ ΜΕ ΜΑΧΑΙΡΙ ΕΛΑΧΙΣΤΗΣ\r\nΙΠΠΟΔΥΝΑΜΗΣ 130 HP ΜΕ ΠΛΑΤΟΣ\r\nΜΑΧΑΙΡΙΟΥ ΑΝΩ ΤΩΝ 3,80M ΓΙΑ ΕΡΓΑΣΙΕΣ\r\nΣΤΙΣ Δ.Ε. ΡΙΟΥ ΔΗΜΟΥ ΠΑΤΡΕΩΝ (ΔΕΝ\r\nΓΙΝΟΝΤΑΙ ΔΕΚΤΟΙ ΟΙ ΦΟΡΤΩΤΕΣ ΤΥΠΟΥ\r\nBOBCAT)",
+          "unit": "Μ2",
+          "initialQty": 201610,
+          "unitPrice": 0.1,
+          "initialNet": 20161,
+          "baseRemainingUnits": 201610,
+          "baseRemainingNet": 20161
+        }
+      ],
+      "receipts": [],
+      "summary": {
+        "initialNet": 20161,
+        "remainingNet": 20161,
+        "remainingVat": 4838.64,
+        "remainingWithVat": 24999.64,
+        "updatedAt": "2026-11-05T11:31:48.012Z"
+      }
+    },
+    {
+      "contractId": "1793948763722-n0a6qrr",
+      "studyNo": "56",
+      "title": "ΥΠΗΡΕΣΙΑ ΕΠΙΣΚΕΥΗΣ – ΣΥΝΤΗΡΗΣΗΣ ΚΟΥΦΩΜΑΤΩΝ ΣΤΟ ΚΤΗΝΙΑΤΡΕΙΟ ΚΑΤΑΦΥΓΙΟΥ ΑΔΕΣΠΟΤΩΝ ΖΩΩΝ ΔΗΜΟΥ ΠΑΤΡΕΩΝ",
+      "vat": 24,
+      "items": [
+        {
+          "id": "i312752854",
+          "description": "ΣΥΝΤΉΡΗΣΗ ΚΟΥΦΩΜΆΤΩΝ ΣΎΜΦΩΝΑ ΜΕ ΤΙΣ\r\nΤΕΧΝΙΚΈΣ ΠΡΟΔΙΑΓΡΑΦΈΣ ΤΗΣ ΜΕΛΈΤΗΣ",
+          "unit": "ΥΠΗΡΕΣΙΑ",
+          "initialQty": 1,
+          "unitPrice": 1550,
+          "initialNet": 1550,
+          "baseRemainingUnits": 1,
+          "baseRemainingNet": 0
+        },
+        {
+          "id": "i229821361",
+          "description": "ΕΠΙΣΚΕΥΉ ΚΑΙ ΑΝΤΙΚΑΤΆΣΤΑΣΗ ΣΙΤΏΝ\r\nΣΎΜΦΩΝΑ ΜΕ ΤΙΣ ΤΕΧΝΙΚΈΣ ΠΡΟΔΙΑΓΡΑΦΈΣ ΤΗΣ\r\nΜΕΛΈΤΗΣ",
+          "unit": "ΥΠΗΡΕΣΙΑ",
+          "initialQty": 1,
+          "unitPrice": 900,
+          "initialNet": 900,
+          "baseRemainingUnits": 1,
+          "baseRemainingNet": 0
+        }
+      ],
+      "receipts": [
+        {
+          "id": "excel-i15001805",
+          "itemId": "i312752854",
+          "mode": "units",
+          "units": 1,
+          "netValue": 1550,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        },
+        {
+          "id": "excel-i1478006196",
+          "itemId": "i229821361",
+          "mode": "units",
+          "units": 1,
+          "netValue": 900,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        }
+      ],
+      "summary": {
+        "initialNet": 2450,
+        "remainingNet": 0,
+        "remainingVat": 0,
+        "remainingWithVat": 0,
+        "updatedAt": "2026-11-11T18:42:29.335Z"
+      }
+    },
+    {
+      "contractId": "1793949337811-i4q4o75",
+      "studyNo": "31",
+      "title": "ΠΡΟΜΗΘΕΙΑ ΚΑΙ ΤΟΠΟΘΕΤΗΣΗ ΥΑΛΟΠΙΝΑΚΩΝ",
+      "vat": 24,
+      "items": [
+        {
+          "id": "i175969177",
+          "description": "ΥΑΛΟΠΙΝΑΚΑΣ ΤΡΙΠΛΕΞ ΠΑΧΟΥΣ 3+3MM (ΠΡΟΜΗΘΕΙΑ ΚΑΙ ΤΟΠΟΘΕΤΗΣΗ)",
+          "unit": "Μ2",
+          "initialQty": 170,
+          "unitPrice": 63,
+          "initialNet": 10710,
+          "baseRemainingUnits": 170,
+          "baseRemainingNet": 10710
+        },
+        {
+          "id": "i2401555",
+          "description": "ΥΑΛΟΠΙΝΑΚΑΣ ΑΡΜΕ (ΟΠΛΙΣΜΕΝΟΣ) ΠΑΧΟΥΣ\r\n6MM (ΠΡΟΜΗΘΕΙΑ ΚΑΙ ΤΟΠΟΘΕΤΗΣΗ)",
+          "unit": "Μ3",
+          "initialQty": 60,
+          "unitPrice": 65,
+          "initialNet": 3900,
+          "baseRemainingUnits": 60,
+          "baseRemainingNet": 2269.8
+        },
+        {
+          "id": "i31889799",
+          "description": "ΥΑΛΟΠΙΝΑΚΑΣ ΔΙΠΛΟΣ ΜΕ ΣΥΝΔΥΑΣΜΟ\r\nΤΡΙΠΛΕΞ 3+3MM /ΑΠΟΣΤΑΤΗΣ/ΤΡΙΠΛΕΞ\r\nΠΑΧΟΥΣ 3+3M (ΠΡΟΜΗΘΕΙΑ ΚΑΙ ΤΟΠΟΘΕΤΗΣΗ)",
+          "unit": "Μ4",
+          "initialQty": 110,
+          "unitPrice": 90,
+          "initialNet": 9900,
+          "baseRemainingUnits": 110,
+          "baseRemainingNet": 9783
+        },
+        {
+          "id": "i278286226",
+          "description": "ΥΑΛΟΠΙΝΑΚΑΣ ΤΡΙΠΛΕΞ ΠΑΧΟΥΣ 5+5MM\r\n(ΠΡΟΜΗΘΕΙΑ ΚΑΙ ΤΟΠΟΘΕΤΗΣΗ)",
+          "unit": "Μ5",
+          "initialQty": 65,
+          "unitPrice": 70,
+          "initialNet": 4550,
+          "baseRemainingUnits": 65,
+          "baseRemainingNet": 3560.2
+        },
+        {
+          "id": "i22759485",
+          "description": "ΛΑΣΤΙΧΟ ΣΤΕΓΑΝΟΠΟΙΗΣΗΣ ΔΙΠΛΟΥ\r\nΥΑΛΟΠΙΝΑΚΑ NO3",
+          "unit": "Μ.Μ",
+          "initialQty": 188,
+          "unitPrice": 5,
+          "initialNet": 940,
+          "baseRemainingUnits": 188,
+          "baseRemainingNet": 940
+        }
+      ],
+      "receipts": [
+        {
+          "id": "excel-i396521024",
+          "itemId": "i2401555",
+          "mode": "units",
+          "units": 25.08,
+          "netValue": 1630.1999999999998,
+          "date": "2026-10-16",
+          "note": "16/10/26"
+        },
+        {
+          "id": "excel-i659939965",
+          "itemId": "i31889799",
+          "mode": "units",
+          "units": 1.3,
+          "netValue": 117,
+          "date": "2026-10-21",
+          "note": "21/10/26"
+        },
+        {
+          "id": "excel-i718439088",
+          "itemId": "i278286226",
+          "mode": "units",
+          "units": 7,
+          "netValue": 490,
+          "date": "2026-10-15",
+          "note": "15/10/26"
+        },
+        {
+          "id": "excel-i796804839",
+          "itemId": "i278286226",
+          "mode": "units",
+          "units": 7.14,
+          "netValue": 499.79999999999995,
+          "date": "2026-10-16",
+          "note": "16/10/26"
+        }
+      ],
+      "summary": {
+        "initialNet": 30000,
+        "remainingNet": 24526,
+        "remainingVat": 5886.24,
+        "remainingWithVat": 30412.239999999998,
+        "updatedAt": "2026-11-10T13:25:59.268Z"
+      }
+    },
+    {
+      "contractId": "1794219397893-ldtnulk",
+      "studyNo": "11",
+      "title": "ΠΡΟΜΗΘΕΙΑ ΧΡΩΜΑΤΩΝ ΓΙΑ ΤΙΣ ΑΝΑΓΚΕΣ ΤΟΥ ΚΑΤΑΦΥΓΙΟΥ ΦΙΛΟΞΕΝΙΑΣ ΑΔΕΣΠΟΤΩΝ ΖΩΩΝ ΔΗΜΟΥ ΠΑΤΡΕΩΝ",
+      "vat": 24,
+      "items": [
+        {
+          "id": "i940173515",
+          "description": "ΠΛΑΣΤΙΚΌ ΟΙΚΟΛΟΓΙΚΌ ΧΡΏΜΑ",
+          "unit": "ΤΕΜ",
+          "initialQty": 4,
+          "unitPrice": 33.87,
+          "initialNet": 135.48,
+          "baseRemainingUnits": 4,
+          "baseRemainingNet": 0
+        },
+        {
+          "id": "i812325478",
+          "description": "ΠΛΑΣΤΙΚΌ ΑΝΤΙΜΙΚΡΟΒΙΑΚΌ ΧΡΏΜΑ",
+          "unit": "ΤΕΜ",
+          "initialQty": 8,
+          "unitPrice": 80.65,
+          "initialNet": 645.2,
+          "baseRemainingUnits": 8,
+          "baseRemainingNet": 0
+        },
+        {
+          "id": "i170758826",
+          "description": "ΥΔΑΤΟΔΙΑΛΥΤΌ ΕΠΟΞΕΙΔΙΚΌ ΧΡΏΜΑ ΔΎΟ ΣΥΣΤΑΤΙΚΏΝ",
+          "unit": "ΤΕΜ",
+          "initialQty": 8,
+          "unitPrice": 58.47,
+          "initialNet": 467.76,
+          "baseRemainingUnits": 8,
+          "baseRemainingNet": 0
+        },
+        {
+          "id": "i604991620",
+          "description": "ΑΚΡΥΛΙΚΌ ΟΙΚΟΛΟΓΙΚΌ ΧΡΏΜΑ",
+          "unit": "ΤΕΜ",
+          "initialQty": 4,
+          "unitPrice": 43.55,
+          "initialNet": 174.2,
+          "baseRemainingUnits": 4,
+          "baseRemainingNet": 0
+        },
+        {
+          "id": "i897956032",
+          "description": "ΝΤΟΥΚΌΧΡΩΜΑ (ΛΑΔΟΜΠΟΓΙΆ)",
+          "unit": "ΤΕΜ",
+          "initialQty": 2,
+          "unitPrice": 21.77,
+          "initialNet": 43.54,
+          "baseRemainingUnits": 2,
+          "baseRemainingNet": 0
+        },
+        {
+          "id": "i1259358797",
+          "description": "ΑΚΡΥΛΙΚΌ ΑΣΤΆΡΙ 100% ΠΛΑΣΤΙΚΟΎ ΥΔΑΤΟΔΙΑΛΥΤΌ",
+          "unit": "ΤΕΜ",
+          "initialQty": 3,
+          "unitPrice": 22.58,
+          "initialNet": 67.74,
+          "baseRemainingUnits": 3,
+          "baseRemainingNet": 0
+        },
+        {
+          "id": "i2094778367",
+          "description": "ΣΥΝΤΗΡΗΤΙΚΌ ΕΜΠΟΤΙΣΜΟΎ ΞΎΛΟΥ ΒΆΣΕΩΣ ΝΕΡΟΎ",
+          "unit": "ΤΕΜ",
+          "initialQty": 3,
+          "unitPrice": 14.76,
+          "initialNet": 44.28,
+          "baseRemainingUnits": 3,
+          "baseRemainingNet": 0
+        },
+        {
+          "id": "i1770493766",
+          "description": "ΒΕΡΝΊΚΙ ΕΜΠΟΤΙΣΜΟΎ ΞΎΛΟΥ ΒΆΣΕΩΣ ΝΕΡΟΎ",
+          "unit": "ΤΕΜ",
+          "initialQty": 2,
+          "unitPrice": 13.95,
+          "initialNet": 27.9,
+          "baseRemainingUnits": 2,
+          "baseRemainingNet": 0
+        },
+        {
+          "id": "i208193073",
+          "description": "ΡΙΠΟΛΊΝΗ ΝΕΡΟΎ ΟΙΚΟΛΟΓΙΚΉ",
+          "unit": "ΤΕΜ",
+          "initialQty": 2,
+          "unitPrice": 24.19,
+          "initialNet": 48.38,
+          "baseRemainingUnits": 2,
+          "baseRemainingNet": 0
+        },
+        {
+          "id": "i547009952",
+          "description": "ΡΟΛΛΆ ΒΑΦΉΣ NO18",
+          "unit": "ΤΕΜ",
+          "initialQty": 4,
+          "unitPrice": 6.85,
+          "initialNet": 27.4,
+          "baseRemainingUnits": 4,
+          "baseRemainingNet": 0
+        },
+        {
+          "id": "i1775155566",
+          "description": "ΚΟΝΤΑΡΟΠΊΝΕΛΑ ΝΟ2",
+          "unit": "ΤΕΜ",
+          "initialQty": 4,
+          "unitPrice": 2.58,
+          "initialNet": 10.32,
+          "baseRemainingUnits": 4,
+          "baseRemainingNet": 0
+        },
+        {
+          "id": "i589764843",
+          "description": "ΚΟΝΤΑΡΟΠΊΝΕΛΑ ΝΟ2,5",
+          "unit": "ΤΕΜ",
+          "initialQty": 4,
+          "unitPrice": 3.06,
+          "initialNet": 12.24,
+          "baseRemainingUnits": 4,
+          "baseRemainingNet": 0
+        },
+        {
+          "id": "i409394349",
+          "description": "ΚΟΝΤΑΡΙΑ 2Μ",
+          "unit": "ΤΕΜ",
+          "initialQty": 2,
+          "unitPrice": 2.82,
+          "initialNet": 5.64,
+          "baseRemainingUnits": 2,
+          "baseRemainingNet": 0
+        },
+        {
+          "id": "i1150585162",
+          "description": "ΑΦΡΌΣΤΟΚΟΣ",
+          "unit": "ΤΕΜ",
+          "initialQty": 5,
+          "unitPrice": 8.06,
+          "initialNet": 40.300000000000004,
+          "baseRemainingUnits": 5,
+          "baseRemainingNet": 0
+        },
+        {
+          "id": "i960799150",
+          "description": "ΛΑΚΚΑ ΠΟΛΥΟΥΡΕΘΑΝΗΣ ΣΑΤΙΝΕ",
+          "unit": "ΤΕΜ",
+          "initialQty": 7,
+          "unitPrice": 19.35,
+          "initialNet": 135.45000000000002,
+          "baseRemainingUnits": 7,
+          "baseRemainingNet": 0
+        },
+        {
+          "id": "i685182154",
+          "description": "ΔΙΑΛΥΤΙΚΟ ΒΕΡΝΙΚΙΏΝ ΚΑΙ ΧΡΩΜΆΤΩΝ ΠΟΛΥΟΥΡΕΘΆΝΗΣ ΝΟ 200",
+          "unit": "ΤΕΜ",
+          "initialQty": 5,
+          "unitPrice": 6.69,
+          "initialNet": 33.45,
+          "baseRemainingUnits": 5,
+          "baseRemainingNet": 0
+        },
+        {
+          "id": "i1290320998",
+          "description": "ΑΣΕΤΟΝ",
+          "unit": "ΤΕΜ",
+          "initialQty": 2,
+          "unitPrice": 14.52,
+          "initialNet": 29.04,
+          "baseRemainingUnits": 2,
+          "baseRemainingNet": 0
+        },
+        {
+          "id": "i1484878761",
+          "description": "ΣΦΟΥΓΓΑΡΙΑ ΤΡΙΨΙΜΑΤΟΣ",
+          "unit": "ΤΕΜ",
+          "initialQty": 8,
+          "unitPrice": 0.56,
+          "initialNet": 4.48,
+          "baseRemainingUnits": 8,
+          "baseRemainingNet": 0
+        },
+        {
+          "id": "i568416048",
+          "description": "ΓΥΑΛΟΧΑΡΤΑ",
+          "unit": "ΤΕΜ",
+          "initialQty": 20,
+          "unitPrice": 0.28,
+          "initialNet": 5.6000000000000005,
+          "baseRemainingUnits": 20,
+          "baseRemainingNet": 0
+        },
+        {
+          "id": "i583809147",
+          "description": "ΣΤΟΚΟΣ",
+          "unit": "ΤΕΜ",
+          "initialQty": 5,
+          "unitPrice": 3.63,
+          "initialNet": 18.15,
+          "baseRemainingUnits": 5,
+          "baseRemainingNet": 0
+        },
+        {
+          "id": "i846257600",
+          "description": "ΠΙΝΕΛΑ ΑΩ ΝΟ3",
+          "unit": "ΤΕΜ",
+          "initialQty": 5,
+          "unitPrice": 6.85,
+          "initialNet": 34.25,
+          "baseRemainingUnits": 5,
+          "baseRemainingNet": 0
+        },
+        {
+          "id": "i1242980091",
+          "description": "ΣΠΑΤΟΥΛΑ ΞΥΛΙΝΟ ΧΕΡΙ ΝΟ16",
+          "unit": "ΤΕΜ",
+          "initialQty": 5,
+          "unitPrice": 4.6,
+          "initialNet": 23,
+          "baseRemainingUnits": 5,
+          "baseRemainingNet": 0
+        },
+        {
+          "id": "i2101822341",
+          "description": "ΣΠΑΤΟΥΛΑ ΞΥΛΙΝΟ ΧΕΡΙ ΝΟ18",
+          "unit": "ΤΕΜ",
+          "initialQty": 5,
+          "unitPrice": 4.84,
+          "initialNet": 24.2,
+          "baseRemainingUnits": 5,
+          "baseRemainingNet": 0
+        },
+        {
+          "id": "i310478964",
+          "description": "ΣΤΟΚΑΔΌΡΟΣ ΞΎΣΤΡΑ",
+          "unit": "ΤΕΜ",
+          "initialQty": 5,
+          "unitPrice": 3.87,
+          "initialNet": 19.35,
+          "baseRemainingUnits": 5,
+          "baseRemainingNet": 0
+        },
+        {
+          "id": "i232387466",
+          "description": "ΣΠΆΤΟΥΛΕΣ ΓΑΛΛΊΑΣ",
+          "unit": "ΤΕΜ",
+          "initialQty": 5,
+          "unitPrice": 4.03,
+          "initialNet": 20.150000000000002,
+          "baseRemainingUnits": 5,
+          "baseRemainingNet": 0
+        },
+        {
+          "id": "i1912320987",
+          "description": "************",
+          "unit": "ΤΕΜ",
+          "initialQty": 5,
+          "unitPrice": 1.61,
+          "initialNet": 8.05,
+          "baseRemainingUnits": 5,
+          "baseRemainingNet": 0
+        },
+        {
+          "id": "i1109908168",
+          "description": "ΑΤΣΑΛΑΚΙΑ INOX",
+          "unit": "ΤΕΜ",
+          "initialQty": 5,
+          "unitPrice": 3.47,
+          "initialNet": 17.35,
+          "baseRemainingUnits": 5,
+          "baseRemainingNet": 0
+        },
+        {
+          "id": "i1042377426",
+          "description": "ΥΠΌΣΤΡΩΜΑ ΠΟΛΥΟΥΡΕΘΆΝΗΣ ΞΎΛΙΝΩΝ ΕΠΙΦΑΝΕΙΏΝ (SURFACER)",
+          "unit": "ΤΕΜ",
+          "initialQty": 4,
+          "unitPrice": 12.9,
+          "initialNet": 51.6,
+          "baseRemainingUnits": 4,
+          "baseRemainingNet": 0
+        },
+        {
+          "id": "i1223319841",
+          "description": "ΛΆΚΑ ΠΟΛΥΟΥΡΕΘΆΝΗΣ ΔΎΟ ΣΥΣΤΑΤΙΚΏΝ",
+          "unit": "ΤΕΜ",
+          "initialQty": 3,
+          "unitPrice": 54.84,
+          "initialNet": 164.52,
+          "baseRemainingUnits": 3,
+          "baseRemainingNet": 0
+        },
+        {
+          "id": "i1189827760",
+          "description": "ΑΚΡΥΛΙΚΌ ΒΕΡΝΊΚΙ ΞΎΛΟΥ ΕΣΩΤΕΡΙΚΉΣ ΧΡΉΣΗΣ",
+          "unit": "ΤΕΜ",
+          "initialQty": 1,
+          "unitPrice": 12.74,
+          "initialNet": 12.74,
+          "baseRemainingUnits": 1,
+          "baseRemainingNet": 0
+        }
+      ],
+      "receipts": [
+        {
+          "id": "excel-i1545100035",
+          "itemId": "i940173515",
+          "mode": "units",
+          "units": 4,
+          "netValue": 135.48,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        },
+        {
+          "id": "excel-i1006207476",
+          "itemId": "i812325478",
+          "mode": "units",
+          "units": 8,
+          "netValue": 645.2,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        },
+        {
+          "id": "excel-i173019224",
+          "itemId": "i170758826",
+          "mode": "units",
+          "units": 8,
+          "netValue": 467.76,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        },
+        {
+          "id": "excel-i1541807335",
+          "itemId": "i604991620",
+          "mode": "units",
+          "units": 4,
+          "netValue": 174.2,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        },
+        {
+          "id": "excel-i429044071",
+          "itemId": "i897956032",
+          "mode": "units",
+          "units": 2,
+          "netValue": 43.54,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        },
+        {
+          "id": "excel-i54474482",
+          "itemId": "i1259358797",
+          "mode": "units",
+          "units": 3,
+          "netValue": 67.74,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        },
+        {
+          "id": "excel-i303376445",
+          "itemId": "i2094778367",
+          "mode": "units",
+          "units": 3,
+          "netValue": 44.28,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        },
+        {
+          "id": "excel-i284206166",
+          "itemId": "i1770493766",
+          "mode": "units",
+          "units": 2,
+          "netValue": 27.9,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        },
+        {
+          "id": "excel-i835614409",
+          "itemId": "i208193073",
+          "mode": "units",
+          "units": 2,
+          "netValue": 48.38,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        },
+        {
+          "id": "excel-i1780632529",
+          "itemId": "i547009952",
+          "mode": "units",
+          "units": 4,
+          "netValue": 27.4,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        },
+        {
+          "id": "excel-i668869110",
+          "itemId": "i1775155566",
+          "mode": "units",
+          "units": 4,
+          "netValue": 10.32,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        },
+        {
+          "id": "excel-i440902804",
+          "itemId": "i589764843",
+          "mode": "units",
+          "units": 4,
+          "netValue": 12.24,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        },
+        {
+          "id": "excel-i187664259",
+          "itemId": "i409394349",
+          "mode": "units",
+          "units": 2,
+          "netValue": 5.64,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        },
+        {
+          "id": "excel-i2008747300",
+          "itemId": "i1150585162",
+          "mode": "units",
+          "units": 5,
+          "netValue": 40.300000000000004,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        },
+        {
+          "id": "excel-i741919292",
+          "itemId": "i960799150",
+          "mode": "units",
+          "units": 7,
+          "netValue": 135.45000000000002,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        },
+        {
+          "id": "excel-i196829940",
+          "itemId": "i685182154",
+          "mode": "units",
+          "units": 5,
+          "netValue": 33.45,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        },
+        {
+          "id": "excel-i596573005",
+          "itemId": "i1290320998",
+          "mode": "units",
+          "units": 2,
+          "netValue": 29.04,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        },
+        {
+          "id": "excel-i568286342",
+          "itemId": "i1484878761",
+          "mode": "units",
+          "units": 8,
+          "netValue": 4.48,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        },
+        {
+          "id": "excel-i1557805230",
+          "itemId": "i568416048",
+          "mode": "units",
+          "units": 20,
+          "netValue": 5.6000000000000005,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        },
+        {
+          "id": "excel-i1711811167",
+          "itemId": "i583809147",
+          "mode": "units",
+          "units": 5,
+          "netValue": 18.15,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        },
+        {
+          "id": "excel-i387104856",
+          "itemId": "i846257600",
+          "mode": "units",
+          "units": 5,
+          "netValue": 34.25,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        },
+        {
+          "id": "excel-i1091556100",
+          "itemId": "i1242980091",
+          "mode": "units",
+          "units": 5,
+          "netValue": 23,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        },
+        {
+          "id": "excel-i2076118246",
+          "itemId": "i2101822341",
+          "mode": "units",
+          "units": 5,
+          "netValue": 24.2,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        },
+        {
+          "id": "excel-i1898862384",
+          "itemId": "i310478964",
+          "mode": "units",
+          "units": 5,
+          "netValue": 19.35,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        },
+        {
+          "id": "excel-i717351791",
+          "itemId": "i232387466",
+          "mode": "units",
+          "units": 5,
+          "netValue": 20.150000000000002,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        },
+        {
+          "id": "excel-i1193546782",
+          "itemId": "i1912320987",
+          "mode": "units",
+          "units": 5,
+          "netValue": 8.05,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        },
+        {
+          "id": "excel-i1119651209",
+          "itemId": "i1109908168",
+          "mode": "units",
+          "units": 5,
+          "netValue": 17.35,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        },
+        {
+          "id": "excel-i896131856",
+          "itemId": "i1042377426",
+          "mode": "units",
+          "units": 4,
+          "netValue": 51.6,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        },
+        {
+          "id": "excel-i2091075766",
+          "itemId": "i1223319841",
+          "mode": "units",
+          "units": 3,
+          "netValue": 164.52,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        },
+        {
+          "id": "excel-i950562499",
+          "itemId": "i1189827760",
+          "mode": "units",
+          "units": 1,
+          "netValue": 12.74,
+          "date": "2026-11-11",
+          "note": "11/11/26"
+        }
+      ],
+      "summary": {
+        "initialNet": 2351.76,
+        "remainingNet": 0,
+        "remainingVat": 0,
+        "remainingWithVat": 0,
+        "updatedAt": "2026-11-11T17:52:29.427Z"
+      }
+    },
+    {
+      "contractId": "1794222987976-shpmqv5",
+      "studyNo": "58",
+      "title": "ΠΡΟΜΗΘΕΙΑ ΣΙΔΗΡΩΝ ΥΛΙΚΩΝ– ΟΜΑΔΑ 3-Δ.Ε. ΜΕΣΣΑΤΙΔΑΣ",
+      "vat": 24,
+      "items": [
+        {
+          "id": "i1776893123",
+          "description": "ΚΙΝΗΤΟ ΚΙΓΚΛΙΔΩΜΑ ΣΥΜΦΩΝΑ ΜΕ ΤΙΣ ΤΕΧΝΙΚΕΣ ΠΡΟΔΙΑΓΡΑΦΕΣ ΤΗΣ ΜΕΛΕΤΗΣ",
+          "unit": "ΤΕΜ",
+          "initialQty": 126,
+          "unitPrice": 150,
+          "initialNet": 18900,
+          "baseRemainingUnits": 126,
+          "baseRemainingNet": 23436
+        }
+      ],
+      "receipts": [],
+      "summary": {
+        "initialNet": 18900,
+        "remainingNet": 23436,
+        "remainingVat": 5624.64,
+        "remainingWithVat": 29060.64,
+        "updatedAt": "2026-11-09T11:32:56.755Z"
+      }
+    },
+    {
+      "contractId": "1794315602002-tt6zwcb",
+      "studyNo": "9",
+      "title": "ΠΡΟΜΗΘΕΙΑ ΑΔΡΑΝΩΝ ΥΛΙΚΩΝ ΓΙΑ ΤΗΝ Δ.Ε. ΠΑΡΑΛΙΑΣ ΤΟΥ Δ. ΠΑΤΡΕΩΝ",
+      "vat": 24,
+      "items": [
+        {
+          "id": "i906874149",
+          "description": "ΑΜΜΟΣ ΣΠΑΣΤΗ ΛΑΤΟΜΕΙΟΥ 0-4 MM",
+          "unit": "ΤΟΝΟΙ",
+          "initialQty": 153,
+          "unitPrice": 20,
+          "initialNet": 3060,
+          "baseRemainingUnits": 153,
+          "baseRemainingNet": 1625.7999999999997
+        },
+        {
+          "id": "i1518990207",
+          "description": "ΨΗΦΙΔΑ ΛΑΤΟΜΕΙΟΥ 4-11,2 MM",
+          "unit": "ΤΟΝΟΙ",
+          "initialQty": 260,
+          "unitPrice": 19,
+          "initialNet": 4940,
+          "baseRemainingUnits": 260,
+          "baseRemainingNet": 444.22000000000025
+        },
+        {
+          "id": "i1719152295",
+          "description": "ΑΜΜΟΧΑΛΙΚΟ 3Α ΒΑΣΗΣ 0-31,5 MM",
+          "unit": "ΤΟΝΟΙ",
+          "initialQty": 1000,
+          "unitPrice": 19,
+          "initialNet": 19000,
+          "baseRemainingUnits": 1000,
+          "baseRemainingNet": 6638.789999999999
+        },
+        {
+          "id": "i1130206002",
+          "description": "ΑΜΜΟΧΑΛΙΚΟ 3Α ΣΚΥΡΟΔΕΜΑΤΟΣ 0-22,4 MM",
+          "unit": "ΤΟΝΟΙ",
+          "initialQty": 150,
+          "unitPrice": 20,
+          "initialNet": 3000,
+          "baseRemainingUnits": 150,
+          "baseRemainingNet": 2023.4
+        }
+      ],
+      "receipts": [
+        {
+          "id": "excel-i1180989823",
+          "itemId": "i906874149",
+          "mode": "units",
+          "units": 41.81,
+          "netValue": 836.2,
+          "date": "2026-08-20",
+          "note": "20/08/26"
+        },
+        {
+          "id": "excel-i1005318174",
+          "itemId": "i906874149",
+          "mode": "units",
+          "units": 29.9,
+          "netValue": 598,
+          "date": "2026-11-10",
+          "note": "10/11/26"
+        },
+        {
+          "id": "excel-i465496381",
+          "itemId": "i1518990207",
+          "mode": "units",
+          "units": 58.91,
+          "netValue": 1119.29,
+          "date": "2026-08-18",
+          "note": "18/08/26"
+        },
+        {
+          "id": "excel-i1546379456",
+          "itemId": "i1518990207",
+          "mode": "units",
+          "units": 58.64,
+          "netValue": 1114.16,
+          "date": "2026-08-27",
+          "note": "27/08/26"
+        },
+        {
+          "id": "excel-i1861977888",
+          "itemId": "i1518990207",
+          "mode": "units",
+          "units": 58.14,
+          "netValue": 1104.66,
+          "date": "2026-09-18",
+          "note": "18/09/26"
+        },
+        {
+          "id": "excel-i1861233111",
+          "itemId": "i1518990207",
+          "mode": "units",
+          "units": 29.53,
+          "netValue": 561.07,
+          "date": "2026-09-22",
+          "note": "22/09/26"
+        },
+        {
+          "id": "excel-i1861143737",
+          "itemId": "i1518990207",
+          "mode": "units",
+          "units": 31.4,
+          "netValue": 596.6,
+          "date": "2026-09-25",
+          "note": "25/09/26"
+        },
+        {
+          "id": "excel-i1290820756",
+          "itemId": "i1719152295",
+          "mode": "units",
+          "units": 58.41,
+          "netValue": 1109.79,
+          "date": "2026-08-19",
+          "note": "19/08/26"
+        },
+        {
+          "id": "excel-i1291476159",
+          "itemId": "i1719152295",
+          "mode": "units",
+          "units": 49.61,
+          "netValue": 942.59,
+          "date": "2026-08-20",
+          "note": "20/08/26"
+        },
+        {
+          "id": "excel-i1291505951",
+          "itemId": "i1719152295",
+          "mode": "units",
+          "units": 178.47,
+          "netValue": 3390.93,
+          "date": "2026-08-21",
+          "note": "21/08/26"
+        },
+        {
+          "id": "excel-i2116672646",
+          "itemId": "i1719152295",
+          "mode": "units",
+          "units": 60.24,
+          "netValue": 1144.56,
+          "date": "2026-09-18",
+          "note": "18/09/26"
+        },
+        {
+          "id": "excel-i2115957661",
+          "itemId": "i1719152295",
+          "mode": "units",
+          "units": 30.25,
+          "netValue": 574.75,
+          "date": "2026-09-21",
+          "note": "21/09/26"
+        },
+        {
+          "id": "excel-i2115927869",
+          "itemId": "i1719152295",
+          "mode": "units",
+          "units": 30.63,
+          "netValue": 581.97,
+          "date": "2026-09-22",
+          "note": "22/09/26"
+        },
+        {
+          "id": "excel-i2115838495",
+          "itemId": "i1719152295",
+          "mode": "units",
+          "units": 30.35,
+          "netValue": 576.65,
+          "date": "2026-09-25",
+          "note": "25/09/26"
+        },
+        {
+          "id": "excel-i1115059734",
+          "itemId": "i1719152295",
+          "mode": "units",
+          "units": 121.79,
+          "netValue": 2314.01,
+          "date": "2026-11-06",
+          "note": "06/11/26"
+        },
+        {
+          "id": "excel-i1115804510",
+          "itemId": "i1719152295",
+          "mode": "units",
+          "units": 90.84,
+          "netValue": 1725.96,
+          "date": "2026-11-10",
+          "note": "10/11/26"
+        },
+        {
+          "id": "excel-i2080356547",
+          "itemId": "i1130206002",
+          "mode": "units",
+          "units": 18.89,
+          "netValue": 377.8,
+          "date": "2026-08-19",
+          "note": "19/08/26"
+        },
+        {
+          "id": "excel-i1192167668",
+          "itemId": "i1130206002",
+          "mode": "units",
+          "units": 29.94,
+          "netValue": 598.8000000000001,
+          "date": "2026-09-21",
+          "note": "21/09/26"
+        }
+      ],
+      "summary": {
+        "initialNet": 30000,
+        "remainingNet": 0,
+        "remainingVat": 0,
+        "remainingWithVat": 0,
+        "updatedAt": "2026-11-10T13:27:45.301Z"
+      }
+    },
+    {
+      "contractId": "1794421879988-8wi5laj",
+      "studyNo": "56",
+      "title": "ΥΠΗΡΕΣΙΑ ΕΠΙΣΚΕΥΗΣ-ΣΥΝΤΗΡΗΣΗΣ ΚΟΥΦΩΜΑΤΩΝ ΣΤΟ ΚΤΗΝΙΑΤΡΕΙΟ ΚΑΤΑΦΥΓΙΟΥ ΑΔΕΣΠΟΤΩΝ ΖΩΩΝ ΔΗΜΟΥ ΠΑΤΡΕΩΝ",
+      "vat": 24,
+      "items": [
+        {
+          "id": "i312752854",
+          "description": "ΣΥΝΤΉΡΗΣΗ ΚΟΥΦΩΜΆΤΩΝ ΣΎΜΦΩΝΑ ΜΕ ΤΙΣ\r\nΤΕΧΝΙΚΈΣ ΠΡΟΔΙΑΓΡΑΦΈΣ ΤΗΣ ΜΕΛΈΤΗΣ",
+          "unit": "ΥΠΗΡΕΣΙΑ",
+          "initialQty": 1,
+          "unitPrice": 1550,
+          "initialNet": 1550,
+          "baseRemainingUnits": 1,
+          "baseRemainingNet": 1550
+        },
+        {
+          "id": "i229821361",
+          "description": "ΕΠΙΣΚΕΥΉ ΚΑΙ ΑΝΤΙΚΑΤΆΣΤΑΣΗ ΣΙΤΏΝ\r\nΣΎΜΦΩΝΑ ΜΕ ΤΙΣ ΤΕΧΝΙΚΈΣ ΠΡΟΔΙΑΓΡΑΦΈΣ ΤΗΣ\r\nΜΕΛΈΤΗΣ",
+          "unit": "ΥΠΗΡΕΣΙΑ",
+          "initialQty": 1,
+          "unitPrice": 900,
+          "initialNet": 900,
+          "baseRemainingUnits": 1,
+          "baseRemainingNet": 900
+        }
+      ],
+      "receipts": [],
+      "summary": {
+        "initialNet": 2450,
+        "remainingNet": 2450,
+        "remainingVat": 588,
+        "remainingWithVat": 3038,
+        "updatedAt": "2026-11-11T18:32:26.258Z"
       }
     }
   ]
