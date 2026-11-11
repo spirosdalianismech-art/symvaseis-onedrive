@@ -591,6 +591,15 @@ tbody tr{
   .table-wrap tbody td:nth-child(n+6),
   .table-wrap thead th:nth-child(n+6) { text-align: center !important; vertical-align: middle; }
 }
+
+/* Ένδειξη διαθέσιμου χώρου OneDrive (μόνο στον διαχειριστή). */
+.onedrive-storage{background:#fff;border-radius:11px;padding:14px 18px;margin-bottom:16px;box-shadow:0 2px 9px rgba(0,0,0,.08)}
+.storage-head{display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap}
+.storage-head strong{font-size:15px}
+.storage-details{font-size:13px;color:#475569;margin-top:8px}
+.storage-meter{height:10px;background:#e2e8f0;border-radius:99px;overflow:hidden;margin-top:10px}
+#onedriveUsedBar{height:100%;width:0;background:#367ee2;transition:width .2s ease}
+@media print{.onedrive-storage{display:none!important}}
 </style>
 </head>
 <body>
@@ -625,6 +634,14 @@ tbody tr{
     <div class="card"><div class="label">Προϋπολογισμός συμβάσεων</div><div class="value" id="contractCard">0,00 €</div></div>
     <div class="card"><div class="label">Υπόλοιπο συμβάσεων με ΦΠΑ</div><div class="value" id="balanceCard">0,00 €</div></div>
   </div>
+  <section class="onedrive-storage" aria-label="Χώρος OneDrive">
+    <div class="storage-head">
+      <strong>☁ Χώρος αποθήκευσης OneDrive</strong>
+      <button type="button" class="btn-gray" onclick="loadOneDriveQuota()" id="quotaRefreshBtn">↻ Ανανέωση χώρου</button>
+    </div>
+    <div class="storage-details" id="onedriveStorageInfo" aria-live="polite">Συνδέσου με Microsoft για να εμφανιστεί ο διαθέσιμος χώρος.</div>
+    <div class="storage-meter" role="progressbar" aria-label="Χρησιμοποιημένος χώρος" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="onedriveStorageMeter"><div id="onedriveUsedBar"></div></div>
+  </section>
   <div class="panel">
     <div class="table-wrap">
       <table>
@@ -756,7 +773,47 @@ function statusFor(r){
 async function getAccount(){let a=msalInstance.getActiveAccount();if(!a){const xs=msalInstance.getAllAccounts();if(xs.length){a=xs[0];msalInstance.setActiveAccount(a)}}return a}
 async function getToken(){const a=await getAccount();if(!a)throw new Error("Πρέπει πρώτα να συνδεθείτε με Microsoft.");try{return (await msalInstance.acquireTokenSilent({scopes:["User.Read","Files.ReadWrite"],account:a})).accessToken}catch{return (await msalInstance.acquireTokenPopup({scopes:["User.Read","Files.ReadWrite"],account:a})).accessToken}}
 async function graph(url,opt={}){const tok=await getToken();opt.headers=opt.headers||{};opt.headers.Authorization="Bearer "+tok;return fetch(url,opt)}
-async function signIn(){try{const r=await msalInstance.loginPopup(loginRequest);msalInstance.setActiveAccount(r.account);setStatus("Συνδεθήκατε ως "+r.account.username,"ok");await loadData();await refreshFromParalaves(false)}catch(e){setStatus("Σφάλμα σύνδεσης:\n"+e.message,"error")}}
+async function signIn(){try{const r=await msalInstance.loginPopup(loginRequest);msalInstance.setActiveAccount(r.account);setStatus("Συνδεθήκατε ως "+r.account.username,"ok");await loadData();await refreshFromParalaves(false);await loadOneDriveQuota()}catch(e){setStatus("Σφάλμα σύνδεσης:\n"+e.message,"error")}}
+// Διαβάζουμε την πραγματική χωρητικότητα του συνδεδεμένου OneDrive μέσω Microsoft Graph.
+// Τα bytes δεν αποθηκεύονται ούτε δημοσιεύονται στο public-data.json.
+function formatStorageBytes(bytes){
+  if(!Number.isFinite(bytes) || bytes<0)return "—";
+  const units=["B","KB","MB","GB","TB","PB"];
+  let n=bytes,i=0;
+  while(n>=1024 && i<units.length-1){n/=1024;i++}
+  return new Intl.NumberFormat("el-GR",{maximumFractionDigits:i===0?0:2}).format(n)+" "+units[i];
+}
+async function loadOneDriveQuota(){
+  const info=document.getElementById("onedriveStorageInfo");
+  const bar=document.getElementById("onedriveUsedBar");
+  const meter=document.getElementById("onedriveStorageMeter");
+  const btn=document.getElementById("quotaRefreshBtn");
+  if(!info||!bar||!meter)return;
+  btn.disabled=true;
+  info.textContent="Ανάκτηση διαθέσιμου χώρου από το OneDrive...";
+  try{
+    if(!(await getAccount()))throw new Error("Πρέπει πρώτα να συνδεθείτε με Microsoft.");
+    const response=await graph("https://graph.microsoft.com/v1.0/me/drive?$select=quota");
+    if(!response.ok)throw new Error("Η Microsoft δεν επέστρεψε τα στοιχεία (HTTP "+response.status+").");
+    const data=await response.json();
+    const q=data?.quota||{};
+    const total=Number(q.total),used=Number(q.used),remaining=Number(q.remaining);
+    if(!Number.isFinite(total)||total<=0||!Number.isFinite(used)||used<0){
+      throw new Error("Δεν είναι διαθέσιμα στοιχεία χωρητικότητας για αυτόν τον λογαριασμό.");
+    }
+    const free=Number.isFinite(remaining)&&remaining>=0?remaining:Math.max(0,total-used);
+    const pct=Math.max(0,Math.min(100,100*used/total));
+    info.textContent="Συνολικός: "+formatStorageBytes(total)+"  |  Χρησιμοποιημένος: "+formatStorageBytes(used)+"  |  Διαθέσιμος: "+formatStorageBytes(free)+" ("+new Intl.NumberFormat("el-GR",{maximumFractionDigits:1}).format(pct)+"% χρήση)";
+    bar.style.width=pct+"%";
+    bar.style.background=pct>=90?"#b91c1c":pct>=75?"#d97706":"#367ee2";
+    meter.setAttribute("aria-valuenow",String(Math.round(pct)));
+  }catch(error){
+    info.textContent="Δεν ήταν δυνατή η εμφάνιση του χώρου: "+error.message;
+    bar.style.width="0%";
+    meter.setAttribute("aria-valuenow","0");
+  }finally{btn.disabled=false}
+}
+
 async function signOut(){const a=await getAccount();if(a)await msalInstance.logoutPopup({account:a,postLogoutRedirectUri:REDIRECT_URI})}
 
 async function ensureRootFolder(){
@@ -1245,7 +1302,7 @@ window.addEventListener("load",async()=>{
   enableUppercaseInputs();
   setupCurrencyInput(document.getElementById("fStudyBudget"));
   setupCurrencyInput(document.getElementById("fContractBudget"));
-  try{const a=await getAccount();if(a){setStatus("Συνδεδεμένος ως "+a.username,"ok");await loadData();await refreshFromParalaves(false)}else{populateYears();render()}}catch(e){setStatus(e.message,"error")}
+  try{const a=await getAccount();if(a){setStatus("Συνδεδεμένος ως "+a.username,"ok");await loadData();await refreshFromParalaves(false);await loadOneDriveQuota()}else{populateYears();render()}}catch(e){setStatus(e.message,"error")}
 });
 </script>
 </body>
