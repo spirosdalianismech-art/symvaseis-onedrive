@@ -24,10 +24,10 @@ button:hover{opacity:.88}select,input{border:1px solid #cbd5e1;border-radius:7px
 #excelAudit.audit-ok{background:#dcfce7;color:#166534}
 #excelAudit.audit-warn{background:#fff3cd;color:#854d0e}
 #excelAudit.audit-error{background:#fee2e2;color:#991b1b}
-.history-table{min-width:900px}.negative{color:#b91c1c;font-weight:700}.positive{color:#166534;font-weight:700}.hidden{display:none!important}
+.history-table{min-width:900px}.readonly-note{background:#edf5ff;color:#1d4b77;border:1px solid #cfdeef;padding:11px 14px;border-radius:8px;margin-bottom:15px;font-size:13px} .negative{color:#b91c1c;font-weight:700}.positive{color:#166534;font-weight:700}.hidden{display:none!important}
 @media(max-width:950px){.cards{grid-template-columns:1fr 1fr}.source-grid,.receipt-form{grid-template-columns:1fr}}
 @media print{
- .toolbar,#status,.source-grid,.receipt-form,.no-print{display:none!important}body{background:white}.container{max-width:none;padding:0}
+ .toolbar,#status,.source-grid,.receipt-form,.readonly-note,.no-print{display:none!important}body{background:white}.container{max-width:none;padding:0}
  header{background:white!important;color:black!important;padding:0 0 12px;border-bottom:2px solid #000}.contract-head,.panel,.card{box-shadow:none}
  .cards{grid-template-columns:repeat(4,1fr);gap:6px}.card{border:1px solid #aaa;padding:10px}
  .table-wrap{overflow:visible}table,.history-table{min-width:0}th,td{font-size:9px;padding:4px}th{background:#eee!important;color:black!important;border:1px solid #999}td{border:1px solid #ccc}
@@ -77,6 +77,7 @@ input[type="text"], textarea, select {
 
 <div class="container">
   <div id="status">Σύνδεση με Microsoft για φόρτωση δεδομένων.</div>
+  <div class="readonly-note">Οι παραλαβές καταχωρίζονται αποκλειστικά στο Excel. Η εφαρμογή εμφανίζει τα στοιχεία χωρίς δυνατότητα προσθήκης ή διαγραφής.</div>
   <div id="excelAudit" class="hidden" role="status" aria-live="polite"></div>
 
   <section class="contract-head">
@@ -112,20 +113,6 @@ input[type="text"], textarea, select {
   </section>
 
   <section class="panel">
-    <div class="panel-title">Νέα παραλαβή</div>
-    <div class="receipt-form">
-      <label>Είδος<select id="receiptItem"></select></label>
-      <label>Τρόπος
-        <select id="receiptMode"><option value="units">Μονάδες μέτρησης</option><option value="value">Χρηματική αξία (€)</option></select>
-      </label>
-      <label>Ποσότητα / Ποσό<input id="receiptAmount" type="number" step="0.001" min="0"></label>
-      <label>Ημερομηνία<input id="receiptDate" type="date"></label>
-      <label>Παρατήρηση<input id="receiptNote"></label>
-      <button class="green" onclick="addReceipt()">+ Καταχώριση</button>
-    </div>
-  </section>
-
-  <section class="panel">
     <div class="panel-title">
       <span>Ιστορικό παραλαβών ανά ημερομηνία</span>
       <span class="muted">Κάθε ημερομηνία εμφανίζεται σε ξεχωριστή στήλη</span>
@@ -139,10 +126,10 @@ input[type="text"], textarea, select {
   </section>
 
   <section class="panel">
-    <div class="panel-title">Αναλυτικό ιστορικό παραλαβών</div>
+    <div class="panel-title">Αναλυτικό ιστορικό παραλαβών από Excel — Μόνο προβολή</div>
     <div class="table-wrap">
       <table class="history-table">
-        <thead><tr><th>Ημερομηνία</th><th>Είδος</th><th>Τρόπος</th><th class="num">Μονάδες</th><th class="num">Αξία χωρίς ΦΠΑ</th><th>Παρατήρηση</th><th class="no-print">Ενέργεια</th></tr></thead>
+        <thead><tr><th>Ημερομηνία</th><th>Είδος</th><th>Τρόπος</th><th class="num">Μονάδες</th><th class="num">Αξία χωρίς ΦΠΑ</th><th>Παρατήρηση</th></tr></thead>
         <tbody id="historyBody"></tbody>
       </table>
     </div>
@@ -206,7 +193,7 @@ function computeLine(item,ledger){
  // Το Excel μπορεί να περιέχει ήδη το υπόλοιπο μετά τις παραλαβές.
  // Δεν αφαιρούμε δεύτερη φορά τις εισαγμένες από Excel παραλαβές.
  // Οι χειροκίνητες παραλαβές εξακολουθούν να αφαιρούνται κανονικά.
- const receipts=ledger.receipts.filter(r=>r.itemId===item.id);
+ const receipts=ledger.receipts.filter(r=>r.itemId===item.id && r.source==="excel");
  const unitReceipts=receipts.filter(r=>r.mode==="units" &&
    !(item.excelRemainingUnitsProvided && r.source==="excel"));
  const netReceipts=receipts.filter(r=>
@@ -449,41 +436,19 @@ function render(){
    <td class="num">${euro(it.initialNet)}</td><td class="num ${x.remainingUnits<0?"negative":""}">${x.remainingUnits.toLocaleString("el-GR")}</td>
    <td class="num ${x.remainingNet<0?"negative":""}"><strong>${euro(x.remainingNet)}</strong></td>
    <td class="num">${euro(x.remainingNet*(1+l.vat/100))}</td>`;itemsBody.appendChild(tr)});
- receiptItem.innerHTML=l.items.map(it=>`<option value="${it.id}">${esc(it.description)}</option>`).join("");
  historyBody.innerHTML="";
  [...l.receipts].sort((a,b)=>String(b.date).localeCompare(String(a.date))).forEach(r=>{const it=l.items.find(x=>x.id===r.itemId);const tr=document.createElement("tr");tr.innerHTML=`
    <td>${r.date||""}</td><td>${esc(it?.description||"")}</td><td>${r.mode==="units"?"Μονάδες":"Χρηματική αξία"}</td>
    <td class="num">${r.mode==="units"?Number(r.units||0).toLocaleString("el-GR"):"—"}</td><td class="num">${euro(r.netValue)}</td>
-   <td>${esc(r.note||"")}</td><td class="no-print"><button class="red" onclick="deleteReceipt('${r.id}')">Διαγραφή</button></td>`;historyBody.appendChild(tr)});
- if(!l.receipts.length)historyBody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px">Δεν υπάρχουν ακόμη καταχωρισμένες παραλαβές.</td></tr>';
+   <td>${esc(r.note||"")}</td>`;historyBody.appendChild(tr)});
+ if(!l.receipts.length)historyBody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:20px">Δεν υπάρχουν ακόμη καταχωρισμένες παραλαβές.</td></tr>';
  renderDateHistoryMatrix();
- receiptDate.value=receiptDate.value||localDateISO(new Date())
 }
 async function saveSourceSettings(){
  const l=getLedger(true);l.excelPath=excelPath.value.trim();l.excelSheet=excelSheet.value.trim()||"ΣΥΜΒΑΣΗ";
  const c=getContract();if(c){c.excelPath=l.excelPath;c.excelSheet=l.excelSheet}
  await saveAll();setStatus("Η διαδρομή Excel αποθηκεύτηκε.","ok")
 }
-async function addReceipt(){
- const l=getLedger(false),it=l?.items.find(x=>x.id===receiptItem.value);if(!l||!it)return;
- const amount=Number(receiptAmount.value||0);if(!(amount>0)){setStatus("Γράψε ποσότητα ή ποσό μεγαλύτερο από μηδέν.","err");return}
- const cur=computeLine(it,l),mode=receiptMode.value;
- let units=0,netValue=0;
- if(mode==="units"){
-   units=amount;netValue=units*Number(it.unitPrice||0);
-   if(units>cur.remainingUnits+1e-9){setStatus("Οι μονάδες παραλαβής είναι περισσότερες από το υπόλοιπο μονάδων.","err");return}
-   if(netValue>cur.remainingNet+0.005){setStatus("Η αξία της παραλαβής υπερβαίνει το υπόλοιπο αξίας της γραμμής.","err");return}
- }else{
-   netValue=amount;
-   if(netValue>cur.remainingNet+0.005){setStatus("Το ποσό παραλαβής υπερβαίνει το υπόλοιπο αξίας της γραμμής.","err");return}
- }
- l.receipts.push({id:uid(),itemId:it.id,mode,units,netValue,date:receiptDate.value||localDateISO(new Date()),note:toUpperText(receiptNote.value.trim()),createdAt:new Date().toISOString()});
- receiptAmount.value="";receiptNote.value="";await saveAll()
-}
-async function deleteReceipt(id){
- const l=getLedger(false);if(!l||!confirm("Να διαγραφεί αυτή η παραλαβή;"))return;l.receipts=l.receipts.filter(r=>r.id!==id);await saveAll()
-}
-
 function buildHeader(rows){
  let best={score:-1,row:0,headers:[]};
  for(let r=0;r<Math.min(rows.length,35);r++){
@@ -673,7 +638,7 @@ async function syncFromExcel(showMessage=true){
 
   // Διαγράφουμε μόνο τις προηγούμενες αυτόματα εισαγμένες παραλαβές Excel.
   // Οι χειροκίνητες παραλαβές που καταχώρισες μέσα στο πρόγραμμα μένουν κανονικά.
-  l.receipts=(l.receipts||[]).filter(x=>x.source!=="excel");
+  l.receipts=[]; // Μόνο το Excel αποτελεί πηγή παραλαβών.
 
   let importedHistoryCount=0;
 
