@@ -48,6 +48,10 @@ input[type="text"], textarea, select {
 }
 .dept-filter input{margin:0}
 
+/* Αχνό κόκκινο όταν ένα είδος έχει μηδενικό υπόλοιπο αξίας */
+#itemsBody tr.zero-balance-row > td{background-color:#fde8e8;}
+@media print{#itemsBody tr.zero-balance-row > td{background-color:#fde8e8!important;print-color-adjust:exact;-webkit-print-color-adjust:exact;}}
+
 </style>
 </head>
 <body>
@@ -431,7 +435,7 @@ function render(){
  initialNet.textContent=euro(s.initialNet);remainingNet.textContent=euro(s.remainingNet);remainingVat.textContent=euro(s.remainingVat);remainingWithVat.textContent=euro(s.remainingWithVat);
  lineCount.textContent=`${l.items.length} γραμμές`;
  itemsBody.innerHTML="";
- l.items.forEach((it,i)=>{const x=computeLine(it,l);const tr=document.createElement("tr");tr.innerHTML=`
+ l.items.forEach((it,i)=>{const x=computeLine(it,l);const tr=document.createElement("tr");if(Number(it.initialNet||0)>0 && Math.abs(x.remainingNet)<0.005)tr.classList.add("zero-balance-row");tr.innerHTML=`
    <td>${i+1}</td><td>${esc(it.description)}</td><td>${esc(it.unit)}</td>
    <td class="num">${Number(it.initialQty||0).toLocaleString("el-GR")}</td><td class="num">${euro(it.unitPrice)}</td>
    <td class="num">${euro(it.initialNet)}</td><td class="num ${x.remainingUnits<0?"negative":""}">${x.remainingUnits.toLocaleString("el-GR")}</td>
