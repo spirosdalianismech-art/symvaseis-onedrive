@@ -733,7 +733,19 @@ function encPath(p){return p.split("/").filter(Boolean).map(encodeURIComponent).
 function esc(v){const d=document.createElement("div");d.textContent=v??"";return d.innerHTML}
 function daysUntil(s){if(!s)return null;const a=new Date();a.setHours(0,0,0,0);const b=new Date(s+"T00:00:00");return Math.ceil((b-a)/86400000)}
 function effectiveExpiry(r){return r.extensionExpiry||r.expiry||""}
-function statusFor(r){if(!Number(r.contractBudget||0))return{text:"ΧΩΡΙΣ ΣΥΜΒΑΣΗ",cls:"no-contract"};const expiry=effectiveExpiry(r);if(!expiry)return{text:"ΕΝΕΡΓΗ",cls:"active"};const d=daysUntil(expiry);if(d<0)return{text:"ΕΧΕΙ ΛΗΞΕΙ",cls:"expired"};if(d<=30)return{text:"ΛΗΓΕΙ ΣΥΝΤΟΜΑ",cls:"soon"};return{text:"ΕΝΕΡΓΗ",cls:"active"}}
+function statusFor(r){
+  const hasContract=Number(r.contractBudget||0)>0;
+  if(!hasContract)return {text:"ΧΩΡΙΣ ΣΥΜΒΑΣΗ",cls:"no-contract"};
+  const expiry=effectiveExpiry(r);
+  const days=expiry?daysUntil(expiry):null;
+  const balance=r.balanceWithVat;
+  const zeroBalance=balance!=null && Number.isFinite(Number(balance)) && Math.abs(Number(balance))<0.005;
+  // Η μηδενική αξία ή η λήξη υπερισχύουν της παράτασης.
+  if(zeroBalance || (days!==null && days<0))return {text:"ΕΛΗΞΕ",cls:"expired"};
+  if(r.extensionExpiry)return {text:"ΠΑΡΑΤΑΣΗ",cls:"active"};
+  if(days!==null && days<=30)return {text:"ΛΗΓΕΙ ΣΥΝΤΟΜΑ",cls:"soon"};
+  return {text:"ΕΝΕΡΓΗ",cls:"active"};
+}
 
 async function getAccount(){let a=msalInstance.getActiveAccount();if(!a){const xs=msalInstance.getAllAccounts();if(xs.length){a=xs[0];msalInstance.setActiveAccount(a)}}return a}
 async function getToken(){const a=await getAccount();if(!a)throw new Error("Πρέπει πρώτα να συνδεθείτε με Microsoft.");try{return (await msalInstance.acquireTokenSilent({scopes:["User.Read","Files.ReadWrite"],account:a})).accessToken}catch{return (await msalInstance.acquireTokenPopup({scopes:["User.Read","Files.ReadWrite"],account:a})).accessToken}}
