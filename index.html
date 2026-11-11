@@ -1127,6 +1127,16 @@ function render(){
   const depts=selectedDepartments();
   let list=records.filter(r=>Number(r.year)===year && depts.includes(toUpperText(r.department||"")));
   if(q)list=list.filter(r=>JSON.stringify(r).toLowerCase().includes(q));
+  // Αύξουσα φυσική ταξινόμηση Α/Α μελέτης (1, 2, 10 αντί 1, 10, 2).
+  // Οι εγγραφές χωρίς αριθμό μελέτης μπαίνουν τελευταίες.
+  const studyNoCollator=new Intl.Collator("el-GR",{numeric:true,sensitivity:"base"});
+  list.sort((a,b)=>{
+    const x=String(a.studyNo??"").trim();
+    const y=String(b.studyNo??"").trim();
+    if(!x)return y?1:0;
+    if(!y)return -1;
+    return studyNoCollator.compare(x,y);
+  });
   document.getElementById("countCard").textContent=list.length;
   document.getElementById("studyCard").textContent=euro(list.reduce((s,r)=>s+Number(r.studyBudget||0),0));
   document.getElementById("contractCard").textContent=euro(list.reduce((s,r)=>s+Number(r.contractBudget||0),0));
