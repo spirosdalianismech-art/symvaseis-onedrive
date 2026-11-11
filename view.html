@@ -1,71 +1,66 @@
 <!DOCTYPE html>
 <html lang="el">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Μελέτες και Συμβάσεις - Προβολή</title>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ΔΗΜΟΣ ΠΑΤΡΕΩΝ – Μελέτες και Συμβάσεις (Προβολή)</title>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#eef2f6;color:#1f2937}
-header{background:#17365d;color:#fff;padding:22px 28px}header h1{margin:0;font-size:27px}header p{margin:6px 0 0;opacity:.85}
-.toolbar{background:#fff;padding:13px 20px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-bottom:1px solid #ddd;position:sticky;top:0;z-index:5}
-button,select,input{font:inherit;border-radius:7px}button{border:0;padding:9px 13px;cursor:pointer;font-weight:700}.blue{background:#0078d4;color:white}.gray{background:#e5e7eb}
-select,input{border:1px solid #cbd5e1;padding:9px;background:white}.dept{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;border:1px solid #cbd5e1;padding:7px 9px;border-radius:7px}
-.container{max-width:1850px;margin:auto;padding:20px}.cards{display:grid;grid-template-columns:repeat(4,minmax(180px,1fr));gap:12px;margin-bottom:16px}
-.card{background:#fff;border-radius:10px;padding:15px;box-shadow:0 2px 8px rgba(0,0,0,.07)}.label{font-size:13px;color:#64748b}.value{font-size:23px;font-weight:700;margin-top:7px}
-.panel{background:white;border-radius:12px;overflow:hidden;box-shadow:0 2px 9px rgba(0,0,0,.08)}.table-wrap{overflow:auto}
-table{width:100%;border-collapse:collapse;min-width:1600px}th{background:#17365d;color:#fff;padding:8px 7px;text-align:left;font-size:12px}td{padding:7px;border-bottom:1px solid #e5e7eb;font-size:13px;vertical-align:top}
-.num{text-align:right}.filegroup{display:flex;flex-direction:column;gap:3px}.filegroup strong{font-size:11px;color:#475569}.filegroup a{font-size:12px;color:#0067b8}
-.badge{border-radius:20px;padding:4px 8px;font-size:11px;font-weight:700}.active{background:#dcfce7;color:#166534}.soon{background:#fef3c7;color:#92400e}.expired{background:#fee2e2;color:#991b1b}.none{background:#e5e7eb}
-@media(max-width:900px){.cards{grid-template-columns:1fr 1fr}}
-@media print{.toolbar{display:none}.container{max-width:none;padding:0}.panel,.card{box-shadow:none}header{background:white!important;color:black!important}.table-wrap{overflow:visible}table{min-width:0}th,td{font-size:8px;padding:4px}th{background:#eee!important;color:black!important;border:1px solid #999}td{border:1px solid #ccc}@page{size:landscape;margin:8mm}}
+header{background:#17365d;color:white;padding:22px 30px}header h1{margin:0;font-size:28px}header p{margin:6px 0 0;opacity:.85}
+.topbar{background:white;padding:14px 22px;display:flex;gap:9px;flex-wrap:wrap;align-items:center;border-bottom:1px solid #d8dee6;position:sticky;top:0;z-index:10}
+button,select,input{font:inherit}button{border:0;border-radius:7px;padding:10px 14px;cursor:pointer;font-weight:600;background:#e5e7eb}select,input{border:1px solid #cbd5e1;border-radius:7px;padding:10px;background:white}#searchInput{min-width:260px}
+.dept-filter{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;background:#f8fafc;border:1px solid #cbd5e1;border-radius:7px;padding:7px 9px}.dept-filter input{margin:0}
+.container{width:100%;max-width:none;margin:0;padding:10px 8px}#status{padding:12px 15px;border-radius:8px;margin-bottom:12px;background:#e8eef5;white-space:pre-wrap}.status-error{background:#fee2e2;color:#991b1b}
+.cards{display:grid;grid-template-columns:repeat(4,minmax(190px,1fr));gap:10px;margin-bottom:12px}.card{background:white;border-radius:11px;padding:12px;box-shadow:0 2px 9px rgba(0,0,0,.08)}.card .label{color:#64748b;font-size:14px}.card .value{font-size:24px;font-weight:700;margin-top:8px}
+.panel{background:white;border-radius:12px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.08)}.table-wrap{width:100%;overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:1500px;table-layout:auto}th{background:#17365d;color:white;padding:5px 4px;text-align:center;font-size:11px;white-space:normal;line-height:1.35;height:55px}td{padding:5px 4px;font-size:11px;line-height:1.15;vertical-align:middle;text-align:center}tbody tr+tr{border-top:1px solid #e6ebf2}tbody tr:hover{background:#eef5ff}
+td:nth-child(4){min-width:250px;max-width:350px;text-align:left;overflow-wrap:anywhere}td:nth-child(7){min-width:180px;font-weight:600}td:nth-child(15){min-width:150px}td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.badge{border-radius:20px;padding:4px 6px;font-size:10px;font-weight:bold;display:inline-block;white-space:nowrap}.active{background:#dcfce7;color:#166534}.soon{background:#fef3c7;color:#92400e}.expired{background:#fee2e2;color:#991b1b}.no-contract{background:#e5e7eb;color:#374151}
+.file-group{display:flex;flex-direction:column;gap:2px;align-items:center}.file-group-title{font-size:12px;font-weight:700;color:#475569}.file-entry{max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}.file-link{color:#0067b8;text-decoration:underline}
+tbody tr.contract-red,tbody tr.contract-red:hover{background:#fde8e8!important}tbody tr.contract-gold,tbody tr.contract-gold:hover{background:#fff2cf!important}
+@media(max-width:900px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}header h1{font-size:21px}}
+@media print{.topbar,#status{display:none!important}body{background:white}.container{padding:0}.panel,.card{box-shadow:none}.table-wrap{overflow:visible}table{min-width:0}th,td{font-size:9px;padding:4px}th{background:#eee!important;color:black!important;border:1px solid #999}td{border:1px solid #ccc}header{background:white!important;color:black!important}@page{size:landscape;margin:8mm}}
 </style>
 </head>
 <body>
-<header><h1>ΔΗΜΟΣ ΠΑΤΡΕΩΝ – Μελέτες και Συμβάσεις</h1><p>ΔΗΜΟΣΙΑ ΠΡΟΒΟΛΗ – ΜΟΝΟ ΑΝΑΓΝΩΣΗ</p></header>
-<div class="toolbar">
-  <select id="year"></select>
-  <label class="dept"><input type="checkbox" class="dc" value="ΚΤΙΡΙΑΚΩΝ" checked> ΚΤΙΡΙΑΚΩΝ</label>
-  <label class="dept"><input type="checkbox" class="dc" value="ΚΟΙΝΟΧΡΗΣΤΩΝ" checked> ΚΟΙΝΟΧΡΗΣΤΩΝ</label>
-  <label class="dept"><input type="checkbox" class="dc" value="ΗΛΕΚΤΡΟΦΩΤΙΣΜΟΥ" checked> ΗΛΕΚΤΡΟΦΩΤΙΣΜΟΥ</label>
-  <input id="q" placeholder="ΑΝΑΖΗΤΗΣΗ...">
-  <button class="blue" onclick="location.href='./paralaves-view.html'">ΠΑΡΑΛΑΒΕΣ</button>
-  <button class="gray" onclick="window.print()">🖨 ΕΚΤΥΠΩΣΗ</button>
+<header><h1>ΔΗΜΟΣ ΠΑΤΡΕΩΝ – Μελέτες και Συμβάσεις</h1><p>Δημόσια προβολή – Μόνο ανάγνωση</p></header>
+<div class="topbar">
+<select id="yearFilter" aria-label="Έτος"></select>
+<label class="dept-filter"><input type="checkbox" class="deptCheck" value="ΚΤΙΡΙΑΚΩΝ" checked> ΚΤΙΡΙΑΚΩΝ</label>
+<label class="dept-filter"><input type="checkbox" class="deptCheck" value="ΚΟΙΝΟΧΡΗΣΤΩΝ" checked> ΚΟΙΝΟΧΡΗΣΤΩΝ</label>
+<label class="dept-filter"><input type="checkbox" class="deptCheck" value="ΗΛΕΚΤΡΟΦΩΤΙΣΜΟΥ" checked> ΗΛΕΚΤΡΟΦΩΤΙΣΜΟΥ</label>
+<input id="searchInput" type="search" placeholder="Αναζήτηση σε όλες τις στήλες...">
+<button type="button" onclick="window.print()">🖨 Εκτύπωση</button>
 </div>
-<div class="container">
-  <div class="cards">
-    <div class="card"><div class="label">ΕΓΓΡΑΦΕΣ</div><div class="value" id="c1">0</div></div>
-    <div class="card"><div class="label">ΠΡΟΫΠΟΛΟΓΙΣΜΟΣ ΜΕΛΕΤΩΝ</div><div class="value" id="c2">0,00 €</div></div>
-    <div class="card"><div class="label">ΠΡΟΫΠΟΛΟΓΙΣΜΟΣ ΣΥΜΒΑΣΕΩΝ</div><div class="value" id="c3">0,00 €</div></div>
-    <div class="card"><div class="label">ΥΠΟΛΟΙΠΟ ΜΕ ΦΠΑ</div><div class="value" id="c4">0,00 €</div></div>
-  </div>
-  <div class="panel"><div class="table-wrap"><table>
-    <thead><tr><th>Α/Α ΜΕΛΕΤΗΣ</th><th>ΤΜΗΜΑ</th><th>ΦΟΡΕΑΣ</th><th>ΤΙΤΛΟΣ ΜΕΛΕΤΗΣ</th><th>ΤΡΟΠΟΣ ΕΚΤΕΛΕΣΗΣ</th><th class="num">ΠΡΟΫΠ. ΜΕΛΕΤΗΣ</th><th>ΑΝΑΔΟΧΟΣ</th><th class="num">ΠΡΟΫΠ. ΣΥΜΒΑΣΗΣ</th><th class="num">ΥΠΟΛΟΙΠΟ ΜΕ ΦΠΑ</th><th>ΛΗΞΗ</th><th>ΚΑΤΑΣΤΑΣΗ</th><th>ΑΡΧΕΙΑ</th></tr></thead>
-    <tbody id="body"></tbody>
-  </table></div></div>
+<div class="container"><div id="status">Φόρτωση δημοσιευμένων συμβάσεων...</div>
+<div class="cards">
+<div class="card"><div class="label">Εγγραφές έτους</div><div class="value" id="countCard">0</div></div>
+<div class="card"><div class="label">Προϋπολογισμός μελετών</div><div class="value" id="studyCard">0,00 €</div></div>
+<div class="card"><div class="label">Προϋπολογισμός συμβάσεων</div><div class="value" id="contractCard">0,00 €</div></div>
+<div class="card"><div class="label">Υπόλοιπο συμβάσεων με ΦΠΑ</div><div class="value" id="balanceCard">0,00 €</div></div>
 </div>
+<div class="panel"><div class="table-wrap"><table><thead><tr>
+<th>Α/Α<br>ΜΕΛΕΤΗΣ</th><th>ΤΜΗΜΑ</th><th>ΦΟΡΕΑΣ</th><th>ΤΙΤΛΟΣ<br>ΜΕΛΕΤΗΣ</th><th>ΤΡΟΠΟΣ<br>ΕΚΤΕΛΕΣΗΣ</th><th>ΠΡΟΫΠΟΛΟΓΙΣΜΟΣ<br>ΜΕΛΕΤΗΣ</th><th>ΑΝΑΔΟΧΟΣ<br>/ ΕΤΑΙΡΕΙΑ</th><th>ΠΡΟΫΠΟΛΟΓΙΣΜΟΣ<br>ΣΥΜΒΑΣΗΣ</th><th>ΥΠΟΛΟΙΠΟ<br>ΜΕ ΦΠΑ</th><th>ΟΡΙΣΤΙΚΗ<br>ΛΗΞΗ</th><th>ΗΜΕΡΕΣ<br>ΕΩΣ ΛΗΞΗ</th><th>ΚΑΤΑΣΤΑΣΗ</th><th>ΣΥΝΤΑΞΑΣ<br>ΜΕΛΕΤΗΣ</th><th>ΑΡΜΟΔΙΑ<br>Δ/ΝΣΗ</th><th>ONLINE<br>ΑΡΧΕΙΑ</th>
+</tr></thead><tbody id="contractsBody"></tbody></table></div></div></div>
 <script>
-let DATA={contracts:[],paralaves:[]};
-const euro=v=>new Intl.NumberFormat("el-GR",{style:"currency",currency:"EUR"}).format(Number(v||0));
-const esc=v=>{const d=document.createElement("div");d.textContent=v??"";return d.innerHTML};
-function status(r){if(!Number(r.contractBudget||0))return["ΧΩΡΙΣ ΣΥΜΒΑΣΗ","none"];if(!r.expiry)return["ΕΝΕΡΓΗ","active"];const t=new Date();t.setHours(0,0,0,0);const d=new Date(r.expiry+"T00:00:00"),n=Math.ceil((d-t)/86400000);if(n<0)return["ΕΧΕΙ ΛΗΞΕΙ","expired"];if(n<=30)return["ΛΗΓΕΙ ΣΥΝΤΟΜΑ","soon"];return["ΕΝΕΡΓΗ","active"]}
-function filesHtml(f){
-  const p=[];
-  if(f?.contract)p.push(`<div class="filegroup"><strong>ΣΥΜΒΑΣΗ</strong><a target="_blank" href="${f.contract.url}">${esc(f.contract.name)}</a></div>`);
-  if(f?.assignmentFiles?.length)p.push(`<div class="filegroup"><strong>ΔΙΑΔΙΚΑΣΙΕΣ ΑΝΑΘΕΣΗΣ</strong>${f.assignmentFiles.map(x=>`<a target="_blank" href="${x.url}">${esc(x.name)}</a>`).join("")}</div>`);
-  if(f?.invoiceFiles?.length)p.push(`<div class="filegroup"><strong>ΤΙΜΟΛΟΓΙΑ</strong>${f.invoiceFiles.map(x=>`<a target="_blank" href="${x.url}">${esc(x.name)}</a>`).join("")}</div>`);
-  return p.join("")||"—";
-}
-function render(){
-  const depts=[...document.querySelectorAll(".dc:checked")].map(x=>x.value), y=Number(year.value), s=q.value.toUpperCase();
-  let a=DATA.contracts.filter(r=>Number(r.year)===y && depts.includes(r.department||""));
-  if(s)a=a.filter(r=>JSON.stringify(r).toUpperCase().includes(s));
-  c1.textContent=a.length;c2.textContent=euro(a.reduce((x,r)=>x+Number(r.studyBudget||0),0));c3.textContent=euro(a.reduce((x,r)=>x+Number(r.contractBudget||0),0));c4.textContent=euro(a.reduce((x,r)=>x+Number(r.balanceWithVat||0),0));
-  body.innerHTML=a.map(r=>{const st=status(r);return `<tr><td>${esc(r.studyNo)}</td><td>${esc(r.department)}</td><td>${esc(r.agency)}</td><td>${esc(r.title)}</td><td>${esc(r.execution)}</td><td class="num">${euro(r.studyBudget)}</td><td>${esc(r.contractor)}</td><td class="num">${euro(r.contractBudget)}</td><td class="num"><strong>${euro(r.balanceWithVat)}</strong></td><td>${r.expiry||""}</td><td><span class="badge ${st[1]}">${st[0]}</span></td><td>${filesHtml(r.files)}</td></tr>`}).join("")||'<tr><td colspan="12" style="text-align:center;padding:25px">ΔΕΝ ΥΠΑΡΧΟΥΝ ΕΓΓΡΑΦΕΣ</td></tr>';
-}
-async function start(){
-  try{DATA=await (await fetch("./public-data.json?"+Date.now())).json()}catch{DATA={contracts:[],paralaves:[]}}
-  const ys=[...new Set(DATA.contracts.map(x=>Number(x.year)).filter(Boolean))].sort((a,b)=>b-a);year.innerHTML=ys.map(x=>`<option>${x}</option>`).join("");render()
-}
-year.onchange=render;q.oninput=render;document.querySelectorAll(".dc").forEach(x=>x.onchange=render);start();
-</script>
-</body></html>
+"use strict";
+let records=[];
+const $=id=>document.getElementById(id);
+function toUpperText(v){return String(v??"").toLocaleUpperCase("el-GR")}
+function esc(v){const d=document.createElement("div");d.textContent=v??"";return d.innerHTML}
+function euro(v){return new Intl.NumberFormat("el-GR",{style:"currency",currency:"EUR"}).format(Number(v||0))}
+function formatDateGR(value){const s=String(value||"").trim();const m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?`${m[3]}/${m[2]}/${m[1]}`:s}
+function daysUntil(s){if(!s)return null;const a=new Date();a.setHours(0,0,0,0);const b=new Date(s+"T00:00:00");return Math.ceil((b-a)/86400000)}
+function effectiveExpiry(r){return r.extensionExpiry||r.expiry||""}
+function statusFor(r){const has=Number(r.contractBudget||0)>0;if(!has)return {text:"ΧΩΡΙΣ ΣΥΜΒΑΣΗ",cls:"no-contract"};const d=effectiveExpiry(r)?daysUntil(effectiveExpiry(r)):null;const bal=r.balanceWithVat;const zero=bal!=null&&Number.isFinite(Number(bal))&&Math.abs(Number(bal))<.005;if(zero||(d!==null&&d<0))return{text:"ΕΛΗΞΕ",cls:"expired"};if(r.extensionExpiry)return{text:"ΠΑΡΑΤΑΣΗ",cls:"active"};if(d!==null&&d<=30)return{text:"ΛΗΓΕΙ ΣΥΝΤΟΜΑ",cls:"soon"};return{text:"ΕΝΕΡΓΗ",cls:"active"}}
+function safeUrl(v){try{const u=new URL(String(v||""),location.href);return ["http:","https:"].includes(u.protocol)?u.href:""}catch{return ""}}
+function fileLink(f,fallback){const url=safeUrl(f?.url);if(!url)return "";const name=String(f?.name||fallback).trim();const first=name.split(/\s+/)[0]||fallback;return `<div class="file-entry"><a class="file-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(name)}">${esc(first)}</a></div>`}
+function renderOnlineFiles(r){const f=r.files||{};const parts=[];if(f.contract?.url)parts.push(`<div class="file-group"><span class="file-group-title">ΣΥΜΒΑΣΗ</span>${fileLink(f.contract,"ΣΥΜΒΑΣΗ")}</div>`);if(Array.isArray(f.assignmentFiles)&&f.assignmentFiles.length)parts.push(`<div class="file-group"><span class="file-group-title">ΔΙΑΔΙΚΑΣΙΕΣ ΑΝΑΘΕΣΗΣ</span>${f.assignmentFiles.map(x=>fileLink(x,"ΑΡΧΕΙΟ")).join("")}</div>`);if(Array.isArray(f.invoiceFiles)&&f.invoiceFiles.length)parts.push(`<div class="file-group"><span class="file-group-title">ΤΙΜΟΛΟΓΙΑ</span>${f.invoiceFiles.map(x=>fileLink(x,"ΤΙΜΟΛΟΓΙΟ")).join("")}</div>`);return parts.join("")||"—"}
+function render(){const year=Number($("yearFilter").value||2026),q=$("searchInput").value.trim().toLocaleLowerCase("el-GR"),depts=[...document.querySelectorAll(".deptCheck:checked")].map(x=>x.value);let list=records.filter(r=>Number(r.year)===year&&depts.includes(toUpperText(r.department||"")));if(q)list=list.filter(r=>JSON.stringify(r).toLocaleLowerCase("el-GR").includes(q));const coll=new Intl.Collator("el-GR",{numeric:true,sensitivity:"base"});list.sort((a,b)=>{const x=String(a.studyNo??"").trim(),y=String(b.studyNo??"").trim();return !x?(y?1:0):(!y?-1:coll.compare(x,y))});
+$("countCard").textContent=list.length;$("studyCard").textContent=euro(list.reduce((s,r)=>s+Number(r.studyBudget||0),0));$("contractCard").textContent=euro(list.reduce((s,r)=>s+Number(r.contractBudget||0),0));$("balanceCard").textContent=euro(list.reduce((s,r)=>s+Number(r.balanceWithVat??r.contractBudget??0),0));
+const body=$("contractsBody");body.innerHTML="";if(!list.length){body.innerHTML='<tr><td colspan="15" style="padding:35px;text-align:center">Δεν υπάρχουν δημοσιευμένες εγγραφές για τις επιλογές αυτές.</td></tr>';return}
+for(const r of list){const st=statusFor(r),expiry=effectiveExpiry(r),days=expiry?daysUntil(expiry):null,bal=r.balanceWithVat??r.contractBudget??0;const has=Number(r.contractBudget||0)>0,zero=has&&r.balanceWithVat!=null&&Number.isFinite(Number(bal))&&Math.abs(Number(bal))<.005,expired=has&&days!==null&&days<0,last30=has&&days!==null&&days>=0&&days<=30;const tr=document.createElement("tr");if(zero||expired)tr.classList.add("contract-red");else if(last30)tr.classList.add("contract-gold");
+tr.innerHTML=`<td>${esc(toUpperText(r.studyNo||""))}</td><td>${esc(toUpperText(r.department||""))}</td><td>${esc(toUpperText(r.agency||""))}</td><td>${esc(toUpperText(r.title||""))}</td><td>${esc(toUpperText(r.execution||""))}</td><td class="num">${euro(r.studyBudget)}</td><td>${esc(toUpperText(r.contractor||""))}</td><td class="num">${euro(r.contractBudget)}</td><td class="num"><strong>${euro(bal)}</strong></td><td title="${r.extensionExpiry?"ΠΑΡΑΤΑΣΗ":"ΑΡΧΙΚΗ ΛΗΞΗ"}">${expiry?esc(formatDateGR(expiry))+(r.extensionExpiry?'<div style="font-size:10px;color:#64748b">ΠΑΡΑΤΑΣΗ</div>':""):""}</td><td>${days===null?"":days}</td><td><span class="badge ${st.cls}">${st.text}</span></td><td>${esc(toUpperText(r.studyAuthor||""))}</td><td>${esc(toUpperText(r.responsibleDirectorate||""))}</td><td>${renderOnlineFiles(r)}</td>`;body.appendChild(tr)}}
+function populateYears(){const y=[...new Set(records.map(r=>Number(r.year)).filter(Boolean))].sort((a,b)=>b-a);$("yearFilter").innerHTML=y.map(x=>`<option value="${x}">${x}</option>`).join("");if(y.includes(2026))$("yearFilter").value="2026"}
+async function start(){try{const res=await fetch("./public-data.json?ts="+Date.now(),{cache:"no-store"});if(!res.ok)throw new Error("Δεν βρέθηκε το public-data.json (HTTP "+res.status+")");const json=await res.json();if(!Array.isArray(json.contracts))throw new Error("Το public-data.json δεν έχει έγκυρη λίστα συμβάσεων.");records=json.contracts;populateYears();render();$("status").textContent="Δημοσιευμένα στοιχεία: "+(json.publishedAt?new Date(json.publishedAt).toLocaleString("el-GR"):"χωρίς ημερομηνία ενημέρωσης")}catch(e){$("status").classList.add("status-error");$("status").textContent="Δεν μπόρεσα να φορτώσω τη δημόσια προβολή: "+e.message}}
+$("yearFilter").addEventListener("change",render);$("searchInput").addEventListener("input",render);document.querySelectorAll(".deptCheck").forEach(x=>x.addEventListener("change",render));start();
+</script></body></html>
