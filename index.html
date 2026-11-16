@@ -611,7 +611,8 @@ tbody tr{
 <div class="topbar">
   <button class="btn-blue" onclick="signIn()">Σύνδεση Microsoft</button>
   <button class="btn-gray" onclick="signOut()">Αποσύνδεση</button>
-  <select id="yearFilter" onchange="render()"></select>
+  <select id="yearFilter" onchange="showYearContracts()"></select>
+  <button id="activeContractsBtn" class="btn-blue" type="button" aria-pressed="false" onclick="toggleActiveContracts()">ΟΛΕΣ ΟΙ ΕΝΕΡΓΕΣ ΣΥΜΒΑΣΕΙΣ</button>
 
   <label class="dept-filter"><input type="checkbox" class="deptCheck" value="ΚΤΙΡΙΑΚΩΝ" checked onchange="render()"> ΚΤΙΡΙΑΚΩΝ</label>
   <label class="dept-filter"><input type="checkbox" class="deptCheck" value="ΚΟΙΝΟΧΡΗΣΤΩΝ" checked onchange="render()"> ΚΟΙΝΟΧΡΗΣΤΩΝ</label>
@@ -629,7 +630,7 @@ tbody tr{
 <div class="container">
   <div id="status">Πατήστε «Σύνδεση Microsoft».</div>
   <div class="cards">
-    <div class="card"><div class="label">Εγγραφές έτους</div><div class="value" id="countCard">0</div></div>
+    <div class="card"><div class="label" id="countLabel">Εγγραφές έτους</div><div class="value" id="countCard">0</div></div>
     <div class="card"><div class="label">Προϋπολογισμός μελετών</div><div class="value" id="studyCard">0,00 €</div></div>
     <div class="card"><div class="label">Προϋπολογισμός συμβάσεων</div><div class="value" id="contractCard">0,00 €</div></div>
     <div class="card"><div class="label">Υπόλοιπο συμβάσεων με ΦΠΑ</div><div class="value" id="balanceCard">0,00 €</div></div>
@@ -1180,10 +1181,33 @@ function selectedDepartments(){
   return [...document.querySelectorAll(".deptCheck:checked")].map(x=>x.value);
 }
 
+let activeContractsOnly=false;
+function showYearContracts(){
+  activeContractsOnly=false;
+  render();
+}
+function toggleActiveContracts(){
+  activeContractsOnly=!activeContractsOnly;
+  if(activeContractsOnly){
+    document.querySelectorAll(".deptCheck").forEach(el=>el.checked=true);
+    document.getElementById("searchInput").value="";
+  }
+  render();
+}
+function isActiveContract(r){
+  const st=statusFor(r);
+  const balance=Number(r.balanceWithVat ?? r.contractBudget ?? 0);
+  return (st.cls==="active" || st.cls==="soon") && Number.isFinite(balance) && balance>=0.005;
+}
 function render(){
+  const activeBtn=document.getElementById("activeContractsBtn");
+  activeBtn.setAttribute("aria-pressed",String(activeContractsOnly));
+  activeBtn.textContent=activeContractsOnly?"ΕΠΙΣΤΡΟΦΗ ΣΤΟ ΕΤΟΣ":"ΟΛΕΣ ΟΙ ΕΝΕΡΓΕΣ ΣΥΜΒΑΣΕΙΣ";
+  activeBtn.className=activeContractsOnly?"btn-purple":"btn-blue";
+  document.getElementById("countLabel").textContent=activeContractsOnly?"Ενεργές συμβάσεις όλων των ετών":"Εγγραφές έτους";
   const year=Number(document.getElementById("yearFilter").value||2026),q=document.getElementById("searchInput").value.trim().toLowerCase();
   const depts=selectedDepartments();
-  let list=records.filter(r=>Number(r.year)===year && depts.includes(toUpperText(r.department||"")));
+  let list=records.filter(r=>(activeContractsOnly ? isActiveContract(r) : Number(r.year)===year) && depts.includes(toUpperText(r.department||"")));
   if(q)list=list.filter(r=>JSON.stringify(r).toLowerCase().includes(q));
   // Αύξουσα φυσική ταξινόμηση Α/Α μελέτης (1, 2, 10 αντί 1, 10, 2).
   // Οι εγγραφές χωρίς αριθμό μελέτης μπαίνουν τελευταίες.
@@ -1200,7 +1224,7 @@ function render(){
   document.getElementById("contractCard").textContent=euro(list.reduce((s,r)=>s+Number(r.contractBudget||0),0));
   document.getElementById("balanceCard").textContent=euro(list.reduce((s,r)=>s+Number(r.balanceWithVat ?? r.contractBudget ?? 0),0));
   const body=document.getElementById("contractsBody");body.innerHTML="";
-  if(!list.length){body.innerHTML='<tr><td colspan="16" style="padding:35px;text-align:center">Δεν υπάρχουν εγγραφές για το επιλεγμένο έτος.</td></tr>';return}
+  if(!list.length){body.innerHTML='<tr><td colspan="16" style="padding:35px;text-align:center">'+(activeContractsOnly?"Δεν βρέθηκαν ενεργές συμβάσεις με τα επιλεγμένα φίλτρα.":"Δεν υπάρχουν εγγραφές για το επιλεγμένο έτος.")+'</td></tr>';return}
   for(const r of list){
     const st=statusFor(r),expiry=effectiveExpiry(r),days=expiry?daysUntil(expiry):"",bal=r.balanceWithVat ?? r.contractBudget ?? 0;
     const tr=document.createElement("tr");
