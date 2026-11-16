@@ -83,7 +83,7 @@ input[type="text"], textarea, select {
 </head>
 <body>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v17.2 — ΜΕΤΑΒΑΣΗ ΠΑΡΑΛΑΒΩΝ</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v17.3 — ΑΥΤΟΜΑΤΗ ΣΥΜΒΑΣΗ PDF ΠΑΡΑΛΑΒΩΝ</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -122,8 +122,8 @@ input[type="text"], textarea, select {
   <section class="panel no-print" id="migrationPanel">
     <div class="panel-title">ΜΕΤΑΒΑΣΗ ΣΕ ΚΑΤΑΧΩΡΙΣΗ ΑΠΟ ΤΗΝ ΕΦΑΡΜΟΓΗ</div>
     <div style="padding:15px;display:grid;gap:10px">
-      <div>Επίλεξε το υπογεγραμμένο PDF. Η εφαρμογή θα προτείνει είδη, ποσότητες και τιμές. Για υπάρχουσα σύμβαση εισάγονται πρώτα οι παλαιές παραλαβές από Excel και ελέγχονται.</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><input id="contractPdf" type="file" accept="application/pdf,.pdf"><button class="blue" onclick="readContractPdf()">ΑΝΑΓΝΩΣΗ PDF</button><button class="blue" onclick="readContractPdf(true)">ΑΝΑΓΝΩΣΗ ΣΑΡΩΜΕΝΟΥ PDF (OCR)</button><button class="green" onclick="fillReviewFromExcel()">ΣΥΜΠΛΗΡΩΣΗ ΑΠΟ EXCEL</button><button class="gray" onclick="addReviewItem()">+ ΓΡΑΜΜΗ ΕΙΔΟΥΣ</button></div>
+      <div>Η εφαρμογή ανακτά αυτόματα το PDF που έχεις ήδη καταχωρίσει στις Συμβάσεις και προτείνει είδη, ποσότητες και τιμές. Για υπάρχουσα σύμβαση εισάγονται πρώτα οι παλαιές παραλαβές από Excel και ελέγχονται.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="blue" onclick="readContractPdf()">ΑΝΑΓΝΩΣΗ ΑΠΟΘΗΚΕΥΜΕΝΗΣ ΣΥΜΒΑΣΗΣ</button><label>Εναλλακτικά, άλλο PDF <input id="contractPdf" type="file" accept="application/pdf,.pdf" onchange="pdfRequest++;pdfLoaded=false;reviewItems=[];el('pdfConfirmed').checked=false;renderReview()"></label><button class="blue" onclick="readContractPdf(true)">ΑΝΑΓΝΩΣΗ ΣΑΡΩΜΕΝΟΥ PDF (OCR)</button><button class="green" onclick="fillReviewFromExcel()">ΣΥΜΠΛΗΡΩΣΗ ΑΠΟ EXCEL</button><button class="gray" onclick="addReviewItem()">+ ΓΡΑΜΜΗ ΕΙΔΟΥΣ</button></div>
       <div id="pdfStatus" class="muted"></div>
       <div class="table-wrap"><table style="min-width:800px"><thead><tr><th>Α/Α</th><th>Περιγραφή</th><th>Μ.Μ.</th><th>Ποσότητα</th><th>Τιμή μονάδας</th><th>Αξία</th><th></th></tr></thead><tbody id="pdfReview"></tbody></table></div>
       <label><input type="checkbox" id="pdfConfirmed"> Επιβεβαιώνω ότι όλα τα είδη, οι ποσότητες και οι τιμές συμφωνούν με το υπογεγραμμένο PDF.</label>
@@ -921,7 +921,7 @@ window.addEventListener("load",async()=>{
 });
 
 // v17: migration review and app-mode ledger. Excel is never reimported after activation.
-let reviewContractId=null, reviewItems=[], pdfLoaded=false, busy=false;
+let reviewContractId=null, reviewItems=[], pdfLoaded=false, busy=false, pdfRequest=0;
 const el=id=>document.getElementById(id);
 const cents=v=>Math.round(Number(v)*100);
 function strictAmount(v){let a=String(v).trim();if(!/^(?:\d+(?:[.,]\d+)?|\d{1,3}(?:\.\d{3})+,\d+)$/.test(a))return NaN;if(a.includes(','))a=a.replace(/\./g,'').replace(',','.');return Number(a);}
@@ -930,7 +930,7 @@ function renderEntryMode(){
  el('migrationPanel').classList.toggle('hidden',!l||active);el('entryPanel').classList.toggle('hidden',!active);
  el('sourceSettings').classList.toggle('hidden',!!active);el('excelSyncButton').disabled=!!active;el('saveButton').disabled=!!active;
  el('modeNote').textContent=active?'ΚΑΤΑΧΩΡΙΣΗ ΣΤΗΝ ΕΦΑΡΜΟΓΗ — Το Excel διατηρείται ως αρχείο. Οι νέες παραλαβές αποθηκεύονται στο OneDrive.':'Λειτουργία Excel — μόνο προβολή. Η μετάβαση στην εφαρμογή γίνεται ανά σύμβαση μετά από έλεγχο.';
- if(reviewContractId!==currentId){reviewContractId=currentId;reviewItems=[];pdfLoaded=false;el('contractPdf').value='';el('pdfConfirmed').checked=false;el('noPrevious').checked=false;el('pdfStatus').textContent='';renderReview();el('appQty').value='';el('appMoney').value='';el('appNote').value='';}
+ if(reviewContractId!==currentId){pdfRequest++;reviewContractId=currentId;reviewItems=[];pdfLoaded=false;el('contractPdf').value='';el('pdfConfirmed').checked=false;el('noPrevious').checked=false;el('pdfStatus').textContent='';renderReview();el('appQty').value='';el('appMoney').value='';el('appNote').value='';if(l&&!active&&getContract()?.contractFileId||l&&!active&&getContract()?.contractFileUrl){const selectedId=currentId;setTimeout(()=>{if(currentId===selectedId&&!pdfLoaded)readContractPdf(false,true);},0);}}
  if(active){const old=el('appItem').value;el('appItem').innerHTML=l.items.map(it=>`<option value="${esc(it.id)}">${esc(it.description)}</option>`).join('');if(l.items.some(it=>it.id===old))el('appItem').value=old;el('appDate').value=el('appDate').value||localDateISO(new Date());previewAppReceipt();}
 }
 function renderReview(){el('pdfReview').innerHTML=reviewItems.map((it,i)=>`<tr><td><input size="4" value="${esc(it.no)}" onchange="editReview(${i},'no',this.value)"></td><td><textarea rows="2" style="width:100%" onchange="editReview(${i},'description',this.value)">${esc(it.description)}</textarea></td><td><input size="6" value="${esc(it.unit)}" onchange="editReview(${i},'unit',this.value)"></td><td><input size="10" value="${esc(it.qty)}" onchange="editReview(${i},'qty',this.value)"></td><td><input size="10" value="${esc(it.price)}" onchange="editReview(${i},'price',this.value)"></td><td>${euro(strictAmount(it.qty)*strictAmount(it.price))}</td><td><button class="gray" onclick="reviewItems.splice(${i},1);el('pdfConfirmed').checked=false;renderReview()">×</button></td></tr>`).join('');}
@@ -992,9 +992,26 @@ function extractPdfRows(pages){
  const legacy=extractPdfRowsLegacy(pages);return out.length>=legacy.length?out:legacy;
 }
 async function ocrPdfPage(page,worker){const viewport=page.getViewport({scale:2.5});const canvas=document.createElement('canvas');canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);await page.render({canvasContext:canvas.getContext('2d'),viewport}).promise;const result=await worker.recognize(canvas);return (result.data.words||[]).map(w=>({str:w.text,width:(w.bbox.x1-w.bbox.x0)/2.5,transform:[1,0,0,1,w.bbox.x0/2.5,(canvas.height-w.bbox.y1)/2.5]}));}
+// Use the exact saved contract attachment, never a guessed PDF from another contract.
+async function storedContractPdf(c){
+ if(!c)throw Error('Επίλεξε σύμβαση.');
+ let itemId=c.contractFileId;
+ if(!itemId&&c.contractFileUrl){
+   // Legacy records: exact webUrl match in the original Files folder.
+   let url='https://graph.microsoft.com/v1.0/me/drive/root:/'+encPath(APP_FOLDER+'/Files')+':/children?$select=id,name,webUrl,file';
+   const normalize=v=>String(v||'').replace(/\/$/,'');
+   while(url&&!itemId){const res=await graph(url);if(!res.ok)throw Error('Αδυναμία αναζήτησης αποθηκευμένου PDF (HTTP '+res.status+').');const page=await res.json();const match=(page.value||[]).find(x=>x.file&&normalize(x.webUrl)===normalize(c.contractFileUrl));if(match)itemId=match.id;url=page['@odata.nextLink']||null;}
+ }
+ if(!itemId)throw Error('Δεν βρέθηκε συνδεδεμένο PDF. Άνοιξε τη σύμβαση στις Συμβάσεις και επίλεξε το αρχείο σύμβασης μία φορά.');
+ const res=await graph('https://graph.microsoft.com/v1.0/me/drive/items/'+encodeURIComponent(itemId)+'/content');
+ if(!res.ok)throw Error('Δεν ανακτήθηκε το PDF από το OneDrive (HTTP '+res.status+').');
+ const bytes=new Uint8Array(await res.arrayBuffer());
+ if(new TextDecoder().decode(bytes.slice(0,5))!=='%PDF-')throw Error('Το συνδεδεμένο αρχείο δεν είναι PDF.');
+ return bytes;
+}
 async function fillReviewFromExcel(){
- const cid=currentId;el('pdfConfirmed').checked=false;el('noPrevious').checked=false;pdfLoaded=false;
- if(!el('contractPdf').files[0]){el('pdfStatus').textContent='Επίλεξε πρώτα το υπογεγραμμένο PDF για αντιπαραβολή.';return;}
+ const cid=currentId;pdfRequest++;el('pdfConfirmed').checked=false;el('noPrevious').checked=false;pdfLoaded=false;
+ if(!el('contractPdf').files[0]&&!getContract()?.contractFileId&&!getContract()?.contractFileUrl){el('pdfStatus').textContent='Δεν υπάρχει συνδεδεμένο PDF για αντιπαραβολή.';return;}
  el('pdfStatus').textContent='Έλεγχος και ανάγνωση ειδών από Excel…';
  try{
   if(!(await syncFromExcel(true))||currentId!==cid)throw Error('Η ενημέρωση Excel δεν ολοκληρώθηκε.');
@@ -1003,14 +1020,14 @@ async function fillReviewFromExcel(){
   pdfLoaded=true;renderReview();el('pdfStatus').textContent=`Συμπληρώθηκαν ${reviewItems.length} είδη από το ελεγμένο Excel. Αντιπαράβαλε με το υπογεγραμμένο PDF και επιβεβαίωσε μόνο αν συμφωνούν.`;
  }catch(e){el('pdfStatus').textContent='Δεν έγινε συμπλήρωση: '+e.message;}
 }
-async function readContractPdf(forceOcr=false){
- const file=el('contractPdf').files[0],cid=currentId;if(!file){alert('Επίλεξε PDF.');return;}
- el('pdfStatus').textContent='Ανάγνωση PDF…';el('pdfConfirmed').checked=false;pdfLoaded=false;let worker=null;
- try{if(!window.pdfjsLib)throw Error('Δεν φορτώθηκε η βιβλιοθήκη PDF.');pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';const doc=await pdfjsLib.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;const pages=[];for(let i=1;i<=doc.numPages;i++){const page=await doc.getPage(i);pages.push((await page.getTextContent()).items);}
+async function readContractPdf(forceOcr=false,auto=false){
+ const file=el('contractPdf').files[0],cid=currentId,c=getContract(),request=++pdfRequest;const stillCurrent=()=>cid===currentId&&request===pdfRequest;
+ el('pdfStatus').textContent='Ανάκτηση και ανάγνωση PDF…';el('pdfConfirmed').checked=false;pdfLoaded=false;reviewItems=[];renderReview();let worker=null;
+ try{if(!window.pdfjsLib)throw Error('Δεν φορτώθηκε η βιβλιοθήκη PDF.');pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';const bytes=file?new Uint8Array(await file.arrayBuffer()):await storedContractPdf(c);if(!stillCurrent())return;const doc=await pdfjsLib.getDocument({data:bytes}).promise;const pages=[];for(let i=1;i<=doc.numPages;i++){const page=await doc.getPage(i);pages.push((await page.getTextContent()).items);}
  let detected=forceOcr?[]:extractPdfRows(pages);
- if(forceOcr||!detected.length){if(!window.Tesseract)throw Error('Δεν φορτώθηκε η βιβλιοθήκη OCR.');el('pdfStatus').textContent='OCR ελληνικών και αγγλικών…';worker=await Tesseract.createWorker('ell+eng',1,{logger:()=>{}});const scanned=[];for(let i=1;i<=doc.numPages;i++){if(cid!==currentId)return;el('pdfStatus').textContent=`OCR σελίδα ${i}/${doc.numPages}…`;scanned.push(await ocrPdfPage(await doc.getPage(i),worker));}detected=extractPdfRows(scanned);}
- if(cid!==currentId)return;reviewItems=detected;pdfLoaded=true;renderReview();const sum=detected.reduce((n,r)=>n+Math.round(strictAmount(r.qty)*strictAmount(r.price)*100),0)/100;el('pdfStatus').textContent=detected.length?`Βρέθηκαν ${detected.length} πιθανές γραμμές · αξία χωρίς ΦΠΑ ${euro(sum)}. Έλεγξε τις περιγραφές και τα ποσά με το PDF πριν επιβεβαιώσεις.`:'Δεν αναγνωρίστηκε ασφαλής πίνακας ούτε με OCR. Συμπλήρωσε τον πίνακα από το PDF ή χρησιμοποίησε το ελεγμένο Excel.';
- }catch(e){if(cid===currentId)el('pdfStatus').textContent='Αποτυχία ανάγνωσης PDF: '+e.message;}finally{if(worker)await worker.terminate();}
+ if(forceOcr||(!auto&&!detected.length)){if(!window.Tesseract)throw Error('Δεν φορτώθηκε η βιβλιοθήκη OCR.');el('pdfStatus').textContent='OCR ελληνικών και αγγλικών…';worker=await Tesseract.createWorker('ell+eng',1,{logger:()=>{}});const scanned=[];for(let i=1;i<=doc.numPages;i++){if(!stillCurrent())return;el('pdfStatus').textContent=`OCR σελίδα ${i}/${doc.numPages}…`;scanned.push(await ocrPdfPage(await doc.getPage(i),worker));}detected=extractPdfRows(scanned);}
+ if(!stillCurrent())return;reviewItems=detected;pdfLoaded=true;renderReview();const sum=detected.reduce((n,r)=>n+Math.round(strictAmount(r.qty)*strictAmount(r.price)*100),0)/100;el('pdfStatus').textContent=detected.length?`Βρέθηκαν ${detected.length} πιθανές γραμμές · αξία χωρίς ΦΠΑ ${euro(sum)}. Έλεγξε τις περιγραφές και τα ποσά με το PDF πριν επιβεβαιώσεις.`:'Δεν αναγνωρίστηκε ασφαλής πίνακας. Πάτησε ΑΝΑΓΝΩΣΗ ΣΑΡΩΜΕΝΟΥ PDF (OCR) ή συμπλήρωσε από το ελεγμένο Excel.';
+ }catch(e){if(stillCurrent())el('pdfStatus').textContent='Αποτυχία ανάγνωσης PDF: '+e.message;}finally{if(worker)await worker.terminate();}
 }
 function validatedPdfItems(){if(!pdfLoaded||!el('pdfConfirmed').checked||!reviewItems.length)throw Error('Διάβασε το PDF και επιβεβαίωσε τον πίνακα.');return reviewItems.map((r,i)=>{const q=strictAmount(r.qty),p=strictAmount(r.price);if(!r.description.trim()||!r.unit.trim()||!(q>0)||!(p>0))throw Error('Μη έγκυρη γραμμή PDF '+(i+1));return {id:'pdf-'+(i+1),description:r.description.trim(),unit:r.unit.trim(),initialQty:q,unitPrice:p,initialNet:cents(q*p)/100};});}
 async function persistAppLedger(candidate,expected){
