@@ -12,6 +12,17 @@
 @media(max-width:900px){.cards{grid-template-columns:1fr 1fr}}
 @media print{.toolbar{display:none}.container{max-width:none;padding:0}.head,.panel,.card{box-shadow:none}header{background:white!important;color:black!important}.wrap{overflow:visible}table{min-width:0}th,td{font-size:8px;padding:4px}th{background:#eee!important;color:black!important;border:1px solid #999}td{border:1px solid #ccc}@page{size:landscape;margin:8mm}}
 .date-group{border-left:2px solid #a8a0c8;text-align:center;background:#514098}.date-group.alt{background:#6453a4}.date-col{background:#f0edfa;text-align:right}.date-col.alt{background:#e5edf9}.start{border-left:2px solid #8e84b9}.total-col{background:#e2e8f0;font-weight:bold;text-align:right}thead .date-col,thead .total-col{background:#e6e1f4;color:#302451}tfoot td{font-weight:bold}.notice{padding:12px 15px;background:#e8eef5;border-radius:8px;margin-bottom:12px}.error{background:#fee2e2;color:#991b1b}select{max-width:100%}
+
+/* Ιστορικό: κάθε ημερομηνία σε ξεχωριστή ομάδα γραμμών */
+#dateHistoryTable{min-width:850px}
+#dateHistoryTable .day-heading td{background:#e7dff8;color:#39216d;font-weight:700;padding:11px;border-top:2px solid #7655aa}
+#dateHistoryTable .day-heading.alt td{background:#dceaf8;color:#23476c}
+#dateHistoryTable .day-entry.alt td{background:#f5f9fd}
+#dateHistoryTable .day-entry td{vertical-align:top}
+#dateHistoryTable .day-total td{background:#f1edf8;font-weight:700;border-bottom:2px solid #b8a7d6}
+#dateHistoryTable .day-total.alt td{background:#e9f2fa}
+#dateHistoryTable .day-heading td,#dateHistoryTable .day-total td{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+#dateHistoryTable td:nth-child(2){width:45%}
 </style>
 </head><body>
 <header><h1>Παραλαβές Συμβάσεων</h1><p>ΔΗΜΟΣΙΑ ΠΡΟΒΟΛΗ – ΜΟΝΟ ΑΝΑΓΝΩΣΗ</p></header>
@@ -27,7 +38,7 @@
 <div id="notice" class="notice">Φόρτωση δημοσιευμένων δεδομένων…</div><section class="head"><h2 id="h">—</h2><div class="muted" id="m"></div></section>
 <div class="cards"><div class="card"><div class="label">ΑΡΧΙΚΗ ΑΞΙΑ ΧΩΡΙΣ ΦΠΑ</div><div class="value" id="a">0,00 €</div></div><div class="card"><div class="label">ΥΠΟΛΟΙΠΟ ΧΩΡΙΣ ΦΠΑ</div><div class="value" id="b">0,00 €</div></div><div class="card"><div class="label">ΦΠΑ ΥΠΟΛΟΙΠΟΥ</div><div class="value" id="c">0,00 €</div></div><div class="card"><div class="label">ΥΠΟΛΟΙΠΟ ΜΕ ΦΠΑ</div><div class="value" id="d">0,00 €</div></div></div>
 <section class="panel"><div class="title">ΣΥΓΚΕΝΤΡΩΤΙΚΟΣ ΠΙΝΑΚΑΣ ΠΑΡΑΛΑΒΩΝ — ΕΩΣ ΤΗΝ ΤΕΛΕΥΤΑΙΑ ΠΑΡΑΛΑΒΗ</div><div class="wrap"><table><thead><tr><th>Α/Α</th><th>ΠΕΡΙΓΡΑΦΗ</th><th>Μ.Μ.</th><th class="num">ΑΡΧΙΚΗ ΠΟΣΟΤΗΤΑ</th><th class="num">ΤΙΜΗ ΜΟΝΑΔΑΣ</th><th class="num">ΑΡΧΙΚΗ ΑΞΙΑ ΧΩΡΙΣ ΦΠΑ</th><th class="num">ΠΑΡΑΛΗΦΘΕΙΣΑ ΠΟΣΟΤΗΤΑ</th><th class="num">ΠΑΡΑΛΗΦΘΕΙΣΑ ΑΞΙΑ ΧΩΡΙΣ ΦΠΑ</th><th class="num">ΥΠΟΛΟΙΠΟ ΜΟΝΑΔΩΝ</th><th class="num">ΥΠΟΛΟΙΠΟ ΧΩΡΙΣ ΦΠΑ</th><th class="num">ΥΠΟΛΟΙΠΟ ΜΕ ΦΠΑ</th></tr></thead><tbody id="items"></tbody></table></div></section>
-<section class="panel"><div class="title">ΙΣΤΟΡΙΚΟ ΠΑΡΑΛΑΒΩΝ ΑΝΑ ΗΜΕΡΟΜΗΝΙΑ</div><div class="wrap"><table><thead id="mh"></thead><tbody id="mb"></tbody><tfoot id="mf"></tfoot></table></div></section>
+<section class="panel"><div class="title">ΙΣΤΟΡΙΚΟ ΠΑΡΑΛΑΒΩΝ ΑΝΑ ΗΜΕΡΟΜΗΝΙΑ</div><div class="wrap"><table id="dateHistoryTable"><thead id="mh"></thead><tbody id="mb"></tbody><tfoot id="mf"></tfoot></table></div></section>
 </div>
 <script>
 let DATA={contracts:[],paralaves:[]},current=new URLSearchParams(location.search).get('contractId');
@@ -40,10 +51,37 @@ function render(){const c=DATA.contracts.find(x=>x.id===current),l=DATA.paralave
  const vat=n(l.vat??24),its=l.items||[],rs=l.receipts||[],sum=l.summary||{};$('m').textContent+=` | ΦΠΑ: ${vat}%`;
  for(const [id,key] of [['a','initialNet'],['b','remainingNet'],['c','remainingVat'],['d','remainingWithVat']])$(id).textContent=euro(sum[key]);
  $('items').innerHTML=its.map((it,i)=>{const t=totals(rs.filter(r=>r.itemId===it.id),it),u=it.baseRemainingUnits??null,v=it.baseRemainingNet??null;return `<tr><td>${i+1}</td><td>${esc(it.description)}</td><td>${esc(it.unit)}</td><td class="num">${qty(it.initialQty)}</td><td class="num">${n(it.unitPrice).toLocaleString('el-GR',{minimumFractionDigits:2,maximumFractionDigits:6})} €</td><td class="num">${euro(it.initialNet)}</td><td class="num">${qty(t.q)}</td><td class="num">${euro(t.v)}</td><td class="num">${qty(u)}</td><td class="num">${euro(v)}</td><td class="num">${euro(v==null?null:n(v)*(1+vat/100))}</td></tr>`}).join('');
- const ds=[...new Set(rs.map(r=>r.date).filter(Boolean))].sort();if(!ds.length){$('mb').innerHTML='<tr><td>Δεν υπάρχουν δημοσιευμένες παραλαβές.</td></tr>';return}
- const cls=(i)=>i%2?' alt':'';$('mh').innerHTML='<tr><th rowspan="2">Α/Α</th><th rowspan="2">ΠΕΡΙΓΡΑΦΗ</th><th rowspan="2">Μ.Μ.</th>'+ds.map((d,i)=>`<th colspan="2" class="date-group${cls(i)}">${esc(date(d))}</th>`).join('')+'<th colspan="2" class="center">ΣΥΝΟΛΟ ΠΑΡΑΛΑΒΩΝ</th></tr><tr>'+ds.map((d,i)=>`<th class="date-col start${cls(i)}">ΠΟΣΟΤΗΤΑ</th><th class="date-col${cls(i)}">ΑΞΙΑ ΧΩΡΙΣ ΦΠΑ</th>`).join('')+'<th class="total-col">ΠΟΣΟΤΗΤΑ</th><th class="total-col">ΑΞΙΑ ΧΩΡΙΣ ΦΠΑ</th></tr>';
- const daily=ds.map(()=>0);let grand=0;$('mb').innerHTML=its.map((it,i)=>{const rr=rs.filter(r=>r.itemId===it.id),t=totals(rr,it);grand+=t.v;return `<tr><td>${i+1}</td><td>${esc(it.description)}</td><td>${esc(it.unit)}</td>`+ds.map((d,j)=>{const matched=rr.filter(r=>r.date===d),x=totals(matched,it);daily[j]+=x.v;return `<td class="date-col start${cls(j)}">${matched.length?qty(x.q):'—'}</td><td class="date-col${cls(j)}">${matched.length?euro(x.v):'—'}</td>`}).join('')+`<td class="total-col">${qty(t.q)}</td><td class="total-col">${euro(t.v)}</td></tr>`}).join('');$('mf').innerHTML='<tr><td colspan="3">ΣΥΝΟΛΟ ΑΞΙΑΣ ΑΝΑ ΗΜΕΡΟΜΗΝΙΑ</td>'+daily.map((v,i)=>`<td class="date-col start${cls(i)}">—</td><td class="date-col${cls(i)}">${euro(v)}</td>`).join('')+`<td class="total-col">—</td><td class="total-col">${euro(grand)}</td></tr>`;
+ groupedReceiptHistory(its,rs,$('mh'),$('mb'),$('mf'));
 }
+function groupedReceiptHistory(items, receipts, head, body, foot){
+  head.innerHTML='<tr><th>Α/Α</th><th>Περιγραφή είδους</th><th>Μ.Μ.</th><th>Τρόπος παραλαβής</th><th class="num">Ποσότητα</th><th class="num">Αξία χωρίς ΦΠΑ</th></tr>';
+  body.innerHTML=""; foot.innerHTML="";
+  const groups=new Map();
+  for(const r of receipts){
+    const key=String(r.date||"");
+    if(!groups.has(key))groups.set(key,[]);
+    groups.get(key).push(r);
+  }
+  if(!groups.size){body.innerHTML='<tr><td colspan="6" style="padding:20px;text-align:center">Δεν υπάρχουν παραλαβές.</td></tr>';return;}
+  const fmtQty=v=>Number(v).toLocaleString("el-GR",{maximumFractionDigits:3});
+  const fmtDate=d=>/^\d{4}-\d{2}-\d{2}$/.test(d)?d.split("-").reverse().join("/"):(d||"ΧΩΡΙΣ ΗΜΕΡΟΜΗΝΙΑ");
+  let grand=0, html="";
+  const dates=[...groups.keys()].sort((a,b)=>a===b?0:!a?1:!b?-1:a.localeCompare(b));
+  dates.forEach((d,i)=>{
+    const alt=i%2?" alt":"", rs=groups.get(d); let daily=0;
+    html+=`<tr class="day-heading${alt}"><td colspan="6">${esc(fmtDate(d))} — ${rs.length} ${rs.length===1?"ΠΑΡΑΛΑΒΗ":"ΠΑΡΑΛΑΒΕΣ"}</td></tr>`;
+    rs.forEach((r,j)=>{
+      const it=items.find(x=>x.id===r.itemId), val=Number(r.netValue||0), isUnits=r.mode==="units";
+      daily+=val;
+      html+=`<tr class="day-entry${alt}"><td>${j+1}</td><td>${esc(it?.description||"ΜΗ ΑΝΑΓΝΩΡΙΣΜΕΝΟ ΕΙΔΟΣ")}</td><td>${esc(it?.unit||"")}</td><td>${isUnits?"ΠΟΣΟΤΗΤΑ":"ΧΡΗΜΑΤΙΚΗ ΑΞΙΑ"}</td><td class="num">${isUnits?fmtQty(r.units||0):"—"}</td><td class="num">${euro(val)}</td></tr>`;
+    });
+    grand+=daily;
+    html+=`<tr class="day-total${alt}"><td colspan="5">ΣΥΝΟΛΟ ΗΜΕΡΑΣ ${esc(fmtDate(d))}</td><td class="num">${euro(daily)}</td></tr>`;
+  });
+  body.innerHTML=html;
+  foot.innerHTML=`<tr><td colspan="5">ΓΕΝΙΚΟ ΣΥΝΟΛΟ ΠΑΡΑΛΑΒΩΝ ΧΩΡΙΣ ΦΠΑ</td><td class="num">${euro(grand)}</td></tr>`;
+}
+
 async function start(){try{const r=await fetch('./public-data.json?'+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);DATA=await r.json();if(!Array.isArray(DATA.contracts)||!Array.isArray(DATA.paralaves))throw Error('Μη έγκυρα δεδομένα');$('notice').textContent='ΔΗΜΟΣΙΑ ΠΡΟΒΟΛΗ — Τελευταία δημοσίευση: '+(DATA.publishedAt?new Date(DATA.publishedAt).toLocaleString('el-GR'):'—');fill()}catch(e){$('notice').classList.add('error');$('notice').textContent='Δεν φορτώθηκαν τα δημοσιευμένα δεδομένα: '+e.message}}
 $('sel').onchange=()=>{current=$('sel').value;render()};document.querySelectorAll('.dc').forEach(x=>x.onchange=fill);start();
 </script></body></html>
