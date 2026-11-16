@@ -70,7 +70,7 @@ input[type="text"], textarea, select {
 </head>
 <body>
 <header>
-  <h1>Παραλαβές Συμβάσεων</h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v16.11.2</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -218,10 +218,7 @@ function recompute(){
  l.summary={initialNet:init,remainingNet:rem,remainingVat:vatAmt,remainingWithVat:total,updatedAt:new Date().toISOString()};
  return l.summary
 }
-async function saveAll(){
- try{recompute();parData.updatedAt=new Date().toISOString();await writeJson(PAR_FILE,parData);render();setStatus("Οι παραλαβές και τα υπόλοιπα αποθηκεύτηκαν στο OneDrive.","ok")}
- catch(e){setStatus("Σφάλμα αποθήκευσης:\n"+e.message,"err")}
-}
+async function saveAll(){return syncFromExcel(true)}
 async function loadAll(){
  setStatus("Φόρτωση δεδομένων...");
  const s=await readJson(DATA_FILE);contracts=Array.isArray(s?.records)?s.records:[];
@@ -273,9 +270,9 @@ async function loadAll(){
    getLedger(true);
    render();
    const l=getLedger(false);
-   if((l.excelPath||getContract()?.excelPath)&&!l.lastAutoSyncSession){
-     l.lastAutoSyncSession=true;
-     await syncFromExcel(false);
+   if(l.excelPath||getContract()?.excelPath){
+     await syncFromExcel(true);
+     return; // Διατηρούμε το αποτέλεσμα του ελέγχου στην οθόνη.
    }
  }
  else render();
@@ -399,7 +396,7 @@ function renderDateHistoryMatrix(){
     let itemQty=0,itemNet=0;
     const dateCells=dates.map((date,j)=>{
       const matched=itemReceipts.filter(r=>r.date===date);
-      const qty=matched.filter(r=>r.mode==="units").reduce((sum,r)=>sum+Number(r.units||0),0);
+      const qty=matched.reduce((sum,r)=>sum+(r.mode==="units"?Number(r.units||0):(it.unitPrice>0?Number(r.netValue||0)/it.unitPrice:0)),0);
       const net=matched.reduce((sum,r)=>sum+Number(r.netValue||0),0);
       itemQty+=qty;itemNet+=net;
       dailyTotals[j].qty+=qty;dailyTotals[j].net+=net;
@@ -439,12 +436,12 @@ function render(){
  l.items.forEach((it,i)=>{
    const x=computeLine(it,l);
    const rs=(l.receipts||[]).filter(r=>r.itemId===it.id && r.source==="excel");
-   const receivedQty=rs.filter(r=>r.mode==="units").reduce((sum,r)=>sum+Number(r.units||0),0);
-   const receivedNet=rs.reduce((sum,r)=>sum+Number(r.netValue||0),0);
+   const receivedQty=Number(it.initialQty||0)-x.remainingUnits;
+   const receivedNet=Number(it.initialNet||0)-x.remainingNet;
    const tr=document.createElement("tr");
    tr.innerHTML=`
     <td>${i+1}</td><td>${esc(it.description)}</td><td>${esc(it.unit||"")}</td>
-    <td class="num">${qtyFmt(it.initialQty)}</td><td class="num">${euro(it.unitPrice)}</td>
+    <td class="num">${qtyFmt(it.initialQty)}</td><td class="num">${Number(it.unitPrice||0).toLocaleString("el-GR",{minimumFractionDigits:2,maximumFractionDigits:6})} €</td>
     <td class="num">${euro(it.initialNet)}</td>
     <td class="num"><strong>${qtyFmt(receivedQty)}</strong></td>
     <td class="num"><strong>${euro(receivedNet)}</strong></td>
@@ -468,7 +465,7 @@ function buildHeader(rows){
      for(let c=0;c<max;c++)h[c]=norm([rows[r]?.[c]??"",depth===2?(rows[r+1]?.[c]??""):""].join(" "));
      let score=0;
      for(const x of h){if(x.includes("ΠΕΡΙΓΡΑΦ")||x.includes("ΤΙΤΛ"))score+=3;if(x.includes("ΠΟΣΟΤ"))score+=2;if(x.includes("ΤΙΜ")&&x.includes("ΜΟΝ"))score+=3;if(x.includes("Μ.Μ")||x==="ΜΜ"||x.includes("ΜΟΝΑΔΑ ΜΕΤΡ"))score+=2;if(x.includes("ΥΠΟΛΟΙΠ"))score+=1}
-     if(score>best.score)best={score,row:r,depth,headers:h}
+     if(score>best.score || (score===best.score && depth<best.depth))best={score,row:r,depth,headers:h}
    }
  }
  return best
@@ -518,19 +515,19 @@ function excelHeaderToDate(value){
   return null;
 }
 
-function findExcelReceiptColumns(rows, startCol, sheet){
+function findExcelReceiptColumns(rows, startCol, sheet, headerEnd){
   const cols=[];
   const maxCols=Math.max(...rows.slice(0,8).map(r=>r?.length||0),0);
 
   for(let c=Math.max(startCol,0); c<maxCols; c++){
     let found=null;
     let label="";
-    for(let r=0; r<Math.min(8,rows.length); r++){
+    for(let r=0; r<Math.min(headerEnd,rows.length); r++){
       // Read the underlying numeric Excel serial directly from the worksheet.
       // This avoids timezone shifts when SheetJS or JavaScript builds a Date object.
       const cell=sheet[XLSX.utils.encode_cell({r,c})];
       const raw=(cell && cell.t==="n") ? cell.v : rows[r]?.[c];
-      const date=excelHeaderToDate(raw);
+      const date=typeof raw==="number" && !XLSX.SSF.is_date(cell?.z||"") ? null : excelHeaderToDate(raw);
       if(date){
         found=date;
         label=toUpperText(String(cell?.w ?? raw ?? ""));
@@ -573,8 +570,8 @@ function auditExcelBalance(rows,ledger,receiptCols){
  const historyPresent=receiptCols.length>0;
  for(const item of ledger.items){
   const row=rows[item.sourceRow-1]||[];
-  const historyQty=receiptCols.reduce((sum,hc)=>sum+Math.max(0,num(row[hc.col])),0);
-  if(historyPresent && item.excelRemainingUnitsProvided){
+  const historyQty=(ledger.receipts||[]).filter(r=>r.itemId===item.id && r.source==="excel").reduce((sum,r)=>sum+(r.mode==="units"?Number(r.units||0):(item.unitPrice>0?Number(r.netValue||0)/item.unitPrice:0)),0);
+  if(historyPresent && item.originalExcelRemainingUnitsProvided){
    const theoretical=Number(item.initialQty||0)-historyQty;
    const actual=Number(item.baseRemainingUnits||0);
    // Απόκλιση από στρογγυλοποίηση μέχρι 0,01 μονάδας.
@@ -612,8 +609,8 @@ async function syncFromExcel(showMessage=true){
   if(!r.ok)throw new Error("Δεν βρέθηκε το Excel στο OneDrive. Έλεγξε τη διαδρομή.");
   // Διαβάζουμε τις ημερομηνίες Excel ως αριθμούς σειράς, όχι ως JS Date.
    // Έτσι αποφεύγουμε μετατόπιση κατά μία ημέρα λόγω ζώνης ώρας.
-   const wb=XLSX.read(await r.arrayBuffer(),{type:"array",cellDates:false});
-  let sh=wb.Sheets[l.excelSheet];if(!sh){const n=wb.SheetNames.find(n=>norm(n)===norm(l.excelSheet));if(n)sh=wb.Sheets[n]}if(!sh)sh=wb.Sheets[wb.SheetNames[0]];
+   const wb=XLSX.read(await r.arrayBuffer(),{type:"array",cellDates:false,cellNF:true});
+  let sh=wb.Sheets[l.excelSheet];if(!sh){const n=wb.SheetNames.find(n=>norm(n)===norm(l.excelSheet));if(n)sh=wb.Sheets[n]}if(!sh)throw new Error("Δεν βρέθηκε το δηλωμένο φύλλο Excel.");
   const rows=XLSX.utils.sheet_to_json(sh,{header:1,defval:"",raw:true});
   const h=buildHeader(rows),H=h.headers;
   const cDesc=findCol(H,x=>x.includes("ΠΕΡΙΓΡΑΦ")||x.includes("ΤΙΤΛ"));
@@ -622,13 +619,14 @@ async function syncFromExcel(showMessage=true){
   const cPrice=findCol(H,x=>x.includes("ΤΙΜ")&&x.includes("ΜΟΝ"));
   const cExpense=findCol(H,x=>(x.includes("ΔΑΠΑΝ")||x.includes("ΑΞΙΑ"))&&!x.includes("ΥΠΟΛΟΙΠ")&&!x.includes("ΠΑΡΑΛΑΒ"));
   const cRemUnits=findCol(H,x=>x.includes("ΥΠΟΛΟΙΠ")&&(x.includes("Μ.Μ")||x.includes("ΜΟΝΑΔ")||x.includes("ΠΟΣΟΤ")));
+  const cReceived=findCol(H,x=>x.includes("ΠΑΡΑΛΑΒ")&&!x.includes("ΥΠΟΛΟΙΠ")&&(x.includes("€")||x.includes("ΑΞΙΑ")));
   const cRemValue=findCol(H,x=>x.includes("ΥΠΟΛΟΙΠ")&&(x.includes("€")||x.includes("ΑΞΙΑ")||x.includes("ΠΟΣΟ")||x.includes("ΣΥΜΒΑΣ")));
   if(cDesc<0||cQty<0||cPrice<0)throw new Error("Δεν μπόρεσα να αναγνωρίσω τις στήλες Περιγραφή / Ποσότητα / Τιμή μονάδας.");
 
   // Οι στήλες δεξιά από τον βασικό πίνακα μπορούν να έχουν ημερομηνίες παραλαβής
   // (π.χ. 20/05/2026 ΠΑΡΑΛΑΒΗ ΥΛΙΚΩΝ). Θα μετατραπούν αυτόματα σε ιστορικό.
-  const historyStartCol=Math.max(cRemValue,cRemUnits,cExpense,cPrice,cQty,cUnit,cDesc)+1;
-  const excelReceiptCols=findExcelReceiptColumns(rows,historyStartCol,sh);
+  const historyStartCol=Math.max(cReceived,cRemValue,cRemUnits,cExpense,cPrice,cQty,cUnit,cDesc)+1;
+  const excelReceiptCols=findExcelReceiptColumns(rows,historyStartCol,sh,h.row+h.depth);
 
   const newItems=[];let blanks=0;
   for(let rr=h.row+h.depth;rr<rows.length;rr++){
@@ -638,10 +636,58 @@ async function syncFromExcel(showMessage=true){
     const unit=cUnit>=0?toUpperText(String(row[cUnit]??"").trim()):"";
     const excelRemainingUnitsProvided=cRemUnits>=0&&String(row[cRemUnits]??"").trim()!=="";
     const excelRemainingNetProvided=cRemValue>=0&&String(row[cRemValue]??"").trim()!=="";
-    const baseUnits=excelRemainingUnitsProvided?num(row[cRemUnits]):qty;
-    const baseNet=excelRemainingNetProvided?num(row[cRemValue]):expense;
-    const itemId=hash(norm(desc)+"|"+norm(unit)+"|"+price.toFixed(6));
-    newItems.push({id:itemId,sourceRow:rr+1,description:desc,unit,initialQty:qty,unitPrice:price,initialNet:expense||qty*price,baseRemainingUnits:baseUnits,baseRemainingNet:baseNet,excelRemainingUnitsProvided,excelRemainingNetProvided});
+    const initialNet=expense||qty*price;
+    const hasReceived=cReceived>=0 && String(row[cReceived]??"").trim()!=="";
+    const received=hasReceived?num(row[cReceived]):null;
+    const rawBalance=excelRemainingNetProvided?num(row[cRemValue]):null;
+    const factor=1+Number(l.vat??24)/100;
+    const close=(a,b)=>Math.abs(a-b)<=0.05;
+    const entries=excelReceiptCols.map(hc=>{
+      const cell=sh[XLSX.utils.encode_cell({r:rr,c:hc.col})];
+      const amount=num(row[hc.col]);
+      const format=String(cell?.z||"")+" "+String(cell?.w||"");
+      const label=norm(hc.label||"");
+      const money=/€|EUR|ΕΥΡΩ/i.test(format+" "+label);
+      const quantity=/ΠΟΣΟΤ|ΜΟΝΑΔΕΣ|Μ\.Μ\./.test(label);
+      if(money&&quantity)throw new Error(`Γραμμή Excel ${rr+1}: αντιφατική μορφή παραλαβής στη στήλη ${hc.col+1}.`);
+      return {...hc,amount,modes:money?["value"]:quantity?["units"]:["units","value"]};
+    }).filter(x=>x.amount!==0);
+    const candidates=[];
+    const targets=[];
+    for(const gross of [false,true]){
+      const fromBalance=rawBalance===null?null:initialNet-rawBalance/(gross?factor:1);
+      const target=hasReceived?received:fromBalance;
+      if(target===null)continue;
+      if(fromBalance!==null&&!close(target,fromBalance))continue;
+      if(target< -0.05 || target>initialNet+0.05)continue;
+      if(excelRemainingUnitsProvided && price>0 && Math.abs(qty-target/price-num(row[cRemUnits]))>0.011)continue;
+      if(!targets.some(t=>close(t.target,target)))targets.push({target,gross});
+    }
+    if(!targets.length && !hasReceived && rawBalance===null && entries.every(e=>e.modes.length===1)){
+      targets.push({target:entries.reduce((sum,e)=>sum+(e.modes[0]==="value"?e.amount:e.amount*price),0),gross:false});
+    }
+    let visited=0;
+    for(const t of targets){
+      if(!entries.length){candidates.push({...t,choices:[]});continue;}
+      // Οι άγνωστες μορφές εξετάζονται ανά κελί, όχι ανά σύμβαση.
+      const opts=entries.map(e=>e.modes.map(mode=>({mode,net:mode==="value"?e.amount:e.amount*price})));
+      const min=Array(opts.length+1).fill(0),max=Array(opts.length+1).fill(0);
+      for(let j=opts.length-1;j>=0;j--){min[j]=min[j+1]+Math.min(...opts[j].map(o=>o.net));max[j]=max[j+1]+Math.max(...opts[j].map(o=>o.net));}
+      const walk=(j,sum,choices)=>{
+        if(++visited>100000)throw new Error(`Γραμμή Excel ${rr+1}: πολλές ασαφείς παραλαβές. Χρησιμοποίησε μορφή Νομισματική (€) μόνο στα χρηματικά κελιά.`);
+        if(sum+min[j]>t.target+0.05||sum+max[j]<t.target-0.05)return;
+        if(j===opts.length){if(close(sum,t.target))candidates.push({...t,choices:[...choices]});return;}
+        for(const o of opts[j]){choices.push(o.mode);walk(j+1,sum+o.net,choices);choices.pop();if(candidates.length>1)return;}
+      };
+      walk(0,0,[]);
+      if(candidates.length>1)break;
+    }
+    if(candidates.length!==1)throw new Error(`Γραμμή Excel ${rr+1}: ${candidates.length?"δεν διακρίνονται με βεβαιότητα ποσά και ποσότητες":"δεν συμφωνούν οι παραλαβές, η αξία και το υπόλοιπο"}. Χρησιμοποίησε μορφή Νομισματική (€) στα χρηματικά κελιά. Δεν ενημερώθηκαν τα δεδομένα.`);
+    const chosen=candidates[0];
+    const net=initialNet-chosen.target;
+    const baseUnits=excelRemainingUnitsProvided?num(row[cRemUnits]):(price>0?qty-chosen.target/price:qty);
+    const itemId=hash(norm(desc)+"|"+norm(unit)+"|"+price.toFixed(6)+"|"+(rr+1));
+    newItems.push({id:itemId,sourceRow:rr+1,description:desc,unit,initialQty:qty,unitPrice:price,initialNet,baseRemainingUnits:baseUnits,baseRemainingNet:net,excelRemainingUnitsProvided:true,excelRemainingNetProvided:true,originalExcelRemainingUnitsProvided:excelRemainingUnitsProvided,receiptEntries:entries.map((e,i)=>({...e,mode:chosen.choices[i]}))});
   }
   if(!newItems.length)throw new Error("Δεν βρέθηκαν γραμμές ειδών στον πίνακα.");
 
@@ -657,26 +703,21 @@ async function syncFromExcel(showMessage=true){
     const rr=(item.sourceRow||1)-1;
     const row=rows[rr]||[];
 
-    for(const hc of excelReceiptCols){
-      const raw=row[hc.col];
-      const units=num(raw);
-
-      // Κενό ή μηδενικό κελί = δεν υπήρξε παραλαβή για το συγκεκριμένο είδος εκείνη την ημερομηνία.
-      if(!(units>0)) continue;
-
+    for(const hc of item.receiptEntries){
+      const amount=hc.amount;
+      const units=hc.mode==="value"?0:amount;
       l.receipts.push({
         id:"excel-"+hash(item.id+"|"+hc.date+"|"+hc.col),
         itemId:item.id,
-        mode:"units",
+        mode:hc.mode,
         units:units,
-        netValue:units*Number(item.unitPrice||0),
+        netValue:hc.mode==="value"?amount:units*Number(item.unitPrice||0),
         date:hc.date,
         note:hc.label || "ΠΑΡΑΛΑΒΗ ΑΠΟ EXCEL",
         source:"excel",
         excelColumn:hc.col,
         createdAt:new Date().toISOString()
       });
-
       importedHistoryCount++;
     }
   }
@@ -702,7 +743,9 @@ async function syncFromExcel(showMessage=true){
   }
   l.lastExcelSync=new Date().toISOString();
   recompute();
-  await saveAll();
+  parData.updatedAt=new Date().toISOString();
+  await writeJson(PAR_FILE,parData);
+  render();
 
   if(showMessage){
     setStatus(
@@ -714,7 +757,7 @@ async function syncFromExcel(showMessage=true){
       "ok"
     );
   }
- }catch(e){setStatus("Σφάλμα ενημέρωσης από Excel:\n"+e.message,"err")}
+ }catch(e){l.items=originalItems;l.receipts=originalReceipts;l.summary=originalSummary;render();const message="ΣΦΑΛΜΑ ΕΝΗΜΕΡΩΣΗΣ EXCEL — εμφανίζονται παλαιά στοιχεία, όχι επιβεβαιωμένο υπόλοιπο.\n"+e.message;setExcelAudit(message,"error");setStatus(message,"err")}
 }
 
 let pickerStack=[];
@@ -785,7 +828,6 @@ async function chooseExcelItem(item){
   const c=getContract();
   if(c)c.excelPath=full;
   pickerDialog.close();
-  await saveAll();
   setStatus("Επιλέχθηκε το Excel: "+item.name+". Γίνεται ανάγνωση του πίνακα...","ok");
   await syncFromExcel(true);
 }
