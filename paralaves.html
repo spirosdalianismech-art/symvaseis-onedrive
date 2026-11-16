@@ -66,11 +66,22 @@ input[type="text"], textarea, select {
  #dateHistoryTable .date-col.alt { background:#f0f0f0 !important; print-color-adjust:exact; -webkit-print-color-adjust:exact; }
  #dateHistoryTable .date-group-start { border-left:2px solid #777 !important; }
 }
+
+/* Ιστορικό: κάθε ημερομηνία σε ξεχωριστή ομάδα γραμμών */
+#dateHistoryTable{min-width:850px}
+#dateHistoryTable .day-heading td{background:#e7dff8;color:#39216d;font-weight:700;padding:11px;border-top:2px solid #7655aa}
+#dateHistoryTable .day-heading.alt td{background:#dceaf8;color:#23476c}
+#dateHistoryTable .day-entry.alt td{background:#f5f9fd}
+#dateHistoryTable .day-entry td{vertical-align:top}
+#dateHistoryTable .day-total td{background:#f1edf8;font-weight:700;border-bottom:2px solid #b8a7d6}
+#dateHistoryTable .day-total.alt td{background:#e9f2fa}
+#dateHistoryTable .day-heading td,#dateHistoryTable .day-total td{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+#dateHistoryTable td:nth-child(2){width:45%}
 </style>
 </head>
 <body>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v16.11.2</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v16.11.3</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -129,7 +140,7 @@ input[type="text"], textarea, select {
   <section class="panel">
     <div class="panel-title">
       <span>Ιστορικό παραλαβών ανά ημερομηνία</span>
-      <span class="muted">Κάθε ημερομηνία έχει ξεχωριστές στήλες ποσότητας και αξίας</span>
+      <span class="muted">Οι παραλαβές ομαδοποιούνται ανά ημερομηνία, μία ανά γραμμή</span>
     </div>
     <div class="table-wrap">
       <table id="dateHistoryTable">
@@ -354,66 +365,39 @@ async function selectContract(id){
  if((l.excelPath||getContract()?.excelPath))await syncFromExcel(false)
 }
 
-function renderDateHistoryMatrix(){
-  const l=getLedger(false);
-  const head=document.getElementById("dateHistoryHead");
-  const body=document.getElementById("dateHistoryBody");
-  const table=document.getElementById("dateHistoryTable");
-  if(!head||!body||!table)return;
-  let foot=table.querySelector("tfoot");
-  if(!foot){ foot=document.createElement("tfoot");table.appendChild(foot); }
-  if(!l || !l.items.length){
-    head.innerHTML="";foot.innerHTML="";
-    body.innerHTML='<tr><td style="padding:20px;text-align:center">Δεν υπάρχουν είδη.</td></tr>';
-    return;
+function groupedReceiptHistory(items, receipts, head, body, foot){
+  head.innerHTML='<tr><th>Α/Α</th><th>Περιγραφή είδους</th><th>Μ.Μ.</th><th>Τρόπος παραλαβής</th><th class="num">Ποσότητα</th><th class="num">Αξία χωρίς ΦΠΑ</th></tr>';
+  body.innerHTML=""; foot.innerHTML="";
+  const groups=new Map();
+  for(const r of receipts){
+    const key=String(r.date||"");
+    if(!groups.has(key))groups.set(key,[]);
+    groups.get(key).push(r);
   }
-
-  // Οι παραλαβές της ίδιας ημερομηνίας αθροίζονται, ακόμα και αν
-  // στο Excel η ίδια ημερομηνία εμφανίζεται σε περισσότερες στήλες.
-  const dates=[...new Set((l.receipts||[]).filter(r=>r.source==="excel").map(r=>r.date).filter(Boolean))].sort();
-  const fmtQty=v=>Number(v||0).toLocaleString("el-GR",{maximumFractionDigits:3});
-  if(!dates.length){
-    head.innerHTML="<tr><th>Α/Α</th><th>Περιγραφή</th><th>Μ.Μ.</th><th>Παραλαβές</th></tr>";
-    body.innerHTML=l.items.map((it,i)=>`<tr><td>${i+1}</td><td>${esc(it.description)}</td><td>${esc(it.unit||"")}</td><td class="center">Δεν υπάρχει ακόμη παραλαβή</td></tr>`).join("");
-    foot.innerHTML="";
-    return;
-  }
-
-  head.innerHTML=
-    '<tr><th rowspan="2">Α/Α</th><th rowspan="2">Περιγραφή</th><th rowspan="2">Μ.Μ.</th>'+
-    dates.map((d,i)=>`<th colspan="2" class="date-group ${i%2?'alt':''}">${formatDateGR(d)}</th>`).join("")+
-    '<th colspan="2" class="center">ΣΥΝΟΛΟ ΠΑΡΑΛΑΒΩΝ</th></tr>'+
-    '<tr>'+dates.map((d,i)=>{
-      const cls=`date-col date-group-start ${i%2?'alt':''}`;
-      return `<th class="${cls}">Ποσότητα</th><th class="date-col ${i%2?'alt':''}">Αξία χωρίς ΦΠΑ</th>`;
-    }).join("")+'<th class="total-col">Ποσότητα</th><th class="total-col">Αξία χωρίς ΦΠΑ</th></tr>';
-
-  const dailyTotals=dates.map(()=>({qty:0,net:0}));
-  let grandQty=0,grandNet=0;
-  body.innerHTML="";
-  l.items.forEach((it,i)=>{
-    const itemReceipts=(l.receipts||[]).filter(r=>r.itemId===it.id && r.source==="excel");
-    let itemQty=0,itemNet=0;
-    const dateCells=dates.map((date,j)=>{
-      const matched=itemReceipts.filter(r=>r.date===date);
-      const qty=matched.reduce((sum,r)=>sum+(r.mode==="units"?Number(r.units||0):(it.unitPrice>0?Number(r.netValue||0)/it.unitPrice:0)),0);
-      const net=matched.reduce((sum,r)=>sum+Number(r.netValue||0),0);
-      itemQty+=qty;itemNet+=net;
-      dailyTotals[j].qty+=qty;dailyTotals[j].net+=net;
-      const cls=`date-col date-group-start ${j%2?'alt':''}`;
-      return `<td class="${cls}">${matched.length?fmtQty(qty):'—'}</td>`+
-             `<td class="date-col ${j%2?'alt':''}">${matched.length?euro(net):'—'}</td>`;
-    }).join("");
-    grandQty+=itemQty;grandNet+=itemNet;
-    const tr=document.createElement("tr");
-    tr.innerHTML=`<td>${i+1}</td><td>${esc(it.description)}</td><td>${esc(it.unit||"")}</td>`+
-      dateCells+`<td class="num total-col">${fmtQty(itemQty)}</td><td class="num total-col">${euro(itemNet)}</td>`;
-    body.appendChild(tr);
+  if(!groups.size){body.innerHTML='<tr><td colspan="6" style="padding:20px;text-align:center">Δεν υπάρχουν παραλαβές.</td></tr>';return;}
+  const fmtQty=v=>Number(v).toLocaleString("el-GR",{maximumFractionDigits:3});
+  const fmtDate=d=>/^\d{4}-\d{2}-\d{2}$/.test(d)?d.split("-").reverse().join("/"):(d||"ΧΩΡΙΣ ΗΜΕΡΟΜΗΝΙΑ");
+  let grand=0, html="";
+  const dates=[...groups.keys()].sort((a,b)=>a===b?0:!a?1:!b?-1:a.localeCompare(b));
+  dates.forEach((d,i)=>{
+    const alt=i%2?" alt":"", rs=groups.get(d); let daily=0;
+    html+=`<tr class="day-heading${alt}"><td colspan="6">${esc(fmtDate(d))} — ${rs.length} ${rs.length===1?"ΠΑΡΑΛΑΒΗ":"ΠΑΡΑΛΑΒΕΣ"}</td></tr>`;
+    rs.forEach((r,j)=>{
+      const it=items.find(x=>x.id===r.itemId), val=Number(r.netValue||0), isUnits=r.mode==="units";
+      daily+=val;
+      html+=`<tr class="day-entry${alt}"><td>${j+1}</td><td>${esc(it?.description||"ΜΗ ΑΝΑΓΝΩΡΙΣΜΕΝΟ ΕΙΔΟΣ")}</td><td>${esc(it?.unit||"")}</td><td>${isUnits?"ΠΟΣΟΤΗΤΑ":"ΧΡΗΜΑΤΙΚΗ ΑΞΙΑ"}</td><td class="num">${isUnits?fmtQty(r.units||0):"—"}</td><td class="num">${euro(val)}</td></tr>`;
+    });
+    grand+=daily;
+    html+=`<tr class="day-total${alt}"><td colspan="5">ΣΥΝΟΛΟ ΗΜΕΡΑΣ ${esc(fmtDate(d))}</td><td class="num">${euro(daily)}</td></tr>`;
   });
-  foot.innerHTML='<tr><td colspan="3">ΣΥΝΟΛΟ ΑΝΑ ΗΜΕΡΟΜΗΝΙΑ</td>'+dailyTotals.map((t,i)=>
-    `<td class="date-col date-group-start ${i%2?'alt':''}">${fmtQty(t.qty)}</td>`+
-    `<td class="date-col ${i%2?'alt':''}">${euro(t.net)}</td>`
-  ).join("") + `<td class="num total-col">${fmtQty(grandQty)}</td><td class="num total-col">${euro(grandNet)}</td></tr>`;
+  body.innerHTML=html;
+  foot.innerHTML=`<tr><td colspan="5">ΓΕΝΙΚΟ ΣΥΝΟΛΟ ΠΑΡΑΛΑΒΩΝ ΧΩΡΙΣ ΦΠΑ</td><td class="num">${euro(grand)}</td></tr>`;
+}
+function renderDateHistoryMatrix(){
+ const l=getLedger(false), table=document.getElementById("dateHistoryTable");
+ const head=document.getElementById("dateHistoryHead"),body=document.getElementById("dateHistoryBody");
+ let foot=table.querySelector("tfoot");if(!foot){foot=document.createElement("tfoot");table.appendChild(foot);}
+ groupedReceiptHistory(l?.items||[],(l?.receipts||[]).filter(r=>r.source==="excel"),head,body,foot);
 }
 
 function formatDateGR(s){
