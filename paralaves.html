@@ -82,7 +82,7 @@ input[type="text"], textarea, select {
 </head>
 <body>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v17.0 — ΜΕΤΑΒΑΣΗ ΠΑΡΑΛΑΒΩΝ</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v17.1 — ΜΕΤΑΒΑΣΗ ΠΑΡΑΛΑΒΩΝ</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -122,7 +122,7 @@ input[type="text"], textarea, select {
     <div class="panel-title">ΜΕΤΑΒΑΣΗ ΣΕ ΚΑΤΑΧΩΡΙΣΗ ΑΠΟ ΤΗΝ ΕΦΑΡΜΟΓΗ</div>
     <div style="padding:15px;display:grid;gap:10px">
       <div>Επίλεξε το υπογεγραμμένο PDF. Η εφαρμογή θα προτείνει είδη, ποσότητες και τιμές. Για υπάρχουσα σύμβαση εισάγονται πρώτα οι παλαιές παραλαβές από Excel και ελέγχονται.</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><input id="contractPdf" type="file" accept="application/pdf,.pdf"><button class="blue" onclick="readContractPdf()">ΑΝΑΓΝΩΣΗ PDF</button><button class="gray" onclick="addReviewItem()">+ ΓΡΑΜΜΗ ΕΙΔΟΥΣ</button></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><input id="contractPdf" type="file" accept="application/pdf,.pdf"><button class="blue" onclick="readContractPdf()">ΑΝΑΓΝΩΣΗ PDF</button><button class="green" onclick="fillReviewFromExcel()">ΣΥΜΠΛΗΡΩΣΗ ΑΠΟ EXCEL</button><button class="gray" onclick="addReviewItem()">+ ΓΡΑΜΜΗ ΕΙΔΟΥΣ</button></div>
       <div id="pdfStatus" class="muted"></div>
       <div class="table-wrap"><table style="min-width:800px"><thead><tr><th>Α/Α</th><th>Περιγραφή</th><th>Μ.Μ.</th><th>Ποσότητα</th><th>Τιμή μονάδας</th><th>Αξία</th><th></th></tr></thead><tbody id="pdfReview"></tbody></table></div>
       <label><input type="checkbox" id="pdfConfirmed"> Επιβεβαιώνω ότι όλα τα είδη, οι ποσότητες και οι τιμές συμφωνούν με το υπογεγραμμένο PDF.</label>
@@ -969,11 +969,22 @@ function extractPdfRows(pages){
  }
  return found;
 }
+async function fillReviewFromExcel(){
+ const cid=currentId;el('pdfConfirmed').checked=false;el('noPrevious').checked=false;pdfLoaded=false;
+ if(!el('contractPdf').files[0]){el('pdfStatus').textContent='Επίλεξε πρώτα το υπογεγραμμένο PDF για αντιπαραβολή.';return;}
+ el('pdfStatus').textContent='Έλεγχος και ανάγνωση ειδών από Excel…';
+ try{
+  if(!(await syncFromExcel(true))||currentId!==cid)throw Error('Η ενημέρωση Excel δεν ολοκληρώθηκε.');
+  const l=getLedger(false);if(!l?.migrationVerified||!l.items?.length)throw Error('Απαιτείται επιτυχής έλεγχος υπολοίπου Excel.');
+  reviewItems=l.items.map((it,i)=>({no:String(i+1),description:it.description,unit:it.unit,qty:String(it.initialQty),price:String(it.unitPrice)}));
+  pdfLoaded=true;renderReview();el('pdfStatus').textContent=`Συμπληρώθηκαν ${reviewItems.length} είδη από το ελεγμένο Excel. Αντιπαράβαλε με το υπογεγραμμένο PDF και επιβεβαίωσε μόνο αν συμφωνούν.`;
+ }catch(e){el('pdfStatus').textContent='Δεν έγινε συμπλήρωση: '+e.message;}
+}
 async function readContractPdf(){
  const file=el('contractPdf').files[0],cid=currentId;if(!file){alert('Επίλεξε PDF.');return;}
  el('pdfStatus').textContent='Ανάγνωση PDF…';el('pdfConfirmed').checked=false;pdfLoaded=false;
  try{if(!window.pdfjsLib)throw Error('Δεν φορτώθηκε η βιβλιοθήκη PDF.');pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';const doc=await pdfjsLib.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;const pages=[];for(let i=1;i<=doc.numPages;i++)pages.push((await (await doc.getPage(i)).getTextContent()).items);if(cid!==currentId)return;
- const detected=extractPdfRows(pages);reviewItems=detected;pdfLoaded=true;renderReview();el('pdfStatus').textContent=detected.length?`Βρέθηκαν ${detected.length} πιθανές γραμμές. Διόρθωσε τυχόν περιγραφές ή γραμμές πριν επιβεβαιώσεις.`:'Δεν αναγνωρίστηκαν αυτόματα γραμμές. Συμπλήρωσε τον πίνακα από το PDF (σαρωμένα ή διαφορετικά PDF χρειάζονται έλεγχο).';
+ const detected=extractPdfRows(pages);reviewItems=detected;pdfLoaded=true;renderReview();el('pdfStatus').textContent=detected.length?`Βρέθηκαν ${detected.length} πιθανές γραμμές. Διόρθωσε τυχόν περιγραφές ή γραμμές πριν επιβεβαιώσεις.`:'Δεν αναγνωρίστηκαν αυτόματα γραμμές. Αν υπάρχει Excel, πάτησε ΣΥΜΠΛΗΡΩΣΗ ΑΠΟ EXCEL και έλεγξε τα είδη με το PDF. Αλλιώς συμπλήρωσε τον πίνακα χειροκίνητα.';
  }catch(e){el('pdfStatus').textContent='Αποτυχία ανάγνωσης PDF: '+e.message;}
 }
 function validatedPdfItems(){if(!pdfLoaded||!el('pdfConfirmed').checked||!reviewItems.length)throw Error('Διάβασε το PDF και επιβεβαίωσε τον πίνακα.');return reviewItems.map((r,i)=>{const q=strictAmount(r.qty),p=strictAmount(r.price);if(!r.description.trim()||!r.unit.trim()||!(q>0)||!(p>0))throw Error('Μη έγκυρη γραμμή PDF '+(i+1));return {id:'pdf-'+(i+1),description:r.description.trim(),unit:r.unit.trim(),initialQty:q,unitPrice:p,initialNet:cents(q*p)/100};});}
