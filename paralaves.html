@@ -6,8 +6,6 @@
 <title>Παραλαβές Συμβάσεων</title>
 <script src="https://alcdn.msauth.net/browser/2.35.0/js/msal-browser.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f1f5f9;color:#1f2937}
 header{background:#4c1d95;color:white;padding:20px 28px}header h1{margin:0;font-size:27px}header p{margin:6px 0 0;opacity:.85}
@@ -83,7 +81,7 @@ input[type="text"], textarea, select {
 </head>
 <body>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v17.3 — ΑΥΤΟΜΑΤΗ ΣΥΜΒΑΣΗ PDF ΠΑΡΑΛΑΒΩΝ</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v19.0 — EXCEL ΒΑΣΗ / ΠΑΡΑΛΑΒΕΣ ΕΦΑΡΜΟΓΗΣ</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -104,7 +102,7 @@ input[type="text"], textarea, select {
 
 <div class="container">
   <div id="status">Σύνδεση με Microsoft για φόρτωση δεδομένων.</div>
-  <div class="readonly-note" id="modeNote">Λειτουργία Excel — μόνο προβολή. Η μετάβαση στην εφαρμογή γίνεται ανά σύμβαση μετά από έλεγχο.</div>
+  <div class="readonly-note" id="modeNote">Εισαγωγή από Excel — ενεργοποίησε τις καταχωρίσεις μετά τον έλεγχο.</div>
   <div id="excelAudit" class="hidden" role="status" aria-live="polite"></div>
 
   <section class="contract-head">
@@ -120,15 +118,10 @@ input[type="text"], textarea, select {
   </section>
 
   <section class="panel no-print" id="migrationPanel">
-    <div class="panel-title">ΜΕΤΑΒΑΣΗ ΣΕ ΚΑΤΑΧΩΡΙΣΗ ΑΠΟ ΤΗΝ ΕΦΑΡΜΟΓΗ</div>
+    <div class="panel-title">ΕΙΣΑΓΩΓΗ ΒΑΣΗΣ ΑΠΟ EXCEL</div>
     <div style="padding:15px;display:grid;gap:10px">
-      <div>Η εφαρμογή ανακτά αυτόματα το PDF που έχεις ήδη καταχωρίσει στις Συμβάσεις και προτείνει είδη, ποσότητες και τιμές. Για υπάρχουσα σύμβαση εισάγονται πρώτα οι παλαιές παραλαβές από Excel και ελέγχονται.</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="blue" onclick="readContractPdf()">ΑΝΑΓΝΩΣΗ ΑΠΟΘΗΚΕΥΜΕΝΗΣ ΣΥΜΒΑΣΗΣ</button><label>Εναλλακτικά, άλλο PDF <input id="contractPdf" type="file" accept="application/pdf,.pdf" onchange="pdfRequest++;pdfLoaded=false;reviewItems=[];el('pdfConfirmed').checked=false;renderReview()"></label><button class="blue" onclick="readContractPdf(true)">ΑΝΑΓΝΩΣΗ ΣΑΡΩΜΕΝΟΥ PDF (OCR)</button><button class="green" onclick="fillReviewFromExcel()">ΣΥΜΠΛΗΡΩΣΗ ΑΠΟ EXCEL</button><button class="gray" onclick="addReviewItem()">+ ΓΡΑΜΜΗ ΕΙΔΟΥΣ</button></div>
-      <div id="pdfStatus" class="muted"></div>
-      <div class="table-wrap"><table style="min-width:800px"><thead><tr><th>Α/Α</th><th>Περιγραφή</th><th>Μ.Μ.</th><th>Ποσότητα</th><th>Τιμή μονάδας</th><th>Αξία</th><th></th></tr></thead><tbody id="pdfReview"></tbody></table></div>
-      <label><input type="checkbox" id="pdfConfirmed"> Επιβεβαιώνω ότι όλα τα είδη, οι ποσότητες και οι τιμές συμφωνούν με το υπογεγραμμένο PDF.</label>
-      <label><input type="checkbox" id="noPrevious"> Νέα σύμβαση χωρίς προηγούμενες παραλαβές (μόνο αν δεν υπάρχει ιστορικό).</label>
-      <button class="green" onclick="activateAppMode()">ΕΛΕΓΧΟΣ ΚΑΙ ΜΕΤΑΒΑΣΗ ΣΤΗΝ ΕΦΑΡΜΟΓΗ</button>
+      <div>Επίλεξε το Excel της σύμβασης. Εισάγονται τα είδη, οι αρχικές ποσότητες, οι τιμές και όλες οι παλιές παραλαβές. Μετά την ενεργοποίηση, οι νέες παραλαβές καταχωρίζονται μόνο εδώ.</div>
+      <button class="green" onclick="activateAppMode()">ΕΛΕΓΧΟΣ EXCEL ΚΑΙ ΕΝΕΡΓΟΠΟΙΗΣΗ ΚΑΤΑΧΩΡΙΣΕΩΝ</button>
     </div>
   </section>
   <section class="panel no-print hidden" id="entryPanel">
@@ -449,7 +442,7 @@ function render(){
  l.vat=Number(l.vat??c.vat??24);excelPath.value=l.excelPath||c.excelPath||"";excelSheet.value=l.excelSheet||c.excelSheet||"ΣΥΜΒΑΣΗ";
  contractTitle.textContent=toUpperText((c.studyNo?c.studyNo+" — ":"")+c.title);
  contractMeta.textContent=toUpperText(`ΤΜΗΜΑ: ${c.department||"—"} | ΑΝΑΔΟΧΟΣ: ${c.contractor||"—"} | ΦΠΑ: ${l.vat}% | EXCEL: ${excelPath.value||"ΔΕΝ ΕΧΕΙ ΔΗΛΩΘΕΙ"}`);
- const s=recompute()||{};
+ const s=(l.entryMode==="app"?l.summary:recompute())||{};
  initialNet.textContent=euro(s.initialNet);remainingNet.textContent=euro(s.remainingNet);remainingVat.textContent=euro(s.remainingVat);remainingWithVat.textContent=euro(s.remainingWithVat);
  lineCount.textContent=`${l.items.length} γραμμές`;
  itemsBody.innerHTML="";
@@ -632,6 +625,7 @@ async function syncFromExcel(showMessage=true){
   const latestBefore=await readJson(PAR_FILE);
   const expected=latestBefore?.contracts?.find(x=>x.contractId===syncId)||null;
   if(expected?.entryMode==="app")throw Error("Η σύμβαση έχει ήδη μεταφερθεί στην εφαρμογή. Ανανέωσε τη σελίδα.");
+  if(expected?.receipts?.some(r=>r.source!=="excel"))throw Error("Υπάρχουν παλαιές καταχωρίσεις εκτός Excel. Δεν θα αντικατασταθούν αυτόματα.");
   if(showMessage)setStatus("Διαβάζω τον υπάρχοντα πίνακα Excel...");
   const r=await graph("https://graph.microsoft.com/v1.0/me/drive/root:/"+encPath(l.excelPath)+":/content");
   if(!r.ok)throw new Error("Δεν βρέθηκε το Excel στο OneDrive. Έλεγξε τη διαδρομή.");
@@ -921,7 +915,7 @@ window.addEventListener("load",async()=>{
 });
 
 // v17: migration review and app-mode ledger. Excel is never reimported after activation.
-let reviewContractId=null, reviewItems=[], pdfLoaded=false, busy=false, pdfRequest=0;
+let reviewContractId=null, busy=false;
 const el=id=>document.getElementById(id);
 const cents=v=>Math.round(Number(v)*100);
 function strictAmount(v){let a=String(v).trim();if(!/^(?:\d+(?:[.,]\d+)?|\d{1,3}(?:\.\d{3})+,\d+)$/.test(a))return NaN;if(a.includes(','))a=a.replace(/\./g,'').replace(',','.');return Number(a);}
@@ -929,107 +923,10 @@ function renderEntryMode(){
  const l=getLedger(false), active=l?.entryMode==='app';
  el('migrationPanel').classList.toggle('hidden',!l||active);el('entryPanel').classList.toggle('hidden',!active);
  el('sourceSettings').classList.toggle('hidden',!!active);el('excelSyncButton').disabled=!!active;el('saveButton').disabled=!!active;
- el('modeNote').textContent=active?'ΚΑΤΑΧΩΡΙΣΗ ΣΤΗΝ ΕΦΑΡΜΟΓΗ — Το Excel διατηρείται ως αρχείο. Οι νέες παραλαβές αποθηκεύονται στο OneDrive.':'Λειτουργία Excel — μόνο προβολή. Η μετάβαση στην εφαρμογή γίνεται ανά σύμβαση μετά από έλεγχο.';
- if(reviewContractId!==currentId){pdfRequest++;reviewContractId=currentId;reviewItems=[];pdfLoaded=false;el('contractPdf').value='';el('pdfConfirmed').checked=false;el('noPrevious').checked=false;el('pdfStatus').textContent='';renderReview();el('appQty').value='';el('appMoney').value='';el('appNote').value='';if(l&&!active&&getContract()?.contractFileId||l&&!active&&getContract()?.contractFileUrl){const selectedId=currentId;setTimeout(()=>{if(currentId===selectedId&&!pdfLoaded)readContractPdf(false,true);},0);}}
+ el('modeNote').textContent=active?'ΚΑΤΑΧΩΡΙΣΗ ΣΤΗΝ ΕΦΑΡΜΟΓΗ — Το Excel διατηρείται ως αρχείο. Οι νέες παραλαβές αποθηκεύονται στο OneDrive.':'Εισαγωγή από Excel — ενεργοποίησε τις καταχωρίσεις μετά τον έλεγχο.';
+ if(reviewContractId!==currentId){reviewContractId=currentId;el('appQty').value='';el('appMoney').value='';el('appNote').value='';}
  if(active){const old=el('appItem').value;el('appItem').innerHTML=l.items.map(it=>`<option value="${esc(it.id)}">${esc(it.description)}</option>`).join('');if(l.items.some(it=>it.id===old))el('appItem').value=old;el('appDate').value=el('appDate').value||localDateISO(new Date());previewAppReceipt();}
 }
-function renderReview(){el('pdfReview').innerHTML=reviewItems.map((it,i)=>`<tr><td><input size="4" value="${esc(it.no)}" onchange="editReview(${i},'no',this.value)"></td><td><textarea rows="2" style="width:100%" onchange="editReview(${i},'description',this.value)">${esc(it.description)}</textarea></td><td><input size="6" value="${esc(it.unit)}" onchange="editReview(${i},'unit',this.value)"></td><td><input size="10" value="${esc(it.qty)}" onchange="editReview(${i},'qty',this.value)"></td><td><input size="10" value="${esc(it.price)}" onchange="editReview(${i},'price',this.value)"></td><td>${euro(strictAmount(it.qty)*strictAmount(it.price))}</td><td><button class="gray" onclick="reviewItems.splice(${i},1);el('pdfConfirmed').checked=false;renderReview()">×</button></td></tr>`).join('');}
-function editReview(i,k,v){reviewItems[i][k]=v;el('pdfConfirmed').checked=false;renderReview();}
-function addReviewItem(){reviewItems.push({no:String(reviewItems.length+1),description:'',unit:'',qty:'',price:''});el('pdfConfirmed').checked=false;renderReview();}
-// Read PDF.js text positions. Accept only rows with a unit and three numeric columns
-// whose product matches the printed line value; all candidates require human review.
-function extractPdfRowsLegacy(pages){
- const found=[];
- for(const page of pages){
-  const rows=[];
-  for(const a of page){if(!a.str.trim())continue;const x=a.transform[4],y=a.transform[5];let r=rows.find(r=>Math.abs(r.y-y)<2.2);if(!r){r={y,parts:[]};rows.push(r);}r.parts.push({x,s:a.str.trim()});}
-  rows.sort((a,b)=>b.y-a.y);for(const r of rows)r.parts.sort((a,b)=>a.x-b.x);
-  const anchors=[];
-  for(let j=0;j<rows.length;j++){
-   const r=rows[j], parts=r.parts;const n=parts.length;
-   if(n<4)continue;
-   const tail=parts.slice(-3),vals=tail.map(t=>strictAmount(t.s));
-   if(vals.some(v=>!Number.isFinite(v)||v<=0)||Math.abs(cents(vals[0]*vals[1])-cents(vals[2]))>1)continue;
-   const u=parts[n-4];if(!u||!/[a-zα-ω²³]/i.test(u.s)||u.s.length>20)continue;
-   anchors.push({j,y:r.y,ux:u.x,unit:u.s,qty:vals[0],price:vals[1],net:vals[2]});
-  }
-  for(let k=0;k<anchors.length;k++){
-   const a=anchors[k], prev=anchors[k-1], next=anchors[k+1];
-   const start=prev?Math.floor((prev.j+a.j)/2)+1:Math.max(0,a.j-5), end=next?Math.floor((a.j+next.j)/2):Math.min(rows.length-1,a.j+4);
-   let no='',desc=[];
-   for(let j=start;j<=end;j++){
-    const line=rows[j].parts.filter(p=>p.x<a.ux-3);
-    if(!line.length)continue;
-    const t=line.map(p=>p.s).join(' ');
-    if(/^[ΑA]\/?$/.test(t))continue;
-    if(/ΔΑΠΑΝΗ|ΠΟΣΟΤΗΤΑ|ΜΟΝΑΔΑ|ΕΙΔΟΣ ΜΗΧΑΝΗΜΑΤΟΣ|ΑΡΘΡΟ|ΟΜΑΔΑ Α:|ΣΥΝΟΛ|Φ\.Π\.Α/i.test(t)){if(j<a.j)desc=[];else if(j>a.j)break;continue;}
-    for(const p of line){if(/^\d+$/.test(p.s)&&!no)no=p.s;else desc.push(p.s);}
-   }
-   found.push({no:no||String(found.length+1),description:desc.join(' ').replace(/^[ΑA]\s+(?=\p{L})/u,'').trim(),unit:a.unit,qty:String(a.qty),price:String(a.price)});
-  }
- }
- return found;
-}
-// Flexible position-based table reader; numeric checks are independent of text layout.
-function pdfNumber(s){s=String(s).replace(/[€\s\u00a0]/g,'');if(/^\d{1,3}(?:\.\d{3})+$/.test(s))return Number(s.replace(/\./g,''));return strictAmount(s);}
-function pdfRows(p){const rows=[];for(const t of p){if(!t.str?.trim())continue;const x=t.transform[4],y=t.transform[5];let r=rows.find(z=>Math.abs(z.y-y)<3);if(!r){r={y,parts:[]};rows.push(r);}r.parts.push({x,s:t.str.trim(),w:t.width||0});}rows.sort((a,b)=>b.y-a.y);for(const r of rows)r.parts.sort((a,b)=>a.x-b.x);return rows;}
-function pdfUnit(s){return /^(?:m[²³23]|m|mm|cm|kg|tn|h|τεμ(?:αχ(?:ιο|ια)?)?\.?|ωρ(?:α|ες)\.?|τον(?:ος|οι)?|κιλ(?:ο|α)?|μετρ(?:ο|α)|μ[²³23]|μ\.?μ\.?|τ\.?μ\.?|κ\.?μ\.?|λιτρ(?:ο|α)|σετ|τεμαχιο|τεμαχια)$/i.test(norm(s).replace(/\s/g,''));}
-function extractPdfRows(pages){
- const out=[];
- for(const p of pages){const rows=pdfRows(p);const anchors=[];
-  for(let j=0;j<rows.length;j++){const r=rows[j], text=r.parts.map(x=>x.s).join(' ');if(/ΣΥΝΟΛ|Φ\s*\.\s*Π\s*\.\s*Α|ΔΑΠΑΝΗ ΕΡΓΑΣΙΩΝ/i.test(norm(text)))continue;
-   // PDF producers often split numbers or put the entire numeric tail in a single text item.
-   const tokens=[];for(const q of r.parts){const m=[...q.s.matchAll(/\S+/g)];for(const t of m)tokens.push({s:t[0],x:q.x+(q.w||q.s.length*4)*t.index/Math.max(1,q.s.length)});}
-   const nums=tokens.map((t,i)=>({i,x:t.x,v:pdfNumber(t.s)})).filter(t=>Number.isFinite(t.v)&&t.v>0);
-   let hit=null;for(let k=nums.length-3;k>=0;k--){const [q,pr,n]=nums.slice(k,k+3);if(Math.abs(Math.round(q.v*pr.v*100)-Math.round(n.v*100))>1)continue;const unit=tokens.slice(0,q.i).reverse().find(t=>pdfUnit(t.s));if(!unit)continue;hit={j,y:r.y,ux:unit.x,unit:unit.s,qty:q.v,price:pr.v,net:n.v};break;}
-   if(hit)anchors.push(hit);
-  }
-  for(let k=0;k<anchors.length;k++){const a=anchors[k],prev=anchors[k-1],next=anchors[k+1];let start=prev?Math.floor((prev.j+a.j)/2)+1:Math.max(0,a.j-5),end=next?Math.floor((a.j+next.j)/2):Math.min(rows.length-1,a.j+4);let no='',desc=[];
-   for(let j=start;j<=end;j++){const ps=rows[j].parts.filter(t=>t.x<a.ux-3);const txt=ps.map(t=>t.s).join(' ');if(/ΣΥΝΟΛ|ΔΑΠΑΝΗ|ΠΟΣΟΤΗΤΑ|ΜΟΝΑΔΑ|ΕΙΔΟΣ|ΑΡΘΡΟ|ΟΜΑΔΑ|Φ\.Π\.Α/i.test(norm(txt))){if(j<a.j){desc=[];no='';}else if(j>a.j)break;continue;}for(const t of ps){if(/^\d+[.)]?$/.test(t.s)&&!no)no=t.s.replace(/[.)]/g,'');else desc.push(t.s);}}
-   if(desc.length)out.push({no:no||String(out.length+1),description:desc.join(' ').trim(),unit:a.unit,qty:String(a.qty),price:String(a.price)});
-  }
- }
- const legacy=extractPdfRowsLegacy(pages);return out.length>=legacy.length?out:legacy;
-}
-async function ocrPdfPage(page,worker){const viewport=page.getViewport({scale:2.5});const canvas=document.createElement('canvas');canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);await page.render({canvasContext:canvas.getContext('2d'),viewport}).promise;const result=await worker.recognize(canvas);return (result.data.words||[]).map(w=>({str:w.text,width:(w.bbox.x1-w.bbox.x0)/2.5,transform:[1,0,0,1,w.bbox.x0/2.5,(canvas.height-w.bbox.y1)/2.5]}));}
-// Use the exact saved contract attachment, never a guessed PDF from another contract.
-async function storedContractPdf(c){
- if(!c)throw Error('Επίλεξε σύμβαση.');
- let itemId=c.contractFileId;
- if(!itemId&&c.contractFileUrl){
-   // Legacy records: exact webUrl match in the original Files folder.
-   let url='https://graph.microsoft.com/v1.0/me/drive/root:/'+encPath(APP_FOLDER+'/Files')+':/children?$select=id,name,webUrl,file';
-   const normalize=v=>String(v||'').replace(/\/$/,'');
-   while(url&&!itemId){const res=await graph(url);if(!res.ok)throw Error('Αδυναμία αναζήτησης αποθηκευμένου PDF (HTTP '+res.status+').');const page=await res.json();const match=(page.value||[]).find(x=>x.file&&normalize(x.webUrl)===normalize(c.contractFileUrl));if(match)itemId=match.id;url=page['@odata.nextLink']||null;}
- }
- if(!itemId)throw Error('Δεν βρέθηκε συνδεδεμένο PDF. Άνοιξε τη σύμβαση στις Συμβάσεις και επίλεξε το αρχείο σύμβασης μία φορά.');
- const res=await graph('https://graph.microsoft.com/v1.0/me/drive/items/'+encodeURIComponent(itemId)+'/content');
- if(!res.ok)throw Error('Δεν ανακτήθηκε το PDF από το OneDrive (HTTP '+res.status+').');
- const bytes=new Uint8Array(await res.arrayBuffer());
- if(new TextDecoder().decode(bytes.slice(0,5))!=='%PDF-')throw Error('Το συνδεδεμένο αρχείο δεν είναι PDF.');
- return bytes;
-}
-async function fillReviewFromExcel(){
- const cid=currentId;pdfRequest++;el('pdfConfirmed').checked=false;el('noPrevious').checked=false;pdfLoaded=false;
- if(!el('contractPdf').files[0]&&!getContract()?.contractFileId&&!getContract()?.contractFileUrl){el('pdfStatus').textContent='Δεν υπάρχει συνδεδεμένο PDF για αντιπαραβολή.';return;}
- el('pdfStatus').textContent='Έλεγχος και ανάγνωση ειδών από Excel…';
- try{
-  if(!(await syncFromExcel(true))||currentId!==cid)throw Error('Η ενημέρωση Excel δεν ολοκληρώθηκε.');
-  const l=getLedger(false);if(!l?.migrationVerified||!l.items?.length)throw Error('Απαιτείται επιτυχής έλεγχος υπολοίπου Excel.');
-  reviewItems=l.items.map((it,i)=>({no:String(i+1),description:it.description,unit:it.unit,qty:String(it.initialQty),price:String(it.unitPrice)}));
-  pdfLoaded=true;renderReview();el('pdfStatus').textContent=`Συμπληρώθηκαν ${reviewItems.length} είδη από το ελεγμένο Excel. Αντιπαράβαλε με το υπογεγραμμένο PDF και επιβεβαίωσε μόνο αν συμφωνούν.`;
- }catch(e){el('pdfStatus').textContent='Δεν έγινε συμπλήρωση: '+e.message;}
-}
-async function readContractPdf(forceOcr=false,auto=false){
- const file=el('contractPdf').files[0],cid=currentId,c=getContract(),request=++pdfRequest;const stillCurrent=()=>cid===currentId&&request===pdfRequest;
- el('pdfStatus').textContent='Ανάκτηση και ανάγνωση PDF…';el('pdfConfirmed').checked=false;pdfLoaded=false;reviewItems=[];renderReview();let worker=null;
- try{if(!window.pdfjsLib)throw Error('Δεν φορτώθηκε η βιβλιοθήκη PDF.');pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';const bytes=file?new Uint8Array(await file.arrayBuffer()):await storedContractPdf(c);if(!stillCurrent())return;const doc=await pdfjsLib.getDocument({data:bytes}).promise;const pages=[];for(let i=1;i<=doc.numPages;i++){const page=await doc.getPage(i);pages.push((await page.getTextContent()).items);}
- let detected=forceOcr?[]:extractPdfRows(pages);
- if(forceOcr||(!auto&&!detected.length)){if(!window.Tesseract)throw Error('Δεν φορτώθηκε η βιβλιοθήκη OCR.');el('pdfStatus').textContent='OCR ελληνικών και αγγλικών…';worker=await Tesseract.createWorker('ell+eng',1,{logger:()=>{}});const scanned=[];for(let i=1;i<=doc.numPages;i++){if(!stillCurrent())return;el('pdfStatus').textContent=`OCR σελίδα ${i}/${doc.numPages}…`;scanned.push(await ocrPdfPage(await doc.getPage(i),worker));}detected=extractPdfRows(scanned);}
- if(!stillCurrent())return;reviewItems=detected;pdfLoaded=true;renderReview();const sum=detected.reduce((n,r)=>n+Math.round(strictAmount(r.qty)*strictAmount(r.price)*100),0)/100;el('pdfStatus').textContent=detected.length?`Βρέθηκαν ${detected.length} πιθανές γραμμές · αξία χωρίς ΦΠΑ ${euro(sum)}. Έλεγξε τις περιγραφές και τα ποσά με το PDF πριν επιβεβαιώσεις.`:'Δεν αναγνωρίστηκε ασφαλής πίνακας. Πάτησε ΑΝΑΓΝΩΣΗ ΣΑΡΩΜΕΝΟΥ PDF (OCR) ή συμπλήρωσε από το ελεγμένο Excel.';
- }catch(e){if(stillCurrent())el('pdfStatus').textContent='Αποτυχία ανάγνωσης PDF: '+e.message;}finally{if(worker)await worker.terminate();}
-}
-function validatedPdfItems(){if(!pdfLoaded||!el('pdfConfirmed').checked||!reviewItems.length)throw Error('Διάβασε το PDF και επιβεβαίωσε τον πίνακα.');return reviewItems.map((r,i)=>{const q=strictAmount(r.qty),p=strictAmount(r.price);if(!r.description.trim()||!r.unit.trim()||!(q>0)||!(p>0))throw Error('Μη έγκυρη γραμμή PDF '+(i+1));return {id:'pdf-'+(i+1),description:r.description.trim(),unit:r.unit.trim(),initialQty:q,unitPrice:p,initialNet:cents(q*p)/100};});}
 async function persistAppLedger(candidate,expected){
  // Refresh latest ledger to avoid overwriting unrelated contracts or stale same-contract data.
  const latest=await readJson(PAR_FILE)||{version:1,contracts:[]};const old=latest.contracts.find(x=>x.contractId===candidate.contractId);
@@ -1039,25 +936,34 @@ async function persistAppLedger(candidate,expected){
 function summarizeApp(l){let net=0,initial=0;for(const it of l.items){const x=computeLine(it,l);if(x.remainingNet< -0.001)throw Error('Υπέρβαση συμβατικής αξίας.');initial+=cents(it.initialNet);net+=cents(x.remainingNet);it.baseRemainingNet=x.remainingNet;it.baseRemainingUnits=x.remainingUnits;it.excelRemainingNetProvided=true;it.excelRemainingUnitsProvided=true;}const vat=Math.round(net*Number(l.vat??24)/100);l.summary={initialNet:initial/100,remainingNet:net/100,remainingVat:vat/100,remainingWithVat:(net+vat)/100,updatedAt:new Date().toISOString()};}
 async function activateAppMode(){
  if(busy)return;busy=true;const cid=currentId;
- try{const pdf=validatedPdfItems(),c=getContract();if(!c)throw Error('Επίλεξε σύμβαση.');const gross=pdf.reduce((s,it)=>s+cents(it.initialNet),0)*(1+Number(c.vat??24)/100);if(Math.abs(gross-cents(c.contractBudget))>2)throw Error('Το σύνολο PDF δεν συμφωνεί με τον καταχωρισμένο προϋπολογισμό σύμβασης.');
- const isNew=el('noPrevious').checked;let l=getLedger(true);
- if(l.entryMode==='app')throw Error('Έχει ήδη γίνει μετάβαση.');
- if(isNew){if(l.receipts?.length||l.excelPath||c.excelPath)throw Error('Υπάρχει Excel ή ιστορικό. Απαιτείται μεταφορά, όχι νέα σύμβαση.');}
- else {if(!(await syncFromExcel(true))||!getLedger(false)?.migrationVerified)throw Error('Απαιτείται επιτυχής έλεγχος του τελικού υπολοίπου Excel.');}
- if(currentId!==cid)throw Error('Άλλαξε η επιλεγμένη σύμβαση.');
- const stored=await readJson(PAR_FILE);const expected=stored?.contracts?.find(x=>x.contractId===cid)||null;
- if(expected?.entryMode==='app')throw Error('Έχει ήδη γίνει μετάβαση.');
- if(!isNew&&(!expected||!expected.migrationVerified))throw Error('Δεν βρέθηκε επιβεβαιωμένη εισαγωγή.');
- if(isNew&&expected?.receipts?.length)throw Error('Βρέθηκαν παλαιές παραλαβές.');
- const candidate=JSON.parse(JSON.stringify(expected||l));
- if(!isNew){const available=[...candidate.items];for(const p of pdf){const matches=available.filter(it=>Math.abs(it.initialQty-p.initialQty)<1e-6&&Math.abs(it.unitPrice-p.unitPrice)<1e-8&&cents(it.initialNet)===cents(p.initialNet));if(matches.length!==1)throw Error('Δεν υπάρχει μοναδική αντιστοίχιση PDF/Excel για '+p.description);const old=matches[0];if(!norm(old.description).includes(norm(p.description).slice(0,20))&&!norm(p.description).includes(norm(old.description).slice(0,20)))throw Error('Η περιγραφή PDF και Excel δεν συμφωνεί: '+p.description);available.splice(available.indexOf(old),1);p.id=old.id;const imported=(candidate.receipts||[]).filter(r=>r.itemId===old.id);if(imported.some(r=>!/^\d{4}-\d{2}-\d{2}$/.test(r.date||'')||!Number.isFinite(Number(r.netValue))))throw Error("Μη έγκυρη εγγραφή ιστορικού για "+p.description);const restored=cents(p.initialNet)-imported.reduce((sum,r)=>sum+cents(r.netValue),0);if(Math.abs(restored-cents(old.baseRemainingNet))>1)throw Error("Το ιστορικό του είδους δεν συμφωνεί με το Excel: "+p.description);}
- if(available.length)throw Error('Υπάρχουν επιπλέον είδη στο Excel.');
- const oldTotal=candidate.summary.remainingWithVat;candidate.items=pdf;candidate.entryMode='app';summarizeApp(candidate);if(Math.abs(candidate.summary.remainingWithVat-oldTotal)>0.01)throw Error('Το πλήρες ιστορικό δεν συμφωνεί με το υπόλοιπο Excel. Δεν έγινε μετάβαση.');
- }else{candidate.items=pdf;candidate.receipts=[];candidate.entryMode='app';summarizeApp(candidate);}
- if(!confirm('Μετάβαση στην εφαρμογή; Υπόλοιπο με ΦΠΑ: '+euro(candidate.summary.remainingWithVat)+' — '+candidate.receipts.length+' παλαιές εγγραφές. Το Excel δεν θα επανεισάγεται.'))return;
- if(expected)await writeJson('paralaves-backup-'+cid+'-'+Date.now()+'.json',expected);
- candidate.migratedAt=new Date().toISOString();await persistAppLedger(candidate,expected);render();setExcelAudit('','');setStatus('Η μετάβαση ολοκληρώθηκε. Οι νέες παραλαβές καταχωρίζονται εδώ.','ok');
- }catch(e){setStatus('ΔΕΝ ΕΓΙΝΕ ΜΕΤΑΒΑΣΗ: '+e.message,'err');}finally{busy=false;}
+ try{
+  const c=getContract(), l=getLedger(true);if(!c||!l)throw Error('Επίλεξε σύμβαση.');
+  if(l.entryMode==='app')throw Error('Έχει ήδη ενεργοποιηθεί.');
+  if(!(await syncFromExcel(true))||currentId!==cid)throw Error('Η εισαγωγή Excel δεν ολοκληρώθηκε.');
+  const stored=await readJson(PAR_FILE), expected=stored?.contracts?.find(x=>x.contractId===cid);
+  if(!expected?.migrationVerified||!expected.items?.length)throw Error('Απαιτείται επιτυχής έλεγχος τελικού υπολοίπου Excel.');
+  if(expected.entryMode==='app')throw Error('Έχει ήδη ενεργοποιηθεί.');
+  const candidate=JSON.parse(JSON.stringify(expected));
+  const ids=new Set(candidate.items.map(it=>it.id));
+  if(ids.size!==candidate.items.length)throw Error('Διπλά αναγνωριστικά ειδών στο Excel.');
+  for(const it of candidate.items){
+   if(!it.description||!it.unit||!(Number(it.initialQty)>0)||!(Number(it.unitPrice)>0)||Math.abs(cents(it.initialQty*it.unitPrice)-cents(it.initialNet))>1)throw Error('Μη έγκυρα συμβατικά στοιχεία: '+it.description);
+   const rs=candidate.receipts.filter(r=>r.itemId===it.id);
+   if(rs.some(r=>!/^\d{4}-\d{2}-\d{2}$/.test(r.date||'')||!Number.isFinite(Number(r.netValue))||Number(r.netValue)<0))throw Error('Μη έγκυρη παραλαβή: '+it.description);
+   const remaining=cents(it.initialNet)-rs.reduce((n,r)=>n+cents(r.netValue),0);
+   if(Math.abs(remaining-cents(computeLine(it,candidate).remainingNet))>1)throw Error('Το ιστορικό δεν συμφωνεί με το υπόλοιπο: '+it.description);
+  }
+  if(candidate.receipts.some(r=>!ids.has(r.itemId)))throw Error('Παραλαβές χωρίς αντιστοίχιση είδους.');
+  const gross=Math.round(candidate.items.reduce((n,it)=>n+cents(it.initialNet),0)*(1+Number(candidate.vat??24)/100));
+  if(!(Number(c.contractBudget)>0)||Math.abs(gross-cents(c.contractBudget))>2)throw Error('Η αρχική αξία Excel δεν συμφωνεί με τον προϋπολογισμό της σύμβασης.');
+  const oldTotal=candidate.summary.remainingWithVat;
+  candidate.entryMode='app';summarizeApp(candidate);
+  if(Math.abs(candidate.summary.remainingWithVat-oldTotal)>0.01)throw Error('Το ιστορικό δεν συμφωνεί με το συνολικό υπόλοιπο Excel.');
+  if(!confirm('Ενεργοποίηση καταχωρίσεων; '+candidate.items.length+' είδη, '+candidate.receipts.length+' παλαιές παραλαβές. Υπόλοιπο με ΦΠΑ: '+euro(candidate.summary.remainingWithVat)+' . Μετά την ενεργοποίηση το Excel δεν επανεισάγεται.'))return;
+  if(currentId!==cid)throw Error('Άλλαξε η επιλεγμένη σύμβαση.');
+  await writeJson('paralaves-backup-'+cid+'-'+Date.now()+'.json',expected);
+  candidate.migratedAt=new Date().toISOString();await persistAppLedger(candidate,expected);render();setExcelAudit('','');setStatus('Η εισαγωγή ολοκληρώθηκε. Καταχώρισε τις νέες παραλαβές στην εφαρμογή.','ok');
+ }catch(e){setStatus('ΔΕΝ ΕΓΙΝΕ ΕΝΕΡΓΟΠΟΙΗΣΗ: '+e.message,'err');}finally{busy=false;if(getLedger(false)?.entryMode==='app')previewAppReceipt();}
 }
 function draftAppReceipt(){const l=getLedger(false),it=l?.items.find(x=>x.id===el('appItem').value);if(!l||!it||l.entryMode!=='app')throw Error('Δεν έχει ενεργοποιηθεί η σύμβαση.');const qs=el('appQty').value.trim(),ms=el('appMoney').value.trim();if(Boolean(qs)===Boolean(ms))throw Error('Συμπλήρωσε μόνο ποσότητα ή χρηματική αξία.');const mode=qs?'units':'value',a=strictAmount(qs||ms);if(!(a>0))throw Error('Μη έγκυρο ποσό ή ποσότητα.');if(mode==='value'&&Math.abs(a*100-Math.round(a*100))>1e-6)throw Error('Η χρηματική αξία πρέπει να έχει έως 2 δεκαδικά.');const net=cents(mode==='units'?a*it.unitPrice:a)/100,x=computeLine(it,l);if(!(net>0)||cents(net)>cents(x.remainingNet))throw Error('Η παραλαβή υπερβαίνει το υπόλοιπο ή είναι μηδενική.');if(mode==='units'&&x.remainingUnits!==null&&a>x.remainingUnits+1e-9)throw Error('Υπέρβαση ποσότητας.');if(mode==='units'&&x.remainingUnits===null){const used=(l.receipts||[]).filter(r=>r.itemId===it.id&&r.mode==='units').reduce((s,r)=>s+Number(r.units),0);if(a+used>it.initialQty+1e-9)throw Error('Υπέρβαση γνωστής συμβατικής ποσότητας.');}return {id:uid(),itemId:it.id,mode,units:mode==='units'?a:0,netValue:net,date:el('appDate').value,note:el('appNote').value.trim(),source:'app',createdAt:new Date().toISOString()};}
 function previewAppReceipt(){const l=getLedger(false),it=l?.items.find(x=>x.id===el('appItem').value);if(!it)return;const x=computeLine(it,l);el('appItemInfo').textContent='Τιμή μονάδας: '+it.unitPrice.toLocaleString('el-GR',{maximumFractionDigits:8})+' € / '+it.unit+' · Υπόλοιπο: '+euro(x.remainingNet)+(x.remainingUnits===null?' · Ποσότητα μη τεκμηριωμένη λόγω χρηματικών παραλαβών':' · '+x.remainingUnits.toLocaleString('el-GR')+' '+it.unit);try{const r=draftAppReceipt();el('appPreview').textContent=(r.mode==='units'?'ΠΟΣΟΤΗΤΑ':'ΧΡΗΜΑΤΙΚΗ ΑΞΙΑ')+' — '+euro(r.netValue)+' χωρίς ΦΠΑ · '+euro(r.netValue*(1+l.vat/100))+' με ΦΠΑ';el('appSubmit').disabled=!r.date||busy;}catch(e){el('appPreview').textContent=e.message;el('appSubmit').disabled=true;}}
