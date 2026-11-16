@@ -70,7 +70,7 @@ input[type="text"], textarea, select {
 </head>
 <body>
 <header>
-  <h1>Παραλαβές Συμβάσεων</h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v16.11.2</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -218,10 +218,7 @@ function recompute(){
  l.summary={initialNet:init,remainingNet:rem,remainingVat:vatAmt,remainingWithVat:total,updatedAt:new Date().toISOString()};
  return l.summary
 }
-async function saveAll(){
- try{recompute();parData.updatedAt=new Date().toISOString();await writeJson(PAR_FILE,parData);render();setStatus("Οι παραλαβές και τα υπόλοιπα αποθηκεύτηκαν στο OneDrive.","ok")}
- catch(e){setStatus("Σφάλμα αποθήκευσης:\n"+e.message,"err")}
-}
+async function saveAll(){return syncFromExcel(true)}
 async function loadAll(){
  setStatus("Φόρτωση δεδομένων...");
  const s=await readJson(DATA_FILE);contracts=Array.isArray(s?.records)?s.records:[];
@@ -273,9 +270,9 @@ async function loadAll(){
    getLedger(true);
    render();
    const l=getLedger(false);
-   if((l.excelPath||getContract()?.excelPath)&&!l.lastAutoSyncSession){
-     l.lastAutoSyncSession=true;
-     await syncFromExcel(false);
+   if(l.excelPath||getContract()?.excelPath){
+     await syncFromExcel(true);
+     return; // Διατηρούμε το αποτέλεσμα του ελέγχου στην οθόνη.
    }
  }
  else render();
@@ -468,7 +465,7 @@ function buildHeader(rows){
      for(let c=0;c<max;c++)h[c]=norm([rows[r]?.[c]??"",depth===2?(rows[r+1]?.[c]??""):""].join(" "));
      let score=0;
      for(const x of h){if(x.includes("ΠΕΡΙΓΡΑΦ")||x.includes("ΤΙΤΛ"))score+=3;if(x.includes("ΠΟΣΟΤ"))score+=2;if(x.includes("ΤΙΜ")&&x.includes("ΜΟΝ"))score+=3;if(x.includes("Μ.Μ")||x==="ΜΜ"||x.includes("ΜΟΝΑΔΑ ΜΕΤΡ"))score+=2;if(x.includes("ΥΠΟΛΟΙΠ"))score+=1}
-     if(score>best.score)best={score,row:r,depth,headers:h}
+     if(score>best.score || (score===best.score && depth<best.depth))best={score,row:r,depth,headers:h}
    }
  }
  return best
@@ -518,19 +515,19 @@ function excelHeaderToDate(value){
   return null;
 }
 
-function findExcelReceiptColumns(rows, startCol, sheet){
+function findExcelReceiptColumns(rows, startCol, sheet, headerEnd){
   const cols=[];
   const maxCols=Math.max(...rows.slice(0,8).map(r=>r?.length||0),0);
 
   for(let c=Math.max(startCol,0); c<maxCols; c++){
     let found=null;
     let label="";
-    for(let r=0; r<Math.min(8,rows.length); r++){
+    for(let r=0; r<Math.min(headerEnd,rows.length); r++){
       // Read the underlying numeric Excel serial directly from the worksheet.
       // This avoids timezone shifts when SheetJS or JavaScript builds a Date object.
       const cell=sheet[XLSX.utils.encode_cell({r,c})];
       const raw=(cell && cell.t==="n") ? cell.v : rows[r]?.[c];
-      const date=excelHeaderToDate(raw);
+      const date=typeof raw==="number" && !XLSX.SSF.is_date(cell?.z||"") ? null : excelHeaderToDate(raw);
       if(date){
         found=date;
         label=toUpperText(String(cell?.w ?? raw ?? ""));
@@ -629,7 +626,7 @@ async function syncFromExcel(showMessage=true){
   // Οι στήλες δεξιά από τον βασικό πίνακα μπορούν να έχουν ημερομηνίες παραλαβής
   // (π.χ. 20/05/2026 ΠΑΡΑΛΑΒΗ ΥΛΙΚΩΝ). Θα μετατραπούν αυτόματα σε ιστορικό.
   const historyStartCol=Math.max(cReceived,cRemValue,cRemUnits,cExpense,cPrice,cQty,cUnit,cDesc)+1;
-  const excelReceiptCols=findExcelReceiptColumns(rows,historyStartCol,sh);
+  const excelReceiptCols=findExcelReceiptColumns(rows,historyStartCol,sh,h.row+h.depth);
 
   const newItems=[];let blanks=0;
   for(let rr=h.row+h.depth;rr<rows.length;rr++){
@@ -746,7 +743,9 @@ async function syncFromExcel(showMessage=true){
   }
   l.lastExcelSync=new Date().toISOString();
   recompute();
-  await saveAll();
+  parData.updatedAt=new Date().toISOString();
+  await writeJson(PAR_FILE,parData);
+  render();
 
   if(showMessage){
     setStatus(
@@ -758,7 +757,7 @@ async function syncFromExcel(showMessage=true){
       "ok"
     );
   }
- }catch(e){l.items=originalItems;l.receipts=originalReceipts;l.summary=originalSummary;render();setStatus("Σφάλμα ενημέρωσης από Excel:\n"+e.message,"err")}
+ }catch(e){l.items=originalItems;l.receipts=originalReceipts;l.summary=originalSummary;render();const message="ΣΦΑΛΜΑ ΕΝΗΜΕΡΩΣΗΣ EXCEL — εμφανίζονται παλαιά στοιχεία, όχι επιβεβαιωμένο υπόλοιπο.\n"+e.message;setExcelAudit(message,"error");setStatus(message,"err")}
 }
 
 let pickerStack=[];
@@ -829,7 +828,6 @@ async function chooseExcelItem(item){
   const c=getContract();
   if(c)c.excelPath=full;
   pickerDialog.close();
-  await saveAll();
   setStatus("Επιλέχθηκε το Excel: "+item.name+". Γίνεται ανάγνωση του πίνακα...","ok");
   await syncFromExcel(true);
 }
