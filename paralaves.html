@@ -81,7 +81,7 @@ input[type="text"], textarea, select {
 </head>
 <body>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v19.4 — EXCEL ΒΑΣΗ / ΠΑΡΑΛΑΒΕΣ ΕΦΑΡΜΟΓΗΣ</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v19.5 — EXCEL ΒΑΣΗ / ΠΑΡΑΛΑΒΕΣ ΕΦΑΡΜΟΓΗΣ</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -741,6 +741,23 @@ async function syncFromExcel(showMessage=true){
       choose(0,0,[]);
       if(solutions.length===1)chosenModes=solutions[0];
       else if(entries.every(e=>e.modes.length===1))chosenModes=entries.map(e=>e.modes[0]);
+      else if(solutions.length>1){
+        // Αν η τιμή μονάδας είναι 1 €, η αριθμητική συμφωνία δεν μπορεί
+        // να ξεχωρίσει μονάδες από ευρώ. Χρησιμοποιούμε τους ΙΔΙΟΥΣ
+        // τους τύπους του Excel ως τεκμήριο: L=E*SUM(χρονολογημένες στήλες)
+        // και M=G-SUM(χρονολογημένες στήλες) -> οι στήλες είναι ΠΟΣΟΤΗΤΕΣ.
+        const lFormula=String(sh[XLSX.utils.encode_cell({r:rr,c:cReceived})]?.f||"").toUpperCase();
+        const mFormula=String(sh[XLSX.utils.encode_cell({r:rr,c:cRemUnits})]?.f||"").toUpperCase();
+        const excelDefinesUnits= /SUM\(/.test(mFormula) && /SUM\(/.test(lFormula)
+          && /\*/.test(lFormula);
+        const allUnits=entries.every(e=>e.modes.includes("units"));
+        const unitSum=entries.reduce((v,e)=>v+e.amount*price,0);
+        if(excelDefinesUnits && allUnits && Math.abs(unitSum-target)<=0.05){
+          chosenModes=entries.map(()=>"units");
+        }else{
+          throw new Error(`Γραμμή Excel ${rr+1}: οι παραλαβές δεν μπορούν να διακριθούν ως ποσότητα ή €. Οι τύποι Excel δεν τεκμηριώνουν ασφαλή επιλογή.`);
+        }
+      }
       else if(entries.some(e=>e.modes.length>1))
         throw new Error(`Γραμμή Excel ${rr+1}: οι χρονολογημένες εγγραφές έχουν ασαφή μορφή (ποσότητα ή €). Χρειάζεται χαρακτηρισμός κελιών.`);
     }
@@ -849,7 +866,7 @@ async function syncFromExcel(showMessage=true){
     );
   }
  return true;
- }catch(e){l.migrationVerified=false;l.items=originalItems;l.receipts=originalReceipts;l.summary=originalSummary;render();const message="ΣΦΑΛΜΑ ΕΝΗΜΕΡΩΣΗΣ EXCEL (v19.4) — εμφανίζονται παλαιά στοιχεία, όχι επιβεβαιωμένο υπόλοιπο.\nΑρχείο: "+(l.excelPath||"(κενό)")+"\nΦύλλο που ζητήθηκε: "+(l.excelSheet||"(κενό)")+"\nΑιτία: "+e.message;setExcelAudit(message,"error");setStatus(message,"err")}
+ }catch(e){l.migrationVerified=false;l.items=originalItems;l.receipts=originalReceipts;l.summary=originalSummary;render();const message="ΣΦΑΛΜΑ ΕΝΗΜΕΡΩΣΗΣ EXCEL (v19.5) — εμφανίζονται παλαιά στοιχεία, όχι επιβεβαιωμένο υπόλοιπο.\nΑρχείο: "+(l.excelPath||"(κενό)")+"\nΦύλλο που ζητήθηκε: "+(l.excelSheet||"(κενό)")+"\nΑιτία: "+e.message;setExcelAudit(message,"error");setStatus(message,"err")}
 }
 
 let pickerStack=[];
