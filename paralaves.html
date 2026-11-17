@@ -81,7 +81,7 @@ input[type="text"], textarea, select {
 </head>
 <body>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v19.2 — EXCEL ΒΑΣΗ / ΠΑΡΑΛΑΒΕΣ ΕΦΑΡΜΟΓΗΣ</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v19.3 — EXCEL ΒΑΣΗ / ΠΑΡΑΛΑΒΕΣ ΕΦΑΡΜΟΓΗΣ</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -660,10 +660,11 @@ async function syncFromExcel(showMessage=true){
   const cDesc=findCol(H,x=>x.includes("ΠΕΡΙΓΡΑΦ")||x.includes("ΤΙΤΛ"));
   const cUnit=findCol(H,x=>x.includes("Μ.Μ")||x==="ΜΜ"||x.includes("ΜΟΝΑΔΑ ΜΕΤΡ"));
   const cQty=findCol(H,x=>x.includes("ΠΟΣΟΤ")&&!x.includes("ΥΠΟΛΟΙΠ"));
+  const cContractQty=findCol(H,x=>x.includes("ΣΥΝΟΛΟ")&&x.includes("ΠΡΟΑΙΡΕΣ"));
   const cPrice=findCol(H,x=>x.includes("ΤΙΜ")&&x.includes("ΜΟΝ"));
   const cExpense=findCol(H,x=>(x.includes("ΔΑΠΑΝ")||x.includes("ΑΞΙΑ"))&&!x.includes("ΥΠΟΛΟΙΠ")&&!x.includes("ΠΑΡΑΛΑΒ"));
-  const cRemUnits=findCol(H,x=>x.includes("ΥΠΟΛΟΙΠ")&&(x.includes("Μ.Μ")||x.includes("ΜΟΝΑΔ")||x.includes("ΠΟΣΟΤ")));
-  const cReceived=findCol(H,x=>x.includes("ΠΑΡΑΛΑΒ")&&!x.includes("ΥΠΟΛΟΙΠ")&&(x.includes("€")||x.includes("ΑΞΙΑ")));
+  const cRemUnits=findCol(H,x=>x.includes("ΥΠΟΛΟΙΠ")&&(x.includes("Μ.Μ")||x.includes("ΜΟΝΑΔ")||x.includes("ΠΟΣΟΤ")||x.includes("ΠΑΡΑΛΑΒ")));
+  const cReceived=findCol(H,x=>x.includes("ΠΑΡΑΛΑΒ")&&!x.includes("ΥΠΟΛΟΙΠ")&&(x.includes("€")||x.includes("ΑΞΙΑ")||x.trim()==="ΠΑΡΑΛΑΒΗ"));
   const cRemValue=findCol(H,x=>x.includes("ΥΠΟΛΟΙΠ")&&(x.includes("€")||x.includes("ΑΞΙΑ")||x.includes("ΠΟΣΟ")||x.includes("ΣΥΜΒΑΣ")));
   if(cDesc<0||cQty<0||cPrice<0)throw new Error("Δεν μπόρεσα να αναγνωρίσω τις στήλες Περιγραφή / Ποσότητα / Τιμή μονάδας.");
 
@@ -674,7 +675,13 @@ async function syncFromExcel(showMessage=true){
 
   const newItems=[];let blanks=0;
   for(let rr=h.row+h.depth;rr<rows.length;rr++){
-    const row=rows[rr]||[],desc=toUpperText(String(row[cDesc]??"").trim()),qty=num(row[cQty]),price=num(row[cPrice]),expense=cExpense>=0?num(row[cExpense]):qty*price;
+    const row=rows[rr]||[],desc=toUpperText(String(row[cDesc]??"").trim());
+    const originalQty=num(row[cQty]);
+    // Η αρχική ποσότητα (D) δεν περιλαμβάνει την προαίρεση. Η δαπάνη (H)
+    // υπολογίζεται από τη συνολική συμβατική ποσότητα (G), όταν υπάρχει.
+    const qty=cContractQty>=0&&String(row[cContractQty]??"").trim()!==""
+      ?num(row[cContractQty]):originalQty;
+    const price=num(row[cPrice]),expense=cExpense>=0?num(row[cExpense]):qty*price;
     if(!desc&&!qty&&!price&&!expense){blanks++;if(blanks>=8&&newItems.length)break;continue}else blanks=0;
     if(!desc||(!(qty||price||expense)))continue;
     const unit=cUnit>=0?toUpperText(String(row[cUnit]??"").trim()):"";
@@ -726,12 +733,12 @@ async function syncFromExcel(showMessage=true){
       walk(0,0,[]);
       if(candidates.length>1)break;
     }
-    if(candidates.length!==1)throw new Error(`Γραμμή Excel ${rr+1}: ${candidates.length?"δεν διακρίνονται με βεβαιότητα ποσά και ποσότητες":"δεν συμφωνούν οι παραλαβές, η αξία και το υπόλοιπο"}. Χρησιμοποίησε μορφή Νομισματική (€) στα χρηματικά κελιά. Δεν ενημερώθηκαν τα δεδομένα.`);
+    if(candidates.length!==1)throw new Error(`Γραμμή Excel ${rr+1}: ${candidates.length?"Αμφίσημες ποσότητες/αξίες":"Ασυμφωνία παραλαβών και υπολοίπου"}. Συμβατική ποσότητα: ${qty}, τιμή: ${price} €, δαπάνη: ${initialNet} €, παραληφθείσα αξία Excel: ${received===null?"δεν υπάρχει":received+" €"}, υπόλοιπο μονάδων Excel: ${excelRemainingUnitsProvided?num(row[cRemUnits]):"δεν υπάρχει"}, εγγραφές ημερομηνιών: ${entries.length}. Τα αποθηκευμένα δεδομένα δεν άλλαξαν.`);
     const chosen=candidates[0];
     const net=initialNet-chosen.target;
     const baseUnits=excelRemainingUnitsProvided?num(row[cRemUnits]):(price>0?qty-chosen.target/price:qty);
     const itemId=hash(norm(desc)+"|"+norm(unit)+"|"+price.toFixed(6)+"|"+(rr+1));
-    newItems.push({id:itemId,sourceRow:rr+1,description:desc,unit,initialQty:qty,unitPrice:price,initialNet,baseRemainingUnits:baseUnits,baseRemainingNet:net,excelRemainingUnitsProvided:true,excelRemainingNetProvided:true,originalExcelRemainingUnitsProvided:excelRemainingUnitsProvided,receiptEntries:entries.map((e,i)=>({...e,mode:chosen.choices[i]}))});
+    newItems.push({id:itemId,sourceRow:rr+1,description:desc,unit,originalQty,optionQty:qty-originalQty,initialQty:qty,unitPrice:price,initialNet,baseRemainingUnits:baseUnits,baseRemainingNet:net,excelRemainingUnitsProvided:true,excelRemainingNetProvided:true,originalExcelRemainingUnitsProvided:excelRemainingUnitsProvided,receiptEntries:entries.map((e,i)=>({...e,mode:chosen.choices[i]}))});
   }
   if(!newItems.length)throw new Error("Δεν βρέθηκαν γραμμές ειδών στον πίνακα.");
 
