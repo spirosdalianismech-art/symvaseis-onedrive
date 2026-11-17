@@ -81,7 +81,7 @@ input[type="text"], textarea, select {
 </head>
 <body>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v19.0 — EXCEL ΒΑΣΗ / ΠΑΡΑΛΑΒΕΣ ΕΦΑΡΜΟΓΗΣ</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v19.1 — EXCEL ΒΑΣΗ / ΠΑΡΑΛΑΒΕΣ ΕΦΑΡΜΟΓΗΣ</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -632,8 +632,25 @@ async function syncFromExcel(showMessage=true){
   // Διαβάζουμε τις ημερομηνίες Excel ως αριθμούς σειράς, όχι ως JS Date.
    // Έτσι αποφεύγουμε μετατόπιση κατά μία ημέρα λόγω ζώνης ώρας.
    const wb=XLSX.read(await r.arrayBuffer(),{type:"array",cellDates:false,cellNF:true});
-  let sh=wb.Sheets[l.excelSheet];if(!sh){const n=wb.SheetNames.find(n=>norm(n)===norm(l.excelSheet));if(n)sh=wb.Sheets[n]}if(!sh)throw new Error("Δεν βρέθηκε το δηλωμένο φύλλο Excel.");
-  const rows=XLSX.utils.sheet_to_json(sh,{header:1,defval:"",raw:true});
+   // Εντοπισμός φύλλου: ακριβές όνομα, ισοδύναμο όνομα, μοναδικό φύλλο,
+   // ή μοναδικό φύλλο με αναγνωρίσιμες επικεφαλίδες ειδών.
+   const configuredSheet=l.excelSheet||"";
+   let chosenSheet=wb.SheetNames.find(n=>n===configuredSheet)
+     ||wb.SheetNames.find(n=>norm(n)===norm(configuredSheet));
+   if(!chosenSheet && wb.SheetNames.length===1)chosenSheet=wb.SheetNames[0];
+   if(!chosenSheet && wb.SheetNames.length>1){
+     const eligible=wb.SheetNames.filter(name=>{
+       const preview=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:"",raw:true});
+       const headers=buildHeader(preview).headers;
+       return findCol(headers,x=>x.includes("ΠΕΡΙΓΡΑΦ")||x.includes("ΤΙΤΛ"))>=0
+         &&findCol(headers,x=>x.includes("ΠΟΣΟΤ")&&!x.includes("ΥΠΟΛΟΙΠ"))>=0
+         &&findCol(headers,x=>x.includes("ΤΙΜ")&&x.includes("ΜΟΝ"))>=0;
+     });
+     if(eligible.length===1)chosenSheet=eligible[0];
+   }
+   if(!chosenSheet)throw new Error("Δεν εντοπίστηκε με βεβαιότητα φύλλο ειδών. Διαθέσιμα φύλλα: "+wb.SheetNames.join(", ")+". Δήλωσε το σωστό όνομα στο πεδίο «Φύλλο Excel».");
+   const sh=wb.Sheets[chosenSheet];
+   const rows=XLSX.utils.sheet_to_json(sh,{header:1,defval:"",raw:true});
   const h=buildHeader(rows),H=h.headers;
   const cDesc=findCol(H,x=>x.includes("ΠΕΡΙΓΡΑΦ")||x.includes("ΤΙΤΛ"));
   const cUnit=findCol(H,x=>x.includes("Μ.Μ")||x==="ΜΜ"||x.includes("ΜΟΝΑΔΑ ΜΕΤΡ"));
@@ -765,6 +782,8 @@ async function syncFromExcel(showMessage=true){
    setExcelAudit("⚠ ΔΕΝ ΒΡΕΘΗΚΕ ΤΟ ΚΕΛΙ ΤΟΥ ΣΥΝΟΛΙΚΟΥ ΥΠΟΛΟΙΠΟΥ ΣΤΟ EXCEL. Έγινε έλεγχος γραμμών όπου ήταν δυνατό, όχι διασταύρωση τελικού ποσού.","warn");
   }
   l.migrationVerified=Boolean(audit.grand);
+  l.excelSheet=chosenSheet;
+  excelSheet.value=chosenSheet;
   l.lastExcelSync=new Date().toISOString();
   recompute();
   parData.updatedAt=new Date().toISOString();
