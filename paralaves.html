@@ -81,7 +81,7 @@ input[type="text"], textarea, select {
 </head>
 <body>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v19.1 — EXCEL ΒΑΣΗ / ΠΑΡΑΛΑΒΕΣ ΕΦΑΡΜΟΓΗΣ</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v19.2 — EXCEL ΒΑΣΗ / ΠΑΡΑΛΑΒΕΣ ΕΦΑΡΜΟΓΗΣ</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -631,7 +631,10 @@ async function syncFromExcel(showMessage=true){
   if(!r.ok)throw new Error("Δεν βρέθηκε το Excel στο OneDrive. Έλεγξε τη διαδρομή.");
   // Διαβάζουμε τις ημερομηνίες Excel ως αριθμούς σειράς, όχι ως JS Date.
    // Έτσι αποφεύγουμε μετατόπιση κατά μία ημέρα λόγω ζώνης ώρας.
-   const wb=XLSX.read(await r.arrayBuffer(),{type:"array",cellDates:false,cellNF:true});
+   const excelBytes=await r.arrayBuffer();
+   if(excelBytes.byteLength<100)throw new Error("Το αρχείο OneDrive είναι κενό ή μη έγκυρο ("+excelBytes.byteLength+" bytes).");
+   const wb=XLSX.read(excelBytes,{type:"array",cellDates:false,cellNF:true});
+   if(!wb.SheetNames.length)throw new Error("Το αρχείο δεν περιέχει φύλλα Excel. Διαδρομή: "+l.excelPath);
    // Εντοπισμός φύλλου: ακριβές όνομα, ισοδύναμο όνομα, μοναδικό φύλλο,
    // ή μοναδικό φύλλο με αναγνωρίσιμες επικεφαλίδες ειδών.
    const configuredSheet=l.excelSheet||"";
@@ -648,7 +651,9 @@ async function syncFromExcel(showMessage=true){
      });
      if(eligible.length===1)chosenSheet=eligible[0];
    }
-   if(!chosenSheet)throw new Error("Δεν εντοπίστηκε με βεβαιότητα φύλλο ειδών. Διαθέσιμα φύλλα: "+wb.SheetNames.join(", ")+". Δήλωσε το σωστό όνομα στο πεδίο «Φύλλο Excel».");
+   if(!chosenSheet)throw new Error("Δεν εντοπίστηκε με βεβαιότητα φύλλο ειδών. Αρχείο: "+l.excelPath+". Ζητούμενο φύλλο: "+configuredSheet+". Διαθέσιμα φύλλα: "+wb.SheetNames.join(", ")+". Επίλεξε το σωστό φύλλο.");
+   l.excelSheet=chosenSheet;
+   excelSheet.value=chosenSheet;
    const sh=wb.Sheets[chosenSheet];
    const rows=XLSX.utils.sheet_to_json(sh,{header:1,defval:"",raw:true});
   const h=buildHeader(rows),H=h.headers;
@@ -801,7 +806,7 @@ async function syncFromExcel(showMessage=true){
     );
   }
  return true;
- }catch(e){l.migrationVerified=false;l.items=originalItems;l.receipts=originalReceipts;l.summary=originalSummary;render();const message="ΣΦΑΛΜΑ ΕΝΗΜΕΡΩΣΗΣ EXCEL — εμφανίζονται παλαιά στοιχεία, όχι επιβεβαιωμένο υπόλοιπο.\n"+e.message;setExcelAudit(message,"error");setStatus(message,"err")}
+ }catch(e){l.migrationVerified=false;l.items=originalItems;l.receipts=originalReceipts;l.summary=originalSummary;render();const message="ΣΦΑΛΜΑ ΕΝΗΜΕΡΩΣΗΣ EXCEL (v19.2) — εμφανίζονται παλαιά στοιχεία, όχι επιβεβαιωμένο υπόλοιπο.\nΑρχείο: "+(l.excelPath||"(κενό)")+"\nΦύλλο που ζητήθηκε: "+(l.excelSheet||"(κενό)")+"\nΑιτία: "+e.message;setExcelAudit(message,"error");setStatus(message,"err")}
 }
 
 let pickerStack=[];
