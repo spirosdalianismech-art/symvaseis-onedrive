@@ -554,16 +554,6 @@ tbody tr{
 .table-wrap thead th:nth-child(n+6).num {
   text-align: center !important;
 }
-/* Στοίχιση συνδέσμων και ομάδων αρχείων στο κέντρο της στήλης */
-.table-wrap tbody td:nth-child(16) .file-group {
-  align-items: center;
-  text-align: center;
-}
-.table-wrap tbody td:nth-child(16) .file-entry {
-  justify-content: center;
-  align-items: center;
-}
-
 /* ΕΝΙΑΙΕΣ ΣΕΙΡΕΣ: ΧΩΡΙΣ ΚΟΥΤΑΚΙΑ ΚΑΙ ΚΑΘΕΤΟΥΣ ΔΙΑΧΩΡΙΣΜΟΥΣ */
 @media screen {
   .table-wrap thead th { border-right: none !important; border-left: none !important; }
@@ -677,7 +667,6 @@ tbody tr{
           <th>ΚΑΤΑΣΤΑΣΗ</th>
           <th>ΣΥΝΤΑΞΑΣ<br>ΜΕΛΕΤΗΣ</th>
           <th>ΑΡΜΟΔΙΑ<br>Δ/ΝΣΗ</th>
-          <th>ONLINE<br>ΑΡΧΕΙΑ</th>
         </tr></thead>
         <tbody id="contractsBody"></tbody>
       </table>
@@ -1321,7 +1310,7 @@ function render(){
   document.getElementById("contractCard").textContent=euro(list.reduce((s,r)=>s+Number(r.contractBudget||0),0));
   document.getElementById("balanceCard").textContent=euro(list.reduce((s,r)=>s+Number(r.balanceWithVat ?? r.contractBudget ?? 0),0));
   const body=document.getElementById("contractsBody");body.innerHTML="";
-  if(!list.length){body.innerHTML='<tr><td colspan="16" style="padding:35px;text-align:center">'+(contractSearchMode?"Δεν βρέθηκαν συμβάσεις με τα στοιχεία αναζήτησης.":activeContractsOnly?"Δεν βρέθηκαν ενεργές συμβάσεις με τα επιλεγμένα φίλτρα.":"Δεν υπάρχουν εγγραφές για το επιλεγμένο έτος.")+'</td></tr>';return}
+  if(!list.length){body.innerHTML='<tr><td colspan="15" style="padding:35px;text-align:center">'+(contractSearchMode?"Δεν βρέθηκαν συμβάσεις με τα στοιχεία αναζήτησης.":activeContractsOnly?"Δεν βρέθηκαν ενεργές συμβάσεις με τα επιλεγμένα φίλτρα.":"Δεν υπάρχουν εγγραφές για το επιλεγμένο έτος.")+'</td></tr>';return}
   for(const r of list){
     const st=statusFor(r),expiry=effectiveExpiry(r),days=expiry?daysUntil(expiry):"",bal=r.balanceWithVat ?? r.contractBudget ?? 0;
     const tr=document.createElement("tr");
@@ -1335,8 +1324,6 @@ function render(){
       <td><div class="actions">
         <button class="btn-blue" onclick="editRecord('${r.id}')">✎</button>
         <button class="btn-purple" onclick="openParalaves('${r.id}')">ΠΑΡΑΛΑΒΕΣ</button>
-        <button class="btn-green" onclick="selectFilesForRecord('${r.id}','assignment')">ΑΝΑΘΕΣΗ</button>
-        <button class="btn-orange" onclick="selectFilesForRecord('${r.id}','invoice')">ΤΙΜΟΛΟΓΙΑ</button>
         <button class="contract-docs-launch" onclick="openContractDocuments('${r.id}')">📁 ΑΡΧΕΙΑ</button>
       </div></td>
       <td>${esc(toUpperText(r.studyNo||""))}</td><td>${esc(toUpperText(r.department||""))}</td><td>${esc(toUpperText(r.agency||""))}</td><td>${esc(toUpperText(r.title||""))}</td><td>${esc(toUpperText(r.execution||""))}</td>
@@ -1344,8 +1331,7 @@ function render(){
       <td class="num"><strong>${euro(bal)}</strong></td><td title="${r.extensionExpiry ? "ΠΑΡΑΤΑΣΗ ΑΠΟ " + (r.expiry ? formatDateGR(r.expiry) : "—") : "ΑΡΧΙΚΗ ΛΗΞΗ"}">${expiry ? esc(formatDateGR(expiry)) + (r.extensionExpiry ? "<div style=\"font-size:10px;color:#64748b\">ΠΑΡΑΤΑΣΗ</div>" : "") : ""}</td><td class="center">${days===null?"":days}</td>
       <td><span class="badge ${st.cls}">${st.text}</span></td>
        <td>${esc(toUpperText(r.studyAuthor||""))}</td>
-       <td>${esc(toUpperText(r.responsibleDirectorate||""))}</td>
-       <td>${renderOnlineFiles(r)}</td>`;
+       <td>${esc(toUpperText(r.responsibleDirectorate||""))}</td>`;
     body.appendChild(tr)
   }
 }
