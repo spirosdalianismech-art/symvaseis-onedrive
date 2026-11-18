@@ -82,7 +82,7 @@ input[type="text"], textarea, select {
 </head>
 <body>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v19.0 — EXCEL ΒΑΣΗ / ΠΑΡΑΛΑΒΕΣ ΕΦΑΡΜΟΓΗΣ</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v19.1 — ΔΙΟΡΘΩΣΗ ΗΜΕΡΟΜΗΝΙΩΝ EXCEL</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -517,7 +517,9 @@ function excelHeaderToDate(value){
     }
   }
 
-  const s=String(value).trim();
+  // Διορθώνουμε επαναλαμβανόμενους διαχωριστές ημερομηνίας, π.χ. 15//9/26 → 15/9/26.
+  // Δεν αλλάζει το Excel· διορθώνεται μόνο η αναγνώριση της επικεφαλίδας.
+  const s=String(value).trim().replace(/([\/\-.])\1+/g,"$1");
 
   // dd/mm/yyyy, dd-mm-yyyy, dd.mm.yyyy, optionally with text after it.
   let m=s.match(/(?:^|\s)(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})(?:\s|$)/);
