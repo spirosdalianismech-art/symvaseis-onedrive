@@ -6,6 +6,7 @@
 <title>Παραλαβές Συμβάσεων</title>
 <script src="https://alcdn.msauth.net/browser/2.35.0/js/msal-browser.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.9.1/mammoth.browser.min.js"></script>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f1f5f9;color:#1f2937}
 header{background:#4c1d95;color:white;padding:20px 28px}header h1{margin:0;font-size:27px}header p{margin:6px 0 0;opacity:.85}
@@ -81,7 +82,7 @@ input[type="text"], textarea, select {
 </head>
 <body>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v19.5 — EXCEL ΒΑΣΗ / ΠΑΡΑΛΑΒΕΣ ΕΦΑΡΜΟΓΗΣ</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v19.0 — EXCEL ΒΑΣΗ / ΠΑΡΑΛΑΒΕΣ ΕΦΑΡΜΟΓΗΣ</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -102,7 +103,7 @@ input[type="text"], textarea, select {
 
 <div class="container">
   <div id="status">Σύνδεση με Microsoft για φόρτωση δεδομένων.</div>
-  <div class="readonly-note" id="modeNote">Εισαγωγή από Excel — πρώτα απαιτείται συμφωνία των ποσών, μετά ενεργοποίηση.</div>
+  <div class="readonly-note" id="modeNote">Εισαγωγή από Excel — ενεργοποίησε τις καταχωρίσεις μετά τον έλεγχο.</div>
   <div id="excelAudit" class="hidden" role="status" aria-live="polite"></div>
 
   <section class="contract-head">
@@ -122,6 +123,14 @@ input[type="text"], textarea, select {
     <div style="padding:15px;display:grid;gap:10px">
       <div>Επίλεξε το Excel της σύμβασης. Εισάγονται τα είδη, οι αρχικές ποσότητες, οι τιμές και όλες οι παλιές παραλαβές. Μετά την ενεργοποίηση, οι νέες παραλαβές καταχωρίζονται μόνο εδώ.</div>
       <button class="green" onclick="activateAppMode()">ΕΛΕΓΧΟΣ EXCEL ΚΑΙ ΕΝΕΡΓΟΠΟΙΗΣΗ ΚΑΤΑΧΩΡΙΣΕΩΝ</button>
+      <div style="border-top:1px solid #ddd;padding-top:12px">
+        <strong>ΕΝΑΛΛΑΚΤΙΚΑ: ΜΕΛΕΤΗ WORD ΑΠΟ ΤΑ ΑΡΧΕΙΑ ΣΥΜΒΑΣΗΣ</strong>
+        <p style="font-size:13px">Για νέες συμβάσεις χωρίς προηγούμενες παραλαβές. Διαβάζει το .docx που ανέβασες στην κατηγορία ΜΕΛΕΤΗ, εμφανίζει πίνακα για έλεγχο και μετά ενεργοποιεί παραλαβές στην εφαρμογή.</p>
+        <button class="blue" id="studyPreviewButton" onclick="previewStudyWord()">📄 ΑΝΑΓΝΩΣΗ ΜΕΛΕΤΗΣ WORD</button>
+        <div id="studyWordStatus" style="white-space:pre-wrap;font-size:13px;margin:10px 0" role="status"></div>
+        <div class="table-wrap"><table style="min-width:600px"><thead><tr><th>Είδος / Υπηρεσία</th><th>Μ.Μ.</th><th>Ποσότητα</th><th>Τιμή μονάδας</th><th>Αξία χωρίς ΦΠΑ</th></tr></thead><tbody id="studyWordPreview"></tbody></table></div>
+        <button class="green hidden" id="studyWordConfirm" onclick="activateStudyWord()">ΕΠΙΒΕΒΑΙΩΣΗ ΚΑΙ ΔΗΜΙΟΥΡΓΙΑ ΒΑΣΗΣ ΑΠΟ WORD</button>
+      </div>
     </div>
   </section>
   <section class="panel no-print hidden" id="entryPanel">
@@ -631,40 +640,17 @@ async function syncFromExcel(showMessage=true){
   if(!r.ok)throw new Error("Δεν βρέθηκε το Excel στο OneDrive. Έλεγξε τη διαδρομή.");
   // Διαβάζουμε τις ημερομηνίες Excel ως αριθμούς σειράς, όχι ως JS Date.
    // Έτσι αποφεύγουμε μετατόπιση κατά μία ημέρα λόγω ζώνης ώρας.
-   const excelBytes=await r.arrayBuffer();
-   if(excelBytes.byteLength<100)throw new Error("Το αρχείο OneDrive είναι κενό ή μη έγκυρο ("+excelBytes.byteLength+" bytes).");
-   const wb=XLSX.read(excelBytes,{type:"array",cellDates:false,cellNF:true});
-   if(!wb.SheetNames.length)throw new Error("Το αρχείο δεν περιέχει φύλλα Excel. Διαδρομή: "+l.excelPath);
-   // Εντοπισμός φύλλου: ακριβές όνομα, ισοδύναμο όνομα, μοναδικό φύλλο,
-   // ή μοναδικό φύλλο με αναγνωρίσιμες επικεφαλίδες ειδών.
-   const configuredSheet=l.excelSheet||"";
-   let chosenSheet=wb.SheetNames.find(n=>n===configuredSheet)
-     ||wb.SheetNames.find(n=>norm(n)===norm(configuredSheet));
-   if(!chosenSheet && wb.SheetNames.length===1)chosenSheet=wb.SheetNames[0];
-   if(!chosenSheet && wb.SheetNames.length>1){
-     const eligible=wb.SheetNames.filter(name=>{
-       const preview=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:"",raw:true});
-       const headers=buildHeader(preview).headers;
-       return findCol(headers,x=>x.includes("ΠΕΡΙΓΡΑΦ")||x.includes("ΤΙΤΛ"))>=0
-         &&findCol(headers,x=>x.includes("ΠΟΣΟΤ")&&!x.includes("ΥΠΟΛΟΙΠ"))>=0
-         &&findCol(headers,x=>x.includes("ΤΙΜ")&&x.includes("ΜΟΝ"))>=0;
-     });
-     if(eligible.length===1)chosenSheet=eligible[0];
-   }
-   if(!chosenSheet)throw new Error("Δεν εντοπίστηκε με βεβαιότητα φύλλο ειδών. Αρχείο: "+l.excelPath+". Ζητούμενο φύλλο: "+configuredSheet+". Διαθέσιμα φύλλα: "+wb.SheetNames.join(", ")+". Επίλεξε το σωστό φύλλο.");
-   l.excelSheet=chosenSheet;
-   excelSheet.value=chosenSheet;
-   const sh=wb.Sheets[chosenSheet];
-   const rows=XLSX.utils.sheet_to_json(sh,{header:1,defval:"",raw:true});
+   const wb=XLSX.read(await r.arrayBuffer(),{type:"array",cellDates:false,cellNF:true});
+  let sh=wb.Sheets[l.excelSheet];if(!sh){const n=wb.SheetNames.find(n=>norm(n)===norm(l.excelSheet));if(n)sh=wb.Sheets[n]}if(!sh)throw new Error("Δεν βρέθηκε το δηλωμένο φύλλο Excel.");
+  const rows=XLSX.utils.sheet_to_json(sh,{header:1,defval:"",raw:true});
   const h=buildHeader(rows),H=h.headers;
   const cDesc=findCol(H,x=>x.includes("ΠΕΡΙΓΡΑΦ")||x.includes("ΤΙΤΛ"));
   const cUnit=findCol(H,x=>x.includes("Μ.Μ")||x==="ΜΜ"||x.includes("ΜΟΝΑΔΑ ΜΕΤΡ"));
   const cQty=findCol(H,x=>x.includes("ΠΟΣΟΤ")&&!x.includes("ΥΠΟΛΟΙΠ"));
-  const cContractQty=findCol(H,x=>x.includes("ΣΥΝΟΛΟ")&&x.includes("ΠΡΟΑΙΡΕΣ"));
   const cPrice=findCol(H,x=>x.includes("ΤΙΜ")&&x.includes("ΜΟΝ"));
   const cExpense=findCol(H,x=>(x.includes("ΔΑΠΑΝ")||x.includes("ΑΞΙΑ"))&&!x.includes("ΥΠΟΛΟΙΠ")&&!x.includes("ΠΑΡΑΛΑΒ"));
-  const cRemUnits=findCol(H,x=>x.includes("ΥΠΟΛΟΙΠ")&&(x.includes("Μ.Μ")||x.includes("ΜΟΝΑΔ")||x.includes("ΠΟΣΟΤ")||x.includes("ΠΑΡΑΛΑΒ")));
-  const cReceived=findCol(H,x=>x.includes("ΠΑΡΑΛΑΒ")&&!x.includes("ΥΠΟΛΟΙΠ")&&(x.includes("€")||x.includes("ΑΞΙΑ")||x.trim()==="ΠΑΡΑΛΑΒΗ"));
+  const cRemUnits=findCol(H,x=>x.includes("ΥΠΟΛΟΙΠ")&&(x.includes("Μ.Μ")||x.includes("ΜΟΝΑΔ")||x.includes("ΠΟΣΟΤ")));
+  const cReceived=findCol(H,x=>x.includes("ΠΑΡΑΛΑΒ")&&!x.includes("ΥΠΟΛΟΙΠ")&&(x.includes("€")||x.includes("ΑΞΙΑ")));
   const cRemValue=findCol(H,x=>x.includes("ΥΠΟΛΟΙΠ")&&(x.includes("€")||x.includes("ΑΞΙΑ")||x.includes("ΠΟΣΟ")||x.includes("ΣΥΜΒΑΣ")));
   if(cDesc<0||cQty<0||cPrice<0)throw new Error("Δεν μπόρεσα να αναγνωρίσω τις στήλες Περιγραφή / Ποσότητα / Τιμή μονάδας.");
 
@@ -673,16 +659,9 @@ async function syncFromExcel(showMessage=true){
   const historyStartCol=Math.max(cReceived,cRemValue,cRemUnits,cExpense,cPrice,cQty,cUnit,cDesc)+1;
   const excelReceiptCols=findExcelReceiptColumns(rows,historyStartCol,sh,h.row+h.depth);
 
-  const excelWarnings=[];
   const newItems=[];let blanks=0;
   for(let rr=h.row+h.depth;rr<rows.length;rr++){
-    const row=rows[rr]||[],desc=toUpperText(String(row[cDesc]??"").trim());
-    const originalQty=num(row[cQty]);
-    // Η αρχική ποσότητα (D) δεν περιλαμβάνει την προαίρεση. Η δαπάνη (H)
-    // υπολογίζεται από τη συνολική συμβατική ποσότητα (G), όταν υπάρχει.
-    const qty=cContractQty>=0&&String(row[cContractQty]??"").trim()!==""
-      ?num(row[cContractQty]):originalQty;
-    const price=num(row[cPrice]),expense=cExpense>=0?num(row[cExpense]):qty*price;
+    const row=rows[rr]||[],desc=toUpperText(String(row[cDesc]??"").trim()),qty=num(row[cQty]),price=num(row[cPrice]),expense=cExpense>=0?num(row[cExpense]):qty*price;
     if(!desc&&!qty&&!price&&!expense){blanks++;if(blanks>=8&&newItems.length)break;continue}else blanks=0;
     if(!desc||(!(qty||price||expense)))continue;
     const unit=cUnit>=0?toUpperText(String(row[cUnit]??"").trim()):"";
@@ -704,73 +683,42 @@ async function syncFromExcel(showMessage=true){
       if(money&&quantity)throw new Error(`Γραμμή Excel ${rr+1}: αντιφατική μορφή παραλαβής στη στήλη ${hc.col+1}.`);
       return {...hc,amount,modes:money?["value"]:quantity?["units"]:["units","value"]};
     }).filter(x=>x.amount!==0);
-    // Το G (σύνολο με προαίρεση) και το M (υπόλοιπες μονάδες)
-    // είναι η βάση ελέγχου της ΠΟΣΟΤΗΤΑΣ. Το L είναι ανεξάρτητη χρηματική
-    // στήλη και ενδέχεται να μην έχει ενημερωθεί ακόμη.
-    const remainingQty=excelRemainingUnitsProvided?num(row[cRemUnits]):null;
-    if(remainingQty!==null && (remainingQty< -0.011 || remainingQty>qty+0.011))
-      throw new Error(`Γραμμή Excel ${rr+1}: το υπόλοιπο ${remainingQty} είναι εκτός της συμβατικής ποσότητας ${qty}.`);
-    const unitsReceived=remainingQty===null?null:qty-remainingQty;
-    const targetFromUnits=unitsReceived===null?null:Math.round(unitsReceived*price*100)/100;
-    const target=targetFromUnits!==null ? targetFromUnits
-      : hasReceived ? received
-      : rawBalance!==null ? initialNet-rawBalance : null;
-    if(target===null)throw new Error(`Γραμμή Excel ${rr+1}: λείπουν στοιχεία για ασφαλή υπολογισμό υπολοίπου.`);
-    if(target< -0.05 || target>initialNet+0.05)
-      throw new Error(`Γραμμή Excel ${rr+1}: η υπολογισμένη παραλαβή ${euro(target)} υπερβαίνει τη συμβατική αξία ${euro(initialNet)}.`);
-    if(hasReceived && targetFromUnits!==null && Math.abs(received-target)>0.05)
-      excelWarnings.push(`Γραμμή ${rr+1}: ${unitsReceived} παραληφθείσες μονάδες (${euro(target)}), αλλά στη στήλη «ΠΑΡΑΛΑΒΗ» γράφει ${euro(received)}. Χρειάζεται επιβεβαίωση της χρηματικής στήλης.`);
-    if(rawBalance!==null && Math.abs(rawBalance-(initialNet-target))>0.05 && cRemValue!==cRemUnits)
-      excelWarnings.push(`Γραμμή ${rr+1}: το χρηματικό υπόλοιπο δεν συμφωνεί με τις ποσότητες.`);
-
-    // Οι χρονολογημένες παραλαβές διαβάζονται ξεχωριστά. Εάν δεν καλύπτουν
-    // όλες τις γνωστές παραληφθείσες μονάδες, η διαφορά εισάγεται ΧΩΡΙΣ
-    // ΗΜΕΡΟΜΗΝΙΑ, ποτέ με επινοημένη ημερομηνία.
-    let chosenModes=[];
-    if(entries.length){
-      const options=entries.map(e=>e.modes.map(mode=>({mode,net:mode==="value"?e.amount:e.amount*price})));
-      let solutions=[];let visits=0;
-      function choose(j,total,modes){
-        if(++visits>50000 || solutions.length>1)return;
-        if(j===options.length){if(Math.abs(total-target)<=0.05)solutions.push([...modes]);return;}
-        for(const option of options[j]){
-          if(total+option.net>target+0.05)continue;
-          choose(j+1,total+option.net,[...modes,option.mode]);
-        }
-      }
-      choose(0,0,[]);
-      if(solutions.length===1)chosenModes=solutions[0];
-      else if(entries.every(e=>e.modes.length===1))chosenModes=entries.map(e=>e.modes[0]);
-      else if(solutions.length>1){
-        // Αν η τιμή μονάδας είναι 1 €, η αριθμητική συμφωνία δεν μπορεί
-        // να ξεχωρίσει μονάδες από ευρώ. Χρησιμοποιούμε τους ΙΔΙΟΥΣ
-        // τους τύπους του Excel ως τεκμήριο: L=E*SUM(χρονολογημένες στήλες)
-        // και M=G-SUM(χρονολογημένες στήλες) -> οι στήλες είναι ΠΟΣΟΤΗΤΕΣ.
-        const lFormula=String(sh[XLSX.utils.encode_cell({r:rr,c:cReceived})]?.f||"").toUpperCase();
-        const mFormula=String(sh[XLSX.utils.encode_cell({r:rr,c:cRemUnits})]?.f||"").toUpperCase();
-        const excelDefinesUnits= /SUM\(/.test(mFormula) && /SUM\(/.test(lFormula)
-          && /\*/.test(lFormula);
-        const allUnits=entries.every(e=>e.modes.includes("units"));
-        const unitSum=entries.reduce((v,e)=>v+e.amount*price,0);
-        if(excelDefinesUnits && allUnits && Math.abs(unitSum-target)<=0.05){
-          chosenModes=entries.map(()=>"units");
-        }else{
-          throw new Error(`Γραμμή Excel ${rr+1}: οι παραλαβές δεν μπορούν να διακριθούν ως ποσότητα ή €. Οι τύποι Excel δεν τεκμηριώνουν ασφαλή επιλογή.`);
-        }
-      }
-      else if(entries.some(e=>e.modes.length>1))
-        throw new Error(`Γραμμή Excel ${rr+1}: οι χρονολογημένες εγγραφές έχουν ασαφή μορφή (ποσότητα ή €). Χρειάζεται χαρακτηρισμός κελιών.`);
+    const candidates=[];
+    const targets=[];
+    for(const gross of [false,true]){
+      const fromBalance=rawBalance===null?null:initialNet-rawBalance/(gross?factor:1);
+      const target=hasReceived?received:fromBalance;
+      if(target===null)continue;
+      if(fromBalance!==null&&!close(target,fromBalance))continue;
+      if(target< -0.05 || target>initialNet+0.05)continue;
+      if(excelRemainingUnitsProvided && price>0 && Math.abs(qty-target/price-num(row[cRemUnits]))>0.011)continue;
+      if(!targets.some(t=>close(t.target,target)))targets.push({target,gross});
     }
-    const datedNet=entries.reduce((a,e,i)=>a+(chosenModes[i]==="value"?e.amount:e.amount*price),0);
-    if(datedNet>target+0.05)
-      throw new Error(`Γραμμή Excel ${rr+1}: οι χρονολογημένες παραλαβές ${euro(datedNet)} ξεπερνούν την παραλαβή ${euro(target)}.`);
-    const undatedNet=Math.round((target-datedNet)*100)/100;
-    const net=Math.round((initialNet-target)*100)/100;
-    const baseUnits=remainingQty!==null?remainingQty:(price>0?qty-target/price:qty);
-    if(undatedNet>0.05 && entries.length)
-      excelWarnings.push(`Γραμμή ${rr+1}: ${euro(undatedNet)} παραληφθέντα δεν αντιστοιχούν σε διαθέσιμη ημερομηνία.`);
+    if(!targets.length && !hasReceived && rawBalance===null && entries.every(e=>e.modes.length===1)){
+      targets.push({target:entries.reduce((sum,e)=>sum+(e.modes[0]==="value"?e.amount:e.amount*price),0),gross:false});
+    }
+    let visited=0;
+    for(const t of targets){
+      if(!entries.length){candidates.push({...t,choices:[]});continue;}
+      // Οι άγνωστες μορφές εξετάζονται ανά κελί, όχι ανά σύμβαση.
+      const opts=entries.map(e=>e.modes.map(mode=>({mode,net:mode==="value"?e.amount:e.amount*price})));
+      const min=Array(opts.length+1).fill(0),max=Array(opts.length+1).fill(0);
+      for(let j=opts.length-1;j>=0;j--){min[j]=min[j+1]+Math.min(...opts[j].map(o=>o.net));max[j]=max[j+1]+Math.max(...opts[j].map(o=>o.net));}
+      const walk=(j,sum,choices)=>{
+        if(++visited>100000)throw new Error(`Γραμμή Excel ${rr+1}: πολλές ασαφείς παραλαβές. Χρησιμοποίησε μορφή Νομισματική (€) μόνο στα χρηματικά κελιά.`);
+        if(sum+min[j]>t.target+0.05||sum+max[j]<t.target-0.05)return;
+        if(j===opts.length){if(close(sum,t.target))candidates.push({...t,choices:[...choices]});return;}
+        for(const o of opts[j]){choices.push(o.mode);walk(j+1,sum+o.net,choices);choices.pop();if(candidates.length>1)return;}
+      };
+      walk(0,0,[]);
+      if(candidates.length>1)break;
+    }
+    if(candidates.length!==1)throw new Error(`Γραμμή Excel ${rr+1}: ${candidates.length?"δεν διακρίνονται με βεβαιότητα ποσά και ποσότητες":"δεν συμφωνούν οι παραλαβές, η αξία και το υπόλοιπο"}. Χρησιμοποίησε μορφή Νομισματική (€) στα χρηματικά κελιά. Δεν ενημερώθηκαν τα δεδομένα.`);
+    const chosen=candidates[0];
+    const net=initialNet-chosen.target;
+    const baseUnits=excelRemainingUnitsProvided?num(row[cRemUnits]):(price>0?qty-chosen.target/price:qty);
     const itemId=hash(norm(desc)+"|"+norm(unit)+"|"+price.toFixed(6)+"|"+(rr+1));
-    newItems.push({id:itemId,sourceRow:rr+1,description:desc,unit,originalQty,optionQty:qty-originalQty,initialQty:qty,unitPrice:price,initialNet,baseRemainingUnits:baseUnits,baseRemainingNet:net,excelRemainingUnitsProvided:true,excelRemainingNetProvided:true,originalExcelRemainingUnitsProvided:excelRemainingUnitsProvided,receiptEntries:entries.map((e,i)=>({...e,mode:chosenModes[i]})),undatedNet});
+    newItems.push({id:itemId,sourceRow:rr+1,description:desc,unit,initialQty:qty,unitPrice:price,initialNet,baseRemainingUnits:baseUnits,baseRemainingNet:net,excelRemainingUnitsProvided:true,excelRemainingNetProvided:true,originalExcelRemainingUnitsProvided:excelRemainingUnitsProvided,receiptEntries:entries.map((e,i)=>({...e,mode:chosen.choices[i]}))});
   }
   if(!newItems.length)throw new Error("Δεν βρέθηκαν γραμμές ειδών στον πίνακα.");
 
@@ -804,30 +752,9 @@ async function syncFromExcel(showMessage=true){
       });
       importedHistoryCount++;
     }
-    if(item.undatedNet>0.05){
-      l.receipts.push({
-        id:"excel-undated-"+item.id,itemId:item.id,mode:"value",units:0,
-        netValue:item.undatedNet,date:"",note:"ΠΑΡΑΛΑΒΗ ΧΩΡΙΣ ΗΜΕΡΟΜΗΝΙΑ — ΣΥΝΑΓΕΤΑΙ ΑΠΟ ΥΠΟΛΟΙΠΟ ΠΟΣΟΤΗΤΑΣ",
-        source:"excel",inferred:true,createdAt:new Date().toISOString()
-      });
-      importedHistoryCount++;
-    }
   }
 
   const audit=auditExcelBalance(rows,l,excelReceiptCols);
-  // Οι αμφισβητούμενες αξίες εμφανίζονται μόνο για έλεγχο, δεν
-  // αποθηκεύονται και δεν επιτρέπουν ενεργοποίηση καταχωρίσεων.
-  if(excelWarnings.length || audit.errors.length){
-    recompute();
-    render();
-    const messages=[...excelWarnings,...audit.errors];
-    const details=messages.slice(0,12).join("\n");
-    const more=messages.length>12?`\n…και ${messages.length-12} ακόμη.`:"";
-    const warning=`⚠ ΠΡΟΣΩΡΙΝΗ ΠΡΟΒΟΛΗ EXCEL — ${newItems.length} ΕΙΔΗ. ΔΕΝ ΕΓΙΝΕ ΑΠΟΘΗΚΕΥΣΗ / ΕΝΕΡΓΟΠΟΙΗΣΗ.\n`+details+more;
-    setExcelAudit(warning,"warn");setStatus(warning,"err");
-    l.migrationVerified=false;
-    return false;
-  }
   if(audit.errors.length){
    // Απόρριψη: μην αλλοιωθεί το αποθηκευμένο υπόλοιπο ή το ιστορικό.
    l.items=originalItems;
@@ -847,8 +774,6 @@ async function syncFromExcel(showMessage=true){
    setExcelAudit("⚠ ΔΕΝ ΒΡΕΘΗΚΕ ΤΟ ΚΕΛΙ ΤΟΥ ΣΥΝΟΛΙΚΟΥ ΥΠΟΛΟΙΠΟΥ ΣΤΟ EXCEL. Έγινε έλεγχος γραμμών όπου ήταν δυνατό, όχι διασταύρωση τελικού ποσού.","warn");
   }
   l.migrationVerified=Boolean(audit.grand);
-  l.excelSheet=chosenSheet;
-  excelSheet.value=chosenSheet;
   l.lastExcelSync=new Date().toISOString();
   recompute();
   parData.updatedAt=new Date().toISOString();
@@ -866,7 +791,7 @@ async function syncFromExcel(showMessage=true){
     );
   }
  return true;
- }catch(e){l.migrationVerified=false;l.items=originalItems;l.receipts=originalReceipts;l.summary=originalSummary;render();const message="ΣΦΑΛΜΑ ΕΝΗΜΕΡΩΣΗΣ EXCEL (v19.5) — εμφανίζονται παλαιά στοιχεία, όχι επιβεβαιωμένο υπόλοιπο.\nΑρχείο: "+(l.excelPath||"(κενό)")+"\nΦύλλο που ζητήθηκε: "+(l.excelSheet||"(κενό)")+"\nΑιτία: "+e.message;setExcelAudit(message,"error");setStatus(message,"err")}
+ }catch(e){l.migrationVerified=false;l.items=originalItems;l.receipts=originalReceipts;l.summary=originalSummary;render();const message="ΣΦΑΛΜΑ ΕΝΗΜΕΡΩΣΗΣ EXCEL — εμφανίζονται παλαιά στοιχεία, όχι επιβεβαιωμένο υπόλοιπο.\n"+e.message;setExcelAudit(message,"error");setStatus(message,"err")}
 }
 
 let pickerStack=[];
@@ -1007,7 +932,7 @@ function renderEntryMode(){
  const l=getLedger(false), active=l?.entryMode==='app';
  el('migrationPanel').classList.toggle('hidden',!l||active);el('entryPanel').classList.toggle('hidden',!active);
  el('sourceSettings').classList.toggle('hidden',!!active);el('excelSyncButton').disabled=!!active;el('saveButton').disabled=!!active;
- el('modeNote').textContent=active?'ΚΑΤΑΧΩΡΙΣΗ ΣΤΗΝ ΕΦΑΡΜΟΓΗ — Το Excel διατηρείται ως αρχείο. Οι νέες παραλαβές αποθηκεύονται στο OneDrive.':'Εισαγωγή από Excel — πρώτα απαιτείται συμφωνία των ποσών, μετά ενεργοποίηση.';
+ el('modeNote').textContent=active?'ΚΑΤΑΧΩΡΙΣΗ ΣΤΗΝ ΕΦΑΡΜΟΓΗ — Το Excel διατηρείται ως αρχείο. Οι νέες παραλαβές αποθηκεύονται στο OneDrive.':'Εισαγωγή από Excel — ενεργοποίησε τις καταχωρίσεις μετά τον έλεγχο.';
  if(reviewContractId!==currentId){reviewContractId=currentId;el('appQty').value='';el('appMoney').value='';el('appNote').value='';}
  if(active){const old=el('appItem').value;el('appItem').innerHTML=l.items.map(it=>`<option value="${esc(it.id)}">${esc(it.description)}</option>`).join('');if(l.items.some(it=>it.id===old))el('appItem').value=old;el('appDate').value=el('appDate').value||localDateISO(new Date());previewAppReceipt();}
 }
@@ -1053,6 +978,89 @@ function draftAppReceipt(){const l=getLedger(false),it=l?.items.find(x=>x.id===e
 function previewAppReceipt(){const l=getLedger(false),it=l?.items.find(x=>x.id===el('appItem').value);if(!it)return;const x=computeLine(it,l);el('appItemInfo').textContent='Τιμή μονάδας: '+it.unitPrice.toLocaleString('el-GR',{maximumFractionDigits:8})+' € / '+it.unit+' · Υπόλοιπο: '+euro(x.remainingNet)+(x.remainingUnits===null?' · Ποσότητα μη τεκμηριωμένη λόγω χρηματικών παραλαβών':' · '+x.remainingUnits.toLocaleString('el-GR')+' '+it.unit);try{const r=draftAppReceipt();el('appPreview').textContent=(r.mode==='units'?'ΠΟΣΟΤΗΤΑ':'ΧΡΗΜΑΤΙΚΗ ΑΞΙΑ')+' — '+euro(r.netValue)+' χωρίς ΦΠΑ · '+euro(r.netValue*(1+l.vat/100))+' με ΦΠΑ';el('appSubmit').disabled=!r.date||busy;}catch(e){el('appPreview').textContent=e.message;el('appSubmit').disabled=true;}}
 async function commitAppReceipt(){if(busy)return;busy=true;const cid=currentId;try{const r=draftAppReceipt();if(!r.date)throw Error('Επίλεξε ημερομηνία.');const latest=await readJson(PAR_FILE),old=latest?.contracts?.find(x=>x.contractId===cid);if(!old||old.entryMode!=='app')throw Error('Δεν βρέθηκε ενεργή καταχώριση.');const local=getLedger(false);if(currentId!==cid||JSON.stringify(old.receipts)!==JSON.stringify(local.receipts))throw Error('Τα δεδομένα άλλαξαν. Ανανέωσε τη σελίδα.');const duplicate=old.receipts.some(z=>z.itemId===r.itemId&&z.date===r.date&&z.mode===r.mode&&Number(z.units)===r.units&&cents(z.netValue)===cents(r.netValue)&&String(z.note||'')===r.note);if(duplicate&&!confirm('Βρέθηκε ίδια παραλαβή. Είναι πράγματι διαφορετική εγγραφή;'))return;const candidate=JSON.parse(JSON.stringify(old));candidate.receipts.push(r);summarizeApp(candidate);await persistAppLedger(candidate,old);el('appQty').value='';el('appMoney').value='';el('appNote').value='';render();setStatus('Η παραλαβή αποθηκεύτηκε στο OneDrive.','ok');}catch(e){setStatus('ΔΕΝ ΑΠΟΘΗΚΕΥΤΗΚΕ: '+e.message,'err');}finally{busy=false;previewAppReceipt();}}
 function exportAppExcel(){const l=getLedger(false);if(!l||l.entryMode!=='app')return;const wb=XLSX.utils.book_new();const data=[['Ημερομηνία','Είδος','Μ.Μ.','Τρόπος','Ποσότητα','Αξία χωρίς ΦΠΑ','Παρατήρηση']];for(const r of [...l.receipts].sort((a,b)=>a.date.localeCompare(b.date))){const it=l.items.find(i=>i.id===r.itemId);data.push([r.date,it?.description,it?.unit,r.mode==='units'?'ΠΟΣΟΤΗΤΑ':'ΧΡΗΜΑΤΙΚΗ ΑΞΙΑ',r.mode==='units'?r.units:null,r.netValue,r.note]);}XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),'ΠΑΡΑΛΑΒΕΣ');XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['Είδος','Αρχική ποσότητα','Τιμή μονάδας','Αρχική αξία','Υπόλοιπο αξίας'],...l.items.map(it=>[it.description,it.initialQty,it.unitPrice,it.initialNet,computeLine(it,l).remainingNet])]),'ΣΥΜΒΑΣΗ');XLSX.writeFile(wb,'ΠΑΡΑΛΑΒΕΣ-'+String(l.studyNo||'ΣΥΜΒΑΣΗ').replace(/[^\p{L}\p{N}-]/gu,'_')+'.xlsx');}
+
+/* Εισαγωγή από μελέτη .docx με υποχρεωτική επιβεβαίωση, μόνο χωρίς προηγούμενες παραλαβές. */
+let studyWordDraft=null;
+const wordStatus=()=>document.getElementById('studyWordStatus');
+function numberFromWord(v){
+ let x=String(v||'').replace(/\s/g,'').replace(/€/g,'').trim();
+ if(!x||!/^[-+]?([\d.,]+)$/.test(x))return NaN;
+ if(x.includes(',')&&x.includes('.'))x=x.lastIndexOf(',')>x.lastIndexOf('.')?x.replace(/\./g,'').replace(',','.'):x.replace(/,/g,'');
+ else if(x.includes(','))x=x.replace(',','.');
+ else if(/^\d{1,3}(?:\.\d{3})+$/.test(x))x=x.replace(/\./g,'');
+ return Number(x);
+}
+function extractStudyRows(html){
+ const dom=new DOMParser().parseFromString(html,'text/html');
+ const candidates=[];
+ for(const table of dom.querySelectorAll('table')){
+  const rows=[];
+  for(const tr of table.querySelectorAll('tr')){
+   const cs=[...tr.children].filter(el=>/^(TD|TH)$/.test(el.tagName)).map(el=>el.textContent.replace(/\s+/g,' ').trim());
+   if(cs.length<4)continue;
+   const tail=cs.slice(-3).map(numberFromWord);
+   if(!tail.every(Number.isFinite)||tail[0]<=0||tail[1]<=0||tail[2]<=0)continue;
+   if(Math.abs(tail[0]*tail[1]-tail[2])>Math.max(.05,tail[2]*.0001))continue;
+   const description=cs.slice(0,-3).filter(Boolean).join(' — ');
+   if(!description||/ΣΥΝΟΛ|ΔΑΠΑΝΗ|ΦΠΑ|ΠΡΟΫΠΟΛΟΓΙΣΜ|ΠΟΣΟΤΗΤΑ/i.test(description))continue;
+   const parts=cs.slice(0,-3).filter(Boolean);
+   const unit=parts.length>=2?parts[parts.length-1]:'ΤΕΜ';
+   const name=parts.length>=2?parts.slice(0,-1).join(' — '):description;
+   if(!name||name.length>500)continue;
+   rows.push({description:name,unit,initialQty:tail[0],unitPrice:tail[1],initialNet:tail[2]});
+  }
+  if(rows.length)candidates.push(rows);
+ }
+ if(!candidates.length)throw Error('Δεν εντοπίστηκε αξιόπιστος πίνακας με ποσότητα, τιμή μονάδας και αξία. Η μελέτη χρειάζεται διαφορετικό πρότυπο Word ή εισαγωγή από Excel.');
+ candidates.sort((a,b)=>b.length-a.length);
+ return candidates[0];
+}
+async function previewStudyWord(){
+ studyWordDraft=null;document.getElementById('studyWordConfirm').classList.add('hidden');
+ document.getElementById('studyWordPreview').innerHTML='';
+ const c=getContract(),l=getLedger(false);
+ try{
+  if(!c||!l)throw Error('Επίλεξε σύμβαση.');
+  if(l.entryMode==='app'||(l.receipts||[]).length)throw Error('Υπάρχουν παραλαβές. Δεν επιτρέπεται αντικατάσταση της βάσης. Για υπάρχουσες παραλαβές χρησιμοποίησε τη μεταφορά από Excel.');
+  const candidates=[...(c.documentFiles||[])].filter(x=>x.category==='study' && /\.docx$/i.test(x.name||''));
+  const chosen=(c.studyFileId&&candidates.find(x=>x.id===c.studyFileId))||candidates.at(-1);
+  if(!chosen?.id)throw Error('Δεν έχει βρεθεί μελέτη .docx. Ανέβασέ την πρώτα στις Συμβάσεις → ΑΡΧΕΙΑ → ΜΕΛΕΤΗ.');
+  if(!window.mammoth)throw Error('Δεν φορτώθηκε η βιβλιοθήκη ανάγνωσης Word. Έλεγξε τη σύνδεση στο Internet.');
+  wordStatus().textContent='Διαβάζω τη μελέτη '+chosen.name+' από το OneDrive...';
+  const response=await graph('https://graph.microsoft.com/v1.0/me/drive/items/'+encodeURIComponent(chosen.id)+'/content');
+  if(!response.ok)throw Error('Αδυναμία ανάκτησης Word: '+response.status);
+  const converted=await mammoth.convertToHtml({arrayBuffer:await response.arrayBuffer()});
+  const items=extractStudyRows(converted.value);
+  const sum=items.reduce((a,x)=>a+Math.round(x.initialNet*100),0)/100;
+  const gross=Math.round(sum*(1+Number(c.vat??24)/100)*100)/100;
+  if(!(Number(c.contractBudget)>0)||Math.abs(gross-Number(c.contractBudget))>.02)
+   throw Error('Η εξαγόμενη αξία '+euro(gross)+' δεν συμφωνεί με τη σύμβαση '+euro(c.contractBudget)+'. Δεν θα γίνει εισαγωγή.');
+  studyWordDraft={contractId:c.id,items,sourceId:chosen.id};
+  document.getElementById('studyWordPreview').innerHTML=items.map(x=>`<tr><td>${esc(x.description)}</td><td>${esc(x.unit)}</td><td class="num">${x.initialQty.toLocaleString('el-GR')}</td><td class="num">${x.unitPrice.toLocaleString('el-GR',{maximumFractionDigits:8})}</td><td class="num">${euro(x.initialNet)}</td></tr>`).join('');
+  wordStatus().textContent='Βρέθηκαν '+items.length+' είδη. Σύνολο με ΦΠΑ '+euro(gross)+'. Έλεγξε γραμμή προς γραμμή πριν επιβεβαιώσεις.';
+  document.getElementById('studyWordConfirm').classList.remove('hidden');
+ }catch(e){wordStatus().textContent='ΔΕΝ ΕΓΙΝΕ ΕΙΣΑΓΩΓΗ: '+e.message;}
+}
+async function activateStudyWord(){
+ if(!studyWordDraft||studyWordDraft.contractId!==currentId)return;
+ const c=getContract(), l=getLedger(false);
+ try{
+  if(!c||!l||l.entryMode==='app'||(l.receipts||[]).length)throw Error('Η σύμβαση έχει ήδη παραλαβές. Δεν επιτρέπεται αντικατάσταση.');
+  if(!confirm('Έλεγξες τον πίνακα Word με την υπογεγραμμένη μελέτη; Θα ενεργοποιηθεί η καταχώριση παραλαβών στην εφαρμογή.'))return;
+  const latest=await readJson(PAR_FILE)||{version:1,contracts:[]};
+  const old=latest.contracts.find(x=>x.contractId===c.id);
+  if((old?.receipts||[]).length||old?.entryMode==='app')throw Error('Βρέθηκαν ήδη αποθηκευμένες παραλαβές στο OneDrive. Δεν έγινε αντικατάσταση.');
+  const candidate=JSON.parse(JSON.stringify(old||l));
+  candidate.contractId=c.id;candidate.studyNo=c.studyNo;candidate.title=c.title;candidate.vat=Number(c.vat??24);
+  candidate.items=studyWordDraft.items.map((it,i)=>({...it,id:'study-'+studyWordDraft.sourceId+'-'+i,baseRemainingUnits:it.initialQty,baseRemainingNet:it.initialNet}));
+  candidate.receipts=[];candidate.entryMode='app';candidate.studySourceFileId=studyWordDraft.sourceId;
+  summarizeApp(candidate);
+  await writeJson('paralaves-backup-'+c.id+'-'+Date.now()+'.json',old||l);
+  await persistAppLedger(candidate,old);
+  studyWordDraft=null;document.getElementById('studyWordConfirm').classList.add('hidden');
+  render();setStatus('Η βάση ειδών εισήχθη από τη μελέτη Word. Οι νέες παραλαβές καταχωρίζονται στην εφαρμογή.','ok');
+ }catch(e){wordStatus().textContent='ΔΕΝ ΑΠΟΘΗΚΕΥΤΗΚΕ: '+e.message;}
+}
 </script>
 </body>
 </html>
