@@ -7,6 +7,7 @@
 <script src="https://alcdn.msauth.net/browser/2.35.0/js/msal-browser.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.9.1/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f1f5f9;color:#1f2937}
 header{background:#4c1d95;color:white;padding:20px 28px}header h1{margin:0;font-size:27px}header p{margin:6px 0 0;opacity:.85}
@@ -82,7 +83,7 @@ input[type="text"], textarea, select {
 </head>
 <body>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v19.2 — ΣΩΣΤΗ ΜΕΤΑΦΟΡΑ ΠΑΡΑΛΑΒΩΝ</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v20.0 — ΕΙΣΑΓΩΓΗ ΑΡΧΕΙΩΝ & ΔΙΟΡΘΩΣΕΙΣ</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -119,9 +120,18 @@ input[type="text"], textarea, select {
   </section>
 
   <section class="panel no-print" id="migrationPanel">
-    <div class="panel-title">ΕΙΣΑΓΩΓΗ ΒΑΣΗΣ ΑΠΟ EXCEL</div>
+    <div class="panel-title" style="font-size:18px">ΕΝΕΡΓΟΠΟΙΗΣΗ ΚΑΤΑΧΩΡΙΣΕΩΝ</div>
     <div style="padding:15px;display:grid;gap:10px">
-      <div>Επίλεξε το Excel της σύμβασης. Εισάγονται τα είδη, οι αρχικές ποσότητες, οι τιμές και όλες οι παλιές παραλαβές. Μετά την ενεργοποίηση, οι νέες παραλαβές καταχωρίζονται μόνο εδώ.</div>
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;padding:12px;border-radius:8px">
+        <strong>ΕΙΣΑΓΩΓΗ ΕΙΔΩΝ ΑΠΟ ΑΡΧΕΙΟ WORD / PDF / EXCEL</strong>
+        <p style="margin:7px 0">Επίλεξε αρχείο με πίνακα ειδών, ποσοτήτων και τιμών. Θα εμφανιστεί προεπισκόπηση και έλεγχος του συνολικού ποσού πριν ενεργοποιηθούν οι καταχωρίσεις.</p>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px"><input type="file" id="catalogFile" accept=".docx,.pdf,.xlsx,.xls" aria-label="Επιλογή αρχείου ειδών"><button class="blue" onclick="previewCatalogFile()">📄 ΑΝΑΓΝΩΣΗ ΑΡΧΕΙΟΥ</button></div>
+        <div id="catalogStatus" role="status" style="white-space:pre-wrap;margin-top:10px;font-size:13px"></div>
+        <div class="table-wrap"><table style="min-width:600px"><thead><tr><th>Είδος</th><th>Μ.Μ.</th><th>Ποσότητα</th><th>Τιμή μονάδας</th><th>Αξία χωρίς ΦΠΑ</th></tr></thead><tbody id="catalogPreview"></tbody></table></div>
+        <button class="green hidden" id="catalogActivate" onclick="activateCatalogFile()">✓ ΕΠΙΒΕΒΑΙΩΣΗ & ΕΝΕΡΓΟΠΟΙΗΣΗ</button>
+        <p class="muted" style="font-size:12px">Για συμβάσεις με ήδη καταχωρισμένες παραλαβές από Excel χρησιμοποίησε την επιλογή «ΕΛΕΓΧΟΣ EXCEL» παρακάτω ώστε να μεταφερθεί ολόκληρο το ιστορικό. Το αρχείο εδώ χρησιμοποιείται ως βάση μόνο για νέες συμβάσεις.</p>
+      </div>
+      <div><strong>ΥΠΑΡΧΟΥΣΕΣ ΠΑΡΑΛΑΒΕΣ ΑΠΟ EXCEL ΣΤΟ ONEDRIVE:</strong> εισάγονται τα είδη, οι ποσότητες, οι τιμές και το προηγούμενο ιστορικό.</div>
       <button class="green" onclick="activateAppMode()">ΕΛΕΓΧΟΣ EXCEL ΚΑΙ ΕΝΕΡΓΟΠΟΙΗΣΗ ΚΑΤΑΧΩΡΙΣΕΩΝ</button>
       <div style="border-top:1px solid #ddd;padding-top:12px">
         <strong>ΕΝΑΛΛΑΚΤΙΚΑ: ΜΕΛΕΤΗ WORD ΑΠΟ ΤΑ ΑΡΧΕΙΑ ΣΥΜΒΑΣΗΣ</strong>
@@ -148,6 +158,18 @@ input[type="text"], textarea, select {
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="appSubmit" class="green" onclick="commitAppReceipt()" disabled>+ ΚΑΤΑΧΩΡΙΣΗ ΠΑΡΑΛΑΒΗΣ</button><button class="gray" onclick="exportAppExcel()">ΕΞΑΓΩΓΗ EXCEL</button></div>
     </div>
   </section>
+  <dialog id="editReceiptDialog" style="width:min(620px,96vw);border:0;border-radius:12px;padding:0;box-shadow:0 15px 50px #0004">
+    <div style="background:#4c1d95;color:#fff;padding:15px;font-weight:700;display:flex;justify-content:space-between;align-items:center"><span>ΔΙΟΡΘΩΣΗ ΠΑΡΑΛΑΒΗΣ</span><button class="gray" onclick="closeReceiptEditor()">✕</button></div>
+    <div style="padding:18px;display:grid;gap:10px">
+      <label>Ημερομηνία <input id="editReceiptDate" type="date" style="width:100%"></label>
+      <label>Είδος / υλικό <select id="editReceiptItem" style="width:100%"></select></label>
+      <label>Τρόπος παραλαβής <select id="editReceiptMode" onchange="refreshReceiptEditor()" style="width:100%"><option value="units">ΠΟΣΟΤΗΤΑ</option><option value="value">ΧΡΗΜΑΤΙΚΗ ΑΞΙΑ</option></select></label>
+      <label id="editReceiptAmountLabel">Ποσότητα <input id="editReceiptAmount" inputmode="decimal" style="width:100%"></label>
+      <label>Παρατήρηση <input id="editReceiptNote" maxlength="300" style="width:100%"></label>
+      <p class="muted" style="font-size:12px">Η αλλαγή θα αποθηκευτεί στο OneDrive με ιστορικό διόρθωσης. Εισαγμένες παραλαβές Excel μπορούν να διορθωθούν μόνο αφού ενεργοποιηθεί η καταχώριση από την εφαρμογή.</p>
+      <div style="display:flex;justify-content:flex-end;gap:8px"><button class="gray" onclick="closeReceiptEditor()">ΑΚΥΡΩΣΗ</button><button class="green" onclick="saveReceiptCorrection()">ΑΠΟΘΗΚΕΥΣΗ ΔΙΟΡΘΩΣΗΣ</button></div>
+    </div>
+  </dialog>
   <div class="cards">
     <div class="card"><div class="label">Αρχική αξία χωρίς ΦΠΑ</div><div class="value" id="initialNet">0,00 €</div></div>
     <div class="card"><div class="label">Υπόλοιπο χωρίς ΦΠΑ</div><div class="value" id="remainingNet">0,00 €</div></div>
@@ -412,7 +434,7 @@ async function selectContract(id){
 }
 
 function groupedReceiptHistory(items, receipts, head, body, foot){
-  head.innerHTML='<tr><th>Α/Α</th><th>Περιγραφή είδους</th><th>Μ.Μ.</th><th>Τρόπος παραλαβής</th><th class="num">Ποσότητα</th><th class="num">Αξία χωρίς ΦΠΑ</th></tr>';
+  head.innerHTML='<tr><th>Α/Α</th><th>Περιγραφή είδους</th><th>Μ.Μ.</th><th>Τρόπος παραλαβής</th><th class="num">Ποσότητα</th><th class="num">Αξία χωρίς ΦΠΑ</th><th class="no-print">Διόρθωση</th></tr>';
   body.innerHTML=""; foot.innerHTML="";
   const groups=new Map();
   for(const r of receipts){
@@ -420,24 +442,24 @@ function groupedReceiptHistory(items, receipts, head, body, foot){
     if(!groups.has(key))groups.set(key,[]);
     groups.get(key).push(r);
   }
-  if(!groups.size){body.innerHTML='<tr><td colspan="6" style="padding:20px;text-align:center">Δεν υπάρχουν παραλαβές.</td></tr>';return;}
+  if(!groups.size){body.innerHTML='<tr><td colspan="7" style="padding:20px;text-align:center">Δεν υπάρχουν παραλαβές.</td></tr>';return;}
   const fmtQty=v=>Number(v).toLocaleString("el-GR",{maximumFractionDigits:3});
   const fmtDate=d=>/^\d{4}-\d{2}-\d{2}$/.test(d)?d.split("-").reverse().join("/"):(d||"ΧΩΡΙΣ ΗΜΕΡΟΜΗΝΙΑ");
   let grand=0, html="";
   const dates=[...groups.keys()].sort((a,b)=>a===b?0:!a?1:!b?-1:a.localeCompare(b));
   dates.forEach((d,i)=>{
     const alt=i%2?" alt":"", rs=groups.get(d); let daily=0;
-    html+=`<tr class="day-heading${alt}"><td colspan="6">${esc(fmtDate(d))} — ${rs.length} ${rs.length===1?"ΠΑΡΑΛΑΒΗ":"ΠΑΡΑΛΑΒΕΣ"}</td></tr>`;
+    html+=`<tr class="day-heading${alt}"><td colspan="7">${esc(fmtDate(d))} — ${rs.length} ${rs.length===1?"ΠΑΡΑΛΑΒΗ":"ΠΑΡΑΛΑΒΕΣ"}</td></tr>`;
     rs.forEach((r,j)=>{
       const it=items.find(x=>x.id===r.itemId), val=Number(r.netValue||0), isUnits=r.mode==="units";
       daily+=val;
-      html+=`<tr class="day-entry${alt}"><td>${j+1}</td><td>${esc(it?.description||"ΜΗ ΑΝΑΓΝΩΡΙΣΜΕΝΟ ΕΙΔΟΣ")}</td><td>${esc(it?.unit||"")}</td><td>${isUnits?"ΠΟΣΟΤΗΤΑ":"ΧΡΗΜΑΤΙΚΗ ΑΞΙΑ"}</td><td class="num">${isUnits?fmtQty(r.units||0):"—"}</td><td class="num">${euro(val)}</td></tr>`;
+      html+=`<tr class="day-entry${alt}"><td>${j+1}</td><td>${esc(it?.description||"ΜΗ ΑΝΑΓΝΩΡΙΣΜΕΝΟ ΕΙΔΟΣ")}</td><td>${esc(it?.unit||"")}</td><td>${isUnits?"ΠΟΣΟΤΗΤΑ":"ΧΡΗΜΑΤΙΚΗ ΑΞΙΑ"}</td><td class="num">${isUnits?fmtQty(r.units||0):"—"}</td><td class="num">${euro(val)}</td><td class="no-print">${getLedger(false)?.entryMode==="app"?`<button class="blue" style="padding:5px 8px;font-size:12px" onclick="openReceiptEditor('${esc(r.id)}')">✎ Διόρθωση</button>`:"—"}</td></tr>`;
     });
     grand+=daily;
-    html+=`<tr class="day-total${alt}"><td colspan="5">ΣΥΝΟΛΟ ΗΜΕΡΑΣ ${esc(fmtDate(d))}</td><td class="num">${euro(daily)}</td></tr>`;
+    html+=`<tr class="day-total${alt}"><td colspan="5">ΣΥΝΟΛΟ ΗΜΕΡΑΣ ${esc(fmtDate(d))}</td><td class="num">${euro(daily)}</td><td class="no-print"></td></tr>`;
   });
   body.innerHTML=html;
-  foot.innerHTML=`<tr><td colspan="5">ΓΕΝΙΚΟ ΣΥΝΟΛΟ ΠΑΡΑΛΑΒΩΝ ΧΩΡΙΣ ΦΠΑ</td><td class="num">${euro(grand)}</td></tr>`;
+  foot.innerHTML=`<tr><td colspan="5">ΓΕΝΙΚΟ ΣΥΝΟΛΟ ΠΑΡΑΛΑΒΩΝ ΧΩΡΙΣ ΦΠΑ</td><td class="num">${euro(grand)}</td><td class="no-print"></td></tr>`;
 }
 function renderDateHistoryMatrix(){
  const l=getLedger(false), table=document.getElementById("dateHistoryTable");
@@ -933,7 +955,7 @@ window.addEventListener("load",async()=>{
 });
 
 // v17: migration review and app-mode ledger. Excel is never reimported after activation.
-let reviewContractId=null, busy=false;
+let reviewContractId=null, busy=false, catalogDraft=null, editingReceiptId=null;
 const el=id=>document.getElementById(id);
 const cents=v=>Math.round(Number(v)*100);
 function strictAmount(v){let a=String(v).trim();if(!/^(?:\d+(?:[.,]\d+)?|\d{1,3}(?:\.\d{3})+,\d+)$/.test(a))return NaN;if(a.includes(','))a=a.replace(/\./g,'').replace(',','.');return Number(a);}
@@ -1084,6 +1106,167 @@ async function activateStudyWord(){
   render();setStatus('Η βάση ειδών εισήχθη από τη μελέτη Word. Οι νέες παραλαβές καταχωρίζονται στην εφαρμογή.','ok');
  }catch(e){wordStatus().textContent='ΔΕΝ ΑΠΟΘΗΚΕΥΤΗΚΕ: '+e.message;}
 }
+
+/* v20: Εισαγωγή της αρχικής βάσης ειδών από επιλεγμένο Word / PDF / Excel. */
+function normalizeCatalogItems(rows){
+ const items=[];
+ for(const x of rows){
+  const description=String(x.description||'').trim().slice(0,500);
+  const unit=String(x.unit||'').trim()||'ΤΕΜ';
+  const q=Number(x.initialQty), p=Number(x.unitPrice), v=Number(x.initialNet);
+  if(!description||!(q>0)||!(p>0)||!(v>0))continue;
+  if(Math.abs(q*p-v)>Math.max(.051,v*.00002))continue;
+  if(/^(ΣΥΝΟΛ|ΦΠΑ|ΔΑΠΑΝΗ|ΥΠΟΣΥΝΟΛ|ΓΕΝΙΚΟ)/i.test(description))continue;
+  items.push({description:toUpperText(description),unit:toUpperText(unit),initialQty:q,unitPrice:p,initialNet:v});
+ }
+ return items;
+}
+function catalogFromExcel(buffer){
+ const wb=XLSX.read(buffer,{type:'array',cellDates:false});
+ const sheet=wb.Sheets[wb.SheetNames.find(n=>norm(n)==='ΣΥΜΒΑΣΗ')||wb.SheetNames[0]];
+ const rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:'',raw:true});
+ const hdr=buildHeader(rows), H=hdr.headers;
+ const d=findCol(H,x=>x.includes('ΠΕΡΙΓΡΑΦ')||x.includes('ΕΙΔΟΣ')||x.includes('ΤΙΤΛ'));
+ const q=findCol(H,x=>x.includes('ΠΟΣΟΤ')&&!x.includes('ΥΠΟΛΟΙΠ'));
+ const p=findCol(H,x=>x.includes('ΤΙΜ')&&x.includes('ΜΟΝ'));
+ const u=findCol(H,x=>x.includes('Μ.Μ')||x==='ΜΜ'||x.includes('ΜΟΝΑΔΑ ΜΕΤΡ'));
+ const v=findCol(H,x=>(x.includes('ΔΑΠΑΝ')||x.includes('ΑΞΙΑ'))&&!x.includes('ΥΠΟΛΟΙΠ')&&!x.includes('ΠΑΡΑΛΑΒ'));
+ if(d<0||q<0||p<0)throw Error('Δεν βρέθηκαν στήλες περιγραφής, ποσότητας και τιμής μονάδας.');
+ const from=hdr.row+hdr.depth;
+ const out=[];
+ for(let r=from;r<rows.length;r++){
+  const a=rows[r]||[],qty=num(a[q]),price=num(a[p]);
+  if(!String(a[d]||'').trim()||!(qty>0)||!(price>0))continue;
+  const value=v>=0&&String(a[v]??'').trim()!==''?num(a[v]):qty*price;
+  out.push({description:a[d],unit:u<0?'ΤΕΜ':a[u],initialQty:qty,unitPrice:price,initialNet:value});
+ }
+ const headers=rows.slice(0,Math.min(8,rows.length));
+ const hasDates=headers.some(row=>row.some(cell=>typeof cell==='string'&&!!excelHeaderToDate(cell)));
+ if(hasDates)throw Error('Αυτό το Excel περιέχει χρονολογημένες παραλαβές. Για να μη χαθεί το ιστορικό, χρησιμοποίησε «ΕΛΕΓΧΟΣ EXCEL ΚΑΙ ΕΝΕΡΓΟΠΟΙΗΣΗ ΚΑΤΑΧΩΡΙΣΕΩΝ» από το OneDrive.');
+ return normalizeCatalogItems(out);
+}
+function catalogFromPdfText(lines){
+ const out=[];
+ for(const line of lines){
+  const text=line.replace(/\s+/g,' ').trim();
+  // Last three numbers: ποσότητα, τιμή μονάδας, αξία. Keep units prior to the numbers.
+  const m=text.match(/^(.*?)\s+(\d[\d.,]*)\s+(\d[\d.,]*)\s+(\d[\d.,]*)\s*€?$/);
+  if(!m)continue;
+  const qty=numberFromWord(m[2]),price=numberFromWord(m[3]),value=numberFromWord(m[4]);
+  let prefix=m[1].trim().replace(/^\d{1,3}\s+/, '');
+  const um=prefix.match(/\s+(m²|m2|m3|m³|τμ|τεμ(?:άχιο)?|τεμάχια|ώρα|ώρες|kg|lt|κ\.μ\.|μ²|μ³)$/i);
+  const unit=um?um[1]:'ΤΕΜ';
+  if(um)prefix=prefix.slice(0,-um[0].length);
+  out.push({description:prefix,unit,initialQty:qty,unitPrice:price,initialNet:value});
+ }
+ return normalizeCatalogItems(out);
+}
+async function catalogFromPdf(buffer){
+ if(!window.pdfjsLib)throw Error('Δεν φορτώθηκε η βιβλιοθήκη PDF. Έλεγξε τη σύνδεση στο Internet.');
+ pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+ const doc=await pdfjsLib.getDocument({data:new Uint8Array(buffer)}).promise;
+ let lines=[];
+ for(let pg=1;pg<=Math.min(doc.numPages,100);pg++){
+  const page=await doc.getPage(pg),text=await page.getTextContent();
+  const buckets=new Map();
+  for(const item of text.items){
+   const y=Math.round(item.transform[5]/3)*3;
+   if(!buckets.has(y))buckets.set(y,[]);
+   buckets.get(y).push({x:item.transform[4],s:item.str});
+  }
+  for(const y of [...buckets.keys()].sort((a,b)=>b-a)){
+   lines.push(buckets.get(y).sort((a,b)=>a.x-b.x).map(x=>x.s).join(' '));
+  }
+ }
+ return catalogFromPdfText(lines);
+}
+async function previewCatalogFile(){
+ catalogDraft=null;el('catalogActivate').classList.add('hidden');el('catalogPreview').innerHTML='';
+ const file=el('catalogFile').files?.[0],c=getContract(),l=getLedger(false);
+ try{
+  if(!file)throw Error('Επίλεξε πρώτα Word, PDF ή Excel.');
+  if(!c||!l||l.entryMode==='app'||l.receipts?.length)throw Error('Υπάρχουν ήδη παραλαβές ή ενεργή βάση. Δεν επιτρέπεται αντικατάσταση.');
+  el('catalogStatus').textContent='Ανάγνωση '+file.name+' ...';
+  const buf=await file.arrayBuffer();let rows=[];
+  if(/\.docx$/i.test(file.name)){
+   if(!window.mammoth)throw Error('Δεν φορτώθηκε η βιβλιοθήκη Word.');
+   rows=normalizeCatalogItems(extractStudyRows((await mammoth.convertToHtml({arrayBuffer:buf})).value));
+  }else if(/\.pdf$/i.test(file.name))rows=await catalogFromPdf(buf);
+  else if(/\.xlsx?$/i.test(file.name))rows=catalogFromExcel(buf);
+  else throw Error('Υποστηρίζονται .docx, .pdf, .xlsx, .xls.');
+  if(!rows.length)throw Error('Δεν αναγνωρίστηκε αξιόπιστος πίνακας ειδών. Τα σαρωμένα PDF δεν υποστηρίζονται σε αυτή την έκδοση.');
+  const net=rows.reduce((a,x)=>a+x.initialNet,0),gross=cents(net*(1+Number(c.vat??24)/100))/100;
+  if(!(Number(c.contractBudget)>0)||Math.abs(gross-Number(c.contractBudget))>.02)
+   throw Error('Η αξία των αναγνωρισμένων ειδών '+euro(gross)+' δεν συμφωνεί με τη συμβατική αξία '+euro(c.contractBudget)+'. Δεν επιτρέπεται ενεργοποίηση.');
+  catalogDraft={contractId:c.id,name:file.name,items:rows};
+  el('catalogPreview').innerHTML=rows.map(x=>`<tr><td>${esc(x.description)}</td><td>${esc(x.unit)}</td><td class="num">${x.initialQty.toLocaleString('el-GR')}</td><td class="num">${x.unitPrice.toLocaleString('el-GR',{maximumFractionDigits:8})}</td><td class="num">${euro(x.initialNet)}</td></tr>`).join('');
+  el('catalogActivate').classList.remove('hidden');
+  el('catalogStatus').textContent='Βρέθηκαν '+rows.length+' είδη, σύνολο '+euro(gross)+' με ΦΠΑ. ΕΠΙΒΕΒΑΙΩΣΕ ότι κάθε γραμμή συμφωνεί με τη μελέτη.';
+ }catch(e){el('catalogStatus').textContent='ΑΝΑΓΝΩΣΗ: '+e.message;}
+}
+async function activateCatalogFile(){
+ const c=getContract(),l=getLedger(false),d=catalogDraft;
+ if(busy)return;busy=true;
+ try{
+  if(!d||!c||d.contractId!==c.id||!l||l.entryMode==='app'||l.receipts?.length)throw Error('Η εισαγωγή δεν είναι πλέον έγκυρη.');
+  if(!confirm('Επιβεβαιώνεις ότι όλα τα είδη και οι αξίες του '+d.name+' συμφωνούν με τη σύμβαση;'))return;
+  const latest=await readJson(PAR_FILE)||{version:1,contracts:[]},old=latest.contracts.find(x=>x.contractId===c.id);
+  if(old?.entryMode==='app'||old?.receipts?.length)throw Error('Υπάρχουν ήδη καταχωρισμένες παραλαβές στο OneDrive.');
+  const candidate=JSON.parse(JSON.stringify(old||l));
+  candidate.contractId=c.id;candidate.studyNo=c.studyNo;candidate.title=c.title;candidate.vat=Number(c.vat??24);
+  candidate.items=d.items.map((it,i)=>({...it,id:'catalog-'+hash(c.id+'|'+i+'|'+it.description),baseRemainingUnits:it.initialQty,baseRemainingNet:it.initialNet}));
+  candidate.receipts=[];candidate.entryMode='app';candidate.catalogSourceName=d.name;
+  summarizeApp(candidate);
+  await writeJson('paralaves-backup-'+c.id+'-'+Date.now()+'.json',old||l);
+  await persistAppLedger(candidate,old);catalogDraft=null;el('catalogActivate').classList.add('hidden');render();setStatus('Η εισαγωγή ολοκληρώθηκε. Μπορείς να καταχωρίζεις παραλαβές.','ok');
+ }catch(e){el('catalogStatus').textContent='ΔΕΝ ΑΠΟΘΗΚΕΥΤΗΚΕ: '+e.message;}finally{busy=false;}
+}
+/* v20: Διορθώσεις με ιστορικό και επανυπολογισμό του πλήρους καθολικού. */
+function closeReceiptEditor(){el('editReceiptDialog').close();editingReceiptId=null;}
+function refreshReceiptEditor(){el('editReceiptAmountLabel').firstChild.textContent=el('editReceiptMode').value==='units'?'Ποσότητα ':'Αξία χωρίς ΦΠΑ (€) ';}
+function openReceiptEditor(id){
+ const l=getLedger(false),r=l?.receipts.find(z=>z.id===id);
+ if(!l||l.entryMode!=='app'||!r)return;
+ editingReceiptId=id;
+ el('editReceiptItem').innerHTML=l.items.map(it=>`<option value="${esc(it.id)}">${esc(it.description)}</option>`).join('');
+ el('editReceiptItem').value=r.itemId;el('editReceiptDate').value=r.date;
+ el('editReceiptMode').value=r.mode==='units'?'units':'value';
+ el('editReceiptAmount').value=String(r.mode==='units'?r.units:r.netValue).replace('.',',');
+ el('editReceiptNote').value=r.note||'';refreshReceiptEditor();el('editReceiptDialog').showModal();
+}
+async function saveReceiptCorrection(){
+ if(busy)return;busy=true;const cid=currentId,id=editingReceiptId;
+ try{
+  const l=getLedger(false),oldReceipt=l?.receipts.find(x=>x.id===id);
+  if(!oldReceipt||l.entryMode!=='app')throw Error('Η παραλαβή δεν βρέθηκε.');
+  const itemId=el('editReceiptItem').value,mode=el('editReceiptMode').value,amount=strictAmount(el('editReceiptAmount').value),date=el('editReceiptDate').value;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!(amount>0))throw Error('Συμπλήρωσε σωστή ημερομηνία και θετική ποσότητα/αξία.');
+  const item=l.items.find(it=>it.id===itemId);if(!item)throw Error('Μη έγκυρο είδος.');
+  if(mode==='value'&&Math.abs(amount*100-Math.round(amount*100))>1e-6)throw Error('Τα ποσά έχουν έως δύο δεκαδικά.');
+  const net=mode==='units'?cents(amount*item.unitPrice)/100:amount;
+  if(!(net>0))throw Error('Μη έγκυρη αξία.');
+  const current=await readJson(PAR_FILE),stored=current?.contracts?.find(x=>x.contractId===cid);
+  if(!stored||stored.entryMode!=='app'||currentId!==cid||JSON.stringify(stored.receipts)!==JSON.stringify(l.receipts))throw Error('Το ιστορικό άλλαξε. Ανανέωσε τη σελίδα.');
+  const candidate=JSON.parse(JSON.stringify(stored)),ix=candidate.receipts.findIndex(r=>r.id===id);
+  if(ix<0)throw Error('Η εγγραφή δεν υπάρχει πλέον.');
+  const before=JSON.parse(JSON.stringify(candidate.receipts[ix]));
+  candidate.receipts[ix]={...before,itemId,date,mode,units:mode==='units'?amount:0,netValue:net,note:el('editReceiptNote').value.trim(),editedAt:new Date().toISOString()};
+  for(const it of candidate.items){
+   const rs=candidate.receipts.filter(r=>r.itemId===it.id),value=rs.reduce((sum,r)=>sum+Number(r.netValue),0);
+   if(value>Number(it.initialNet)+.001)throw Error('Υπέρβαση αξίας στο είδος: '+it.description);
+   const qty=rs.filter(r=>r.mode==='units').reduce((sum,r)=>sum+Number(r.units),0);
+   if(qty>Number(it.initialQty)+1e-8)throw Error('Υπέρβαση ποσότητας στο είδος: '+it.description);
+  }
+  candidate.correctionHistory=Array.isArray(candidate.correctionHistory)?candidate.correctionHistory:[];
+  candidate.correctionHistory.push({receiptId:id,at:new Date().toISOString(),before,after:JSON.parse(JSON.stringify(candidate.receipts[ix]))});
+  summarizeApp(candidate);
+  if(!confirm('Να αποθηκευτεί η διόρθωση; Θα ενημερωθούν τα υπόλοιπα και θα διατηρηθεί το προηγούμενο περιεχόμενο στο ιστορικό αλλαγών.'))return;
+  await writeJson('paralaves-backup-'+cid+'-'+Date.now()+'.json',stored);
+  await persistAppLedger(candidate,stored);
+  closeReceiptEditor();render();setStatus('Η διόρθωση αποθηκεύτηκε στο OneDrive και ενημερώθηκαν τα υπόλοιπα.','ok');
+ }catch(e){setStatus('ΔΕΝ ΑΠΟΘΗΚΕΥΤΗΚΕ Η ΔΙΟΡΘΩΣΗ: '+e.message,'err');}finally{busy=false;}
+}
+
 </script>
 </body>
 </html>
