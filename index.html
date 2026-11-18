@@ -600,6 +600,19 @@ tbody tr{
 .storage-meter{height:10px;background:#e2e8f0;border-radius:99px;overflow:hidden;margin-top:10px}
 #onedriveUsedBar{height:100%;width:0;background:#367ee2;transition:width .2s ease}
 @media print{.onedrive-storage{display:none!important}}
+
+/* Φάκελος εγγράφων ανά σύμβαση */
+.contract-docs-launch{background:#0f766e;color:white;grid-column:1/-1}
+.docs-folders{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.docs-folder{border:1px solid #dce4ed;border-radius:10px;overflow:hidden;background:#fff}
+.docs-folder h3{margin:0;padding:12px;background:#edf3f8;font-size:14px}
+.docs-folder ul{padding:5px 12px 12px;list-style:none;margin:0;max-height:210px;overflow:auto}
+.docs-folder li{font-size:12px;display:flex;gap:8px;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #eee;overflow-wrap:anywhere}
+.docs-folder a{color:#0658a6}
+.docs-toolbar{display:flex;flex-wrap:wrap;gap:10px;padding:12px;background:#f8fafc;align-items:end}
+.docs-toolbar label{font-size:12px;font-weight:700;display:flex;flex-direction:column;gap:5px;flex:1;min-width:170px}
+.docs-toolbar input,.docs-toolbar select{width:100%;font-size:13px}
+@media print{#docsDialog{display:none!important}}
 </style>
 </head>
 <body>
@@ -676,6 +689,21 @@ tbody tr{
 <input id="assignmentFilesInput" type="file" multiple class="hidden" onchange="handleCategoryUpload('assignment', this)">
 <input id="invoiceFilesInput" type="file" multiple class="hidden" onchange="handleCategoryUpload('invoice', this)">
 
+<dialog id="docsDialog" style="width:min(1100px,96vw);max-height:91vh">
+  <div class="dialog-head"><h2 id="docsTitle">ΑΡΧΕΙΑ ΣΥΜΒΑΣΗΣ</h2><button type="button" class="btn-gray" onclick="document.getElementById('docsDialog').close()">✕</button></div>
+  <div class="dialog-body">
+    <p style="margin:0 0 12px;color:#475569">Οργανωμένα αρχεία της σύμβασης. Τα παλαιά έγγραφα παραμένουν στη θέση τους στο OneDrive.</p>
+    <div class="docs-toolbar">
+      <label>Κατηγορία
+        <select id="docsCategory"><option value="study">ΜΕΛΕΤΗ</option><option value="contract">ΣΥΜΒΑΣΗ</option><option value="assignment">ΔΙΑΔΙΚΑΣΙΕΣ ΑΝΑΘΕΣΗΣ</option><option value="invoice">ΤΙΜΟΛΟΓΙΑ</option><option value="minutes">ΠΡΑΚΤΙΚΑ ΠΑΡΑΛΑΒΗΣ</option><option value="receipt">ΠΑΡΑΛΑΒΕΣ / ΔΕΛΤΙΑ</option><option value="correspondence">ΑΛΛΗΛΟΓΡΑΦΙΑ</option><option value="other">ΛΟΙΠΑ</option></select>
+      </label>
+      <label>Επιλογή αρχείων από τον υπολογιστή <input id="docsInput" type="file" multiple></label>
+      <button type="button" class="btn-green" id="docsUploadButton" onclick="uploadContractDocuments()">ΑΝΕΒΑΣΜΑ ΑΡΧΕΙΩΝ</button>
+    </div>
+    <div id="docsMessage" style="padding:10px;font-size:12px;color:#475569" role="status"></div>
+    <div id="docsFolders" class="docs-folders"></div>
+  </div>
+</dialog>
 <dialog id="recordDialog">
 <form id="recordForm">
   <div class="dialog-head"><h2 id="dialogTitle">Νέα εγγραφή</h2><button type="button" class="btn-gray" onclick="closeDialog()">✕</button></div>
@@ -893,55 +921,8 @@ function populateYears(){
 let pendingUploadRecordId=null;
 
 function renderOnlineFiles(r){
-  const parts=[];
-  const recordId=esc(String(r.id));
-
-  // Το κουμπί αφαιρεί μόνο το συγκεκριμένο αρχείο, όχι όλη την εγγραφή.
-  function fileEntry(f,type,index,defaultName){
-    const fullName=String(f?.name||defaultName).trim();
-    const firstWord=fullName.split(/\s+/)[0]||defaultName;
-    const name=esc(firstWord);
-    const fullTitle=esc(fullName);
-    const url=esc(f?.webUrl||"");
-    const link=url
-      ? `<a class="file-link" href="${url}" target="_blank" rel="noopener noreferrer" title="${fullTitle}">${name}</a>`
-      : `<span title="${fullTitle}">${name}</span>`;
-    return `<div class="file-entry">
-      ${link}
-      <button type="button" class="file-remove no-print"
-        data-record-id="${recordId}" data-file-type="${type}" data-file-index="${index}"
-        onclick="removeStoredFile(this)" title="Αφαίρεση αυτού του εγγράφου">✕ ΔΙΑΓΡΑΦΗ</button>
-    </div>`;
-  }
-
-  if(r.contractFileUrl){
-    parts.push(`<div class="file-group">
-      <span class="file-group-title">ΣΥΜΒΑΣΗ</span>
-      ${fileEntry({name:r.contractFileName||"ΑΝΟΙΓΜΑ",webUrl:r.contractFileUrl},"contract",0,"ΣΥΜΒΑΣΗ")}
-    </div>`);
-  }
-
-  if(Array.isArray(r.assignmentFiles) && r.assignmentFiles.length){
-    const links=r.assignmentFiles.map((f,i)=>
-      fileEntry(f,"assignment",i,"ΑΡΧΕΙΟ "+(i+1))
-    ).join("");
-    parts.push(`<div class="file-group">
-      <span class="file-group-title">ΔΙΑΔΙΚΑΣΙΕΣ ΑΝΑΘΕΣΗΣ</span>
-      ${links}
-    </div>`);
-  }
-
-  if(Array.isArray(r.invoiceFiles) && r.invoiceFiles.length){
-    const links=r.invoiceFiles.map((f,i)=>
-      fileEntry(f,"invoice",i,"ΤΙΜΟΛΟΓΙΟ "+(i+1))
-    ).join("");
-    parts.push(`<div class="file-group">
-      <span class="file-group-title">ΤΙΜΟΛΟΓΙΑ</span>
-      ${links}
-    </div>`);
-  }
-
-  return parts.length ? parts.join("") : "—";
+ const count=(r.contractFileUrl?1:0)+(r.assignmentFiles||[]).length+(r.invoiceFiles||[]).length+(r.documentFiles||[]).length;
+ return `<button class="btn-gray" type="button" onclick="openContractDocuments('${esc(r.id)}')">📁 ΑΡΧΕΙΑ (${count})</button>`;
 }
 
 // Διαγραφή από τη λίστα και προαιρετικά και από το πραγματικό αρχείο OneDrive.
@@ -1179,6 +1160,92 @@ async function uploadCategoryFile(record,file,type){
 
 
 
+
+/* ============================================================
+   Οργανωμένο αρχείο εγγράφων σύμβασης – διατηρεί legacy links
+   ============================================================ */
+const DOC_CATEGORIES={study:'ΜΕΛΕΤΗ',contract:'ΣΥΜΒΑΣΗ',assignment:'ΔΙΑΔΙΚΑΣΙΕΣ ΑΝΑΘΕΣΗΣ',invoice:'ΤΙΜΟΛΟΓΙΑ',minutes:'ΠΡΑΚΤΙΚΑ ΠΑΡΑΛΑΒΗΣ',receipt:'ΠΑΡΑΛΑΒΕΣ / ΔΕΛΤΙΑ',correspondence:'ΑΛΛΗΛΟΓΡΑΦΙΑ',other:'ΛΟΙΠΑ'};
+let documentsRecordId=null, documentsBusy=false;
+function contractDocuments(record){
+ const out=[];
+ const add=(category,file)=>{if(file && (file.id||file.webUrl))out.push({category,...file});};
+ if(record.contractFileUrl)add('contract',{name:record.contractFileName||'ΣΥΜΒΑΣΗ',id:record.contractFileId||null,webUrl:record.contractFileUrl});
+ (record.assignmentFiles||[]).forEach(f=>add('assignment',f));
+ (record.invoiceFiles||[]).forEach(f=>add('invoice',f));
+ (record.documentFiles||[]).forEach(f=>add(f.category||'other',f));
+ return out;
+}
+function drawContractDocuments(){
+ const r=records.find(x=>x.id===documentsRecordId);
+ if(!r)return;
+ const documents=contractDocuments(r),host=document.getElementById('docsFolders');
+ host.innerHTML=Object.entries(DOC_CATEGORIES).map(([key,label])=>{
+  const files=documents.filter(f=>f.category===key);
+  const lis=files.length?files.map(f=>{
+   const url=f.webUrl||'';
+   return `<li>${url?`<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">📄 ${esc(f.name||'ΑΡΧΕΙΟ')}</a>`:`<span>📄 ${esc(f.name||'ΑΡΧΕΙΟ')} (χωρίς σύνδεσμο)</span>`}</li>`;
+  }).join(''):'<li style="color:#64748b">Δεν υπάρχουν αρχεία</li>';
+  return `<section class="docs-folder"><h3>📂 ${label} (${files.length})</h3><ul>${lis}</ul></section>`;
+ }).join('');
+}
+function openContractDocuments(recordId){
+ const r=records.find(x=>x.id===recordId);if(!r)return;
+ documentsRecordId=recordId;
+ document.getElementById('docsTitle').textContent='ΑΡΧΕΙΑ — '+(r.studyNo||'')+' — '+(r.contractor||r.title||'');
+ document.getElementById('docsMessage').textContent='Τα αρχεία διατηρούνται στο OneDrive. Για εισαγωγή μελέτης στις Παραλαβές, επιβεβαίωσε πρώτα τον πίνακα ειδών.';
+ document.getElementById('docsInput').value='';
+ drawContractDocuments();document.getElementById('docsDialog').showModal();
+}
+async function ensureDocumentFolder(parentPath,folderName){
+ const folderPath=parentPath+'/'+folderName;
+ const check=await graph('https://graph.microsoft.com/v1.0/me/drive/root:/'+encPath(folderPath));
+ if(check.ok)return folderPath;
+ if(check.status!==404)throw Error('Σφάλμα ελέγχου φακέλου: '+await check.text());
+ const create=await graph('https://graph.microsoft.com/v1.0/me/drive/root:/'+encPath(parentPath)+':/children',{
+  method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:folderName,folder:{},'@microsoft.graph.conflictBehavior':'fail'})
+ });
+ if(!create.ok&&create.status!==409)throw Error('Σφάλμα δημιουργίας φακέλου: '+await create.text());
+ return folderPath;
+}
+async function contractDocFolder(record,category){
+ await ensureSubFolder('Files');
+ // Σταθερό αναγνωριστικό: δύο συμβάσεις με ίδιο αριθμό μελέτης δεν μοιράζονται τον φάκελο.
+ const base=String(record.studyNo||'ΣΥΜΒΑΣΗ').replace(/[\\/:*?"<>|]/g,'_').slice(0,60)+' - '+String(record.id).replace(/[^a-zA-Z0-9_-]/g,'_');
+ const root=await ensureDocumentFolder(APP_FOLDER+'/Files',base);
+ return ensureDocumentFolder(root,DOC_CATEGORIES[category]);
+}
+async function uploadContractDocuments(){
+ if(documentsBusy)return;
+ const r=records.find(x=>x.id===documentsRecordId),category=document.getElementById('docsCategory').value;
+ const input=document.getElementById('docsInput'),files=[...input.files];
+ const message=document.getElementById('docsMessage');
+ if(!r||!files.length){message.textContent='Επίλεξε τουλάχιστον ένα αρχείο.';return;}
+ documentsBusy=true;document.getElementById('docsUploadButton').disabled=true;
+ try{
+  const folder=await contractDocFolder(r,category);
+  r.documentFiles=Array.isArray(r.documentFiles)?r.documentFiles:[];
+  for(const file of files){
+   if(file.size>4*1024*1024)throw Error('Το αρχείο '+file.name+' υπερβαίνει το όριο απλής μεταφόρτωσης 4 MB. Δεν ανέβηκε.');
+   message.textContent='Ανέβασμα: '+file.name;
+   const unique=Date.now()+'-'+Math.random().toString(36).slice(2,8)+'-'+file.name.replace(/[\\/:*?"<>|]/g,'_');
+   const url='https://graph.microsoft.com/v1.0/me/drive/root:/'+encPath(folder+'/'+unique)+':/content';
+   const response=await graph(url,{method:'PUT',headers:{'Content-Type':file.type||'application/octet-stream'},body:file});
+   if(!response.ok)throw Error('Αποτυχία ανεβάσματος '+file.name+': '+await response.text());
+   const meta=await response.json();
+   const added={category,name:file.name,id:meta.id,webUrl:meta.webUrl,uploadedAt:new Date().toISOString()};
+   r.documentFiles.push(added);
+   if(category==='study' && /\.docx$/i.test(file.name)){
+    r.studyFileId=meta.id;r.studyFileName=file.name;
+   }
+   // Αποθήκευση μετά από κάθε αρχείο για αποφυγή απώλειας μεταδεδομένων σε μερική αποτυχία.
+   await saveData();drawContractDocuments();
+  }
+  message.textContent='Αποθηκεύτηκαν '+files.length+' αρχεία στο OneDrive.';
+  input.value='';render();
+ }catch(e){message.textContent='ΣΦΑΛΜΑ: '+e.message;setStatus('Σφάλμα αρχείων: '+e.message,'error');}
+ finally{documentsBusy=false;document.getElementById('docsUploadButton').disabled=false;}
+}
+
 function selectedDepartments(){
   return [...document.querySelectorAll(".deptCheck:checked")].map(x=>x.value);
 }
@@ -1270,6 +1337,7 @@ function render(){
         <button class="btn-purple" onclick="openParalaves('${r.id}')">ΠΑΡΑΛΑΒΕΣ</button>
         <button class="btn-green" onclick="selectFilesForRecord('${r.id}','assignment')">ΑΝΑΘΕΣΗ</button>
         <button class="btn-orange" onclick="selectFilesForRecord('${r.id}','invoice')">ΤΙΜΟΛΟΓΙΑ</button>
+        <button class="contract-docs-launch" onclick="openContractDocuments('${r.id}')">📁 ΑΡΧΕΙΑ</button>
       </div></td>
       <td>${esc(toUpperText(r.studyNo||""))}</td><td>${esc(toUpperText(r.department||""))}</td><td>${esc(toUpperText(r.agency||""))}</td><td>${esc(toUpperText(r.title||""))}</td><td>${esc(toUpperText(r.execution||""))}</td>
       <td class="num">${euro(r.studyBudget)}</td><td>${esc(toUpperText(r.contractor||""))}</td><td class="num">${euro(r.contractBudget)}</td>
