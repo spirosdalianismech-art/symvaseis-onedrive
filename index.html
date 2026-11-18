@@ -241,10 +241,9 @@ async function publishPublicData(){
       }
 
       const ledger=ledgers.find(x=>x.contractId===primary.id);
-      const balanceWithVat=
-        ledger?.summary?.remainingWithVat!==undefined
+      const balanceWithVat=(ledger?.summary?.remainingWithVat!==undefined
           ? Number(ledger.summary.remainingWithVat||0)
-          : Number(primary.balanceWithVat ?? primary.contractBudget ?? 0);
+          : Number(primary.balanceWithVat ?? primary.contractBudget ?? 0)) + optionAmount(primary);
 
       publicContracts.push({
         id:primary.id,
@@ -259,6 +258,7 @@ async function publishPublicData(){
         studyBudget:Number(primary.studyBudget||0),
         contractor:toUpperText(primary.contractor||""),
         contractBudget:Number(primary.contractBudget||0),
+        optionAmount:optionAmount(primary),
         balanceWithVat,
         expiry:primary.expiry||"",
         extensionExpiry:primary.extensionExpiry||"",
@@ -661,6 +661,7 @@ tbody tr{
           <th class="num budget-heading">ΠΡΟΫΠΟΛΟΓΙΣΜΟΣ<br><span>ΜΕΛΕΤΗΣ</span></th>
           <th class="contractor-heading">ΑΝΑΔΟΧΟΣ<br><span>/ ΕΤΑΙΡΕΙΑ</span></th>
           <th class="num budget-heading">ΠΡΟΫΠΟΛΟΓΙΣΜΟΣ<br><span>ΣΥΜΒΑΣΗΣ</span></th>
+          <th class="num">ΠΟΣΟ<br>ΠΡΟΑΙΡΕΣΗΣ</th>
           <th class="num">ΥΠΟΛΟΙΠΟ<br>ΜΕ ΦΠΑ</th>
           <th>ΟΡΙΣΤΙΚΗ<br>ΛΗΞΗ</th>
           <th class="center">ΗΜΕΡΕΣ<br>ΕΩΣ ΛΗΞΗ</th>
@@ -717,6 +718,10 @@ tbody tr{
       <label>Προϋπολογισμός Μελέτης<input id="fStudyBudget" type="text" inputmode="decimal" placeholder="0,00 €"></label>
       <label>Ανάδοχος / Εταιρεία<input id="fContractor"></label>
       <label>Προϋπολογισμός Σύμβασης<input id="fContractBudget" type="text" inputmode="decimal" placeholder="0,00 €"></label>
+      <label>Ποσό ενεργοποιημένης προαίρεσης (με ΦΠΑ)
+        <input id="fOptionAmount" type="text" inputmode="decimal" placeholder="0,00 €">
+        <span class="help">Συμπλήρωσε το ποσό μόνο εφόσον έχει ασκηθεί η προαίρεση. Προστίθεται μία φορά στο υπόλοιπο με ΦΠΑ. Δεν αλλάζει τον αρχικό προϋπολογισμό.</span>
+      </label>
       <label>Ημερομηνία Αρχικής Λήξης<input id="fExpiry" type="date"></label>
       <label>Ημερομηνία Λήξης με Παράταση<input id="fExtensionExpiry" type="date"><span class="help">Εάν συμπληρωθεί, αντικαθιστά την αρχική ημερομηνία για τον υπολογισμό της λήξης.</span></label>
       <label>ΦΠΑ σύμβασης (%)<input id="fVat" type="number" step="0.01" value="24"></label>
@@ -1270,9 +1275,16 @@ function toggleActiveContracts(){
   }
   render();
 }
+// Το υπόλοιπο από τις Παραλαβές είναι της αρχικής σύμβασης.
+// Η ενεργοποιημένη προαίρεση προστίθεται αποκλειστικά στην προβολή,
+// ώστε οι επανειλημμένες ανανεώσεις από το OneDrive να μην τη διπλομετρήσουν.
+function optionAmount(r){return Math.max(0,Number(r.optionAmount||0));}
+function effectiveContractBalance(r){
+  return Number(r.balanceWithVat ?? r.contractBudget ?? 0)+optionAmount(r);
+}
 function isActiveContract(r){
   const st=statusFor(r);
-  const balance=Number(r.balanceWithVat ?? r.contractBudget ?? 0);
+  const balance=effectiveContractBalance(r);
   return (st.cls==="active" || st.cls==="soon") && Number.isFinite(balance) && balance>=0.005;
 }
 function render(){
@@ -1308,14 +1320,14 @@ function render(){
   document.getElementById("countCard").textContent=list.length;
   document.getElementById("studyCard").textContent=euro(list.reduce((s,r)=>s+Number(r.studyBudget||0),0));
   document.getElementById("contractCard").textContent=euro(list.reduce((s,r)=>s+Number(r.contractBudget||0),0));
-  document.getElementById("balanceCard").textContent=euro(list.reduce((s,r)=>s+Number(r.balanceWithVat ?? r.contractBudget ?? 0),0));
+  document.getElementById("balanceCard").textContent=euro(list.reduce((s,r)=>s+effectiveContractBalance(r),0));
   const body=document.getElementById("contractsBody");body.innerHTML="";
-  if(!list.length){body.innerHTML='<tr><td colspan="15" style="padding:35px;text-align:center">'+(contractSearchMode?"Δεν βρέθηκαν συμβάσεις με τα στοιχεία αναζήτησης.":activeContractsOnly?"Δεν βρέθηκαν ενεργές συμβάσεις με τα επιλεγμένα φίλτρα.":"Δεν υπάρχουν εγγραφές για το επιλεγμένο έτος.")+'</td></tr>';return}
+  if(!list.length){body.innerHTML='<tr><td colspan="16" style="padding:35px;text-align:center">'+(contractSearchMode?"Δεν βρέθηκαν συμβάσεις με τα στοιχεία αναζήτησης.":activeContractsOnly?"Δεν βρέθηκαν ενεργές συμβάσεις με τα επιλεγμένα φίλτρα.":"Δεν υπάρχουν εγγραφές για το επιλεγμένο έτος.")+'</td></tr>';return}
   for(const r of list){
-    const st=statusFor(r),expiry=effectiveExpiry(r),days=expiry?daysUntil(expiry):"",bal=r.balanceWithVat ?? r.contractBudget ?? 0;
+    const st=statusFor(r),expiry=effectiveExpiry(r),days=expiry?daysUntil(expiry):"",bal=effectiveContractBalance(r);
     const tr=document.createElement("tr");
     const hasContract=Number(r.contractBudget||0)>0;
-    const zeroBalance=hasContract && r.balanceWithVat!=null && Number.isFinite(Number(bal)) && Math.abs(Number(bal))<0.005;
+    const zeroBalance=hasContract && Number.isFinite(Number(bal)) && Math.abs(Number(bal))<0.005;
     const expired=hasContract && days!=="" && days!==null && days<0;
     const last30Days=hasContract && days!=="" && days!==null && days>=0 && days<=30;
     if(zeroBalance || expired) tr.classList.add("contract-red");
@@ -1328,7 +1340,7 @@ function render(){
       </div></td>
       <td>${esc(toUpperText(r.studyNo||""))}</td><td>${esc(toUpperText(r.department||""))}</td><td>${esc(toUpperText(r.agency||""))}</td><td>${esc(toUpperText(r.title||""))}</td><td>${esc(toUpperText(r.execution||""))}</td>
       <td class="num">${euro(r.studyBudget)}</td><td>${esc(toUpperText(r.contractor||""))}</td><td class="num">${euro(r.contractBudget)}</td>
-      <td class="num"><strong>${euro(bal)}</strong></td><td title="${r.extensionExpiry ? "ΠΑΡΑΤΑΣΗ ΑΠΟ " + (r.expiry ? formatDateGR(r.expiry) : "—") : "ΑΡΧΙΚΗ ΛΗΞΗ"}">${expiry ? esc(formatDateGR(expiry)) + (r.extensionExpiry ? "<div style=\"font-size:10px;color:#64748b\">ΠΑΡΑΤΑΣΗ</div>" : "") : ""}</td><td class="center">${days===null?"":days}</td>
+      <td class="num">${euro(optionAmount(r))}</td><td class="num"><strong>${euro(bal)}</strong></td><td title="${r.extensionExpiry ? "ΠΑΡΑΤΑΣΗ ΑΠΟ " + (r.expiry ? formatDateGR(r.expiry) : "—") : "ΑΡΧΙΚΗ ΛΗΞΗ"}">${expiry ? esc(formatDateGR(expiry)) + (r.extensionExpiry ? "<div style=\"font-size:10px;color:#64748b\">ΠΑΡΑΤΑΣΗ</div>" : "") : ""}</td><td class="center">${days===null?"":days}</td>
       <td><span class="badge ${st.cls}">${st.text}</span></td>
        <td>${esc(toUpperText(r.studyAuthor||""))}</td>
        <td>${esc(toUpperText(r.responsibleDirectorate||""))}</td>`;
@@ -1339,7 +1351,7 @@ function openParalaves(contractId=""){window.location.href="paralaves.html"+(con
 function openNewRecord(){currentEditingId=null;document.getElementById("dialogTitle").textContent="Νέα εγγραφή";document.getElementById("recordForm").reset();document.getElementById("fYear").value=document.getElementById("yearFilter").value||2026;document.getElementById("fVat").value="24";document.getElementById("fDepartment").value="";document.getElementById("fExcelSheet").value="ΣΥΜΒΑΣΗ";document.getElementById("deleteBtn").classList.add("hidden");document.getElementById("recordDialog").showModal()}
 function editRecord(x){
   const r=records.find(a=>a.id===x);if(!r)return;currentEditingId=x;document.getElementById("dialogTitle").textContent="Επεξεργασία εγγραφής";
-  const vals={fYear:r.year||2026,fStudyNo:r.studyNo||"",fDepartment:r.department||"",fAgency:r.agency||"",fStudyAuthor:r.studyAuthor||"",fResponsibleDirectorate:r.responsibleDirectorate||"",fExecution:r.execution||"",fTitle:r.title||"",fStudyBudget:euro(r.studyBudget||0),fContractor:r.contractor||"",fContractBudget:euro(r.contractBudget||0),fExpiry:r.expiry||"",fExtensionExpiry:r.extensionExpiry||"",fVat:r.vat??24,fExcelPath:r.excelPath||"",fExcelSheet:r.excelSheet||"ΣΥΜΒΑΣΗ"};
+  const vals={fYear:r.year||2026,fStudyNo:r.studyNo||"",fDepartment:r.department||"",fAgency:r.agency||"",fStudyAuthor:r.studyAuthor||"",fResponsibleDirectorate:r.responsibleDirectorate||"",fExecution:r.execution||"",fTitle:r.title||"",fStudyBudget:euro(r.studyBudget||0),fContractor:r.contractor||"",fContractBudget:euro(r.contractBudget||0),fOptionAmount:euro(r.optionAmount||0),fExpiry:r.expiry||"",fExtensionExpiry:r.extensionExpiry||"",fVat:r.vat??24,fExcelPath:r.excelPath||"",fExcelSheet:r.excelSheet||"ΣΥΜΒΑΣΗ"};
   Object.entries(vals).forEach(([k,v])=>document.getElementById(k).value=v);document.getElementById("deleteBtn").classList.remove("hidden");document.getElementById("recordDialog").showModal()
 }
 function closeDialog(){document.getElementById("recordDialog").close()}
@@ -1349,7 +1361,12 @@ document.getElementById("recordForm").addEventListener("submit",async e=>{
     let r=currentEditingId?records.find(x=>x.id===currentEditingId):{id:id()};
     if(!currentEditingId)records.push(r);
     r.year=Number(fYear.value);r.studyNo=toUpperText(fStudyNo.value.trim());r.department=toUpperText(fDepartment.value.trim());r.agency=toUpperText(fAgency.value.trim());r.studyAuthor=toUpperText(document.getElementById("fStudyAuthor").value.trim());r.responsibleDirectorate=toUpperText(document.getElementById("fResponsibleDirectorate").value.trim());r.execution=toUpperText(fExecution.value.trim());r.title=toUpperText(fTitle.value.trim());
-    r.studyBudget=parseEuroInput(fStudyBudget.value);r.contractor=toUpperText(fContractor.value.trim());r.contractBudget=parseEuroInput(fContractBudget.value);r.expiry=fExpiry.value;r.extensionExpiry=fExtensionExpiry.value;
+    r.studyBudget=parseEuroInput(fStudyBudget.value);r.contractor=toUpperText(fContractor.value.trim());r.contractBudget=parseEuroInput(fContractBudget.value);
+    const optionRaw=fOptionAmount.value.trim();
+    const optionValue=parseEuroInput(optionRaw);
+    if(optionRaw && (!Number.isFinite(optionValue) || optionValue<0 || !/[0-9]/.test(optionRaw)))throw Error("Μη έγκυρο ποσό προαίρεσης.");
+    r.optionAmount=Math.round(optionValue*100)/100;
+    r.expiry=fExpiry.value;r.extensionExpiry=fExtensionExpiry.value;
     r.vat=Number(fVat.value||24);r.excelPath=fExcelPath.value.trim();r.excelSheet=toUpperText(fExcelSheet.value.trim())||"ΣΥΜΒΑΣΗ";
     const file=fContractFile.files[0];if(file){
       const uploadedContract=await uploadContractFile(r,file);
@@ -1410,6 +1427,7 @@ window.addEventListener("load",async()=>{
   enableUppercaseInputs();
   setupCurrencyInput(document.getElementById("fStudyBudget"));
   setupCurrencyInput(document.getElementById("fContractBudget"));
+  setupCurrencyInput(document.getElementById("fOptionAmount"));
   try{const a=await getAccount();if(a){setStatus("Συνδεδεμένος ως "+a.username,"ok");await loadData();await refreshFromParalaves(false);await loadOneDriveQuota()}else{populateYears();render()}}catch(e){setStatus(e.message,"error")}
 });
 </script>
