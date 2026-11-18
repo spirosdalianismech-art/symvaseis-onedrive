@@ -110,7 +110,7 @@ html,body{width:100%;max-width:none}
 </head>
 <body>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v24.0 — ΠΙΝΑΚΕΣ ΚΑΤΟΠΙΝ ΕΠΙΛΟΓΗΣ · ΜΑΖΙΚΗ ΠΑΡΑΛΑΒΗ</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v25.0 — ΟΜΑΔΕΣ & ΥΠΟΛΟΙΠΑ — ΠΙΝΑΚΕΣ ΚΑΤΟΠΙΝ ΕΠΙΛΟΓΗΣ · ΜΑΖΙΚΗ ΠΑΡΑΛΑΒΗ</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -238,6 +238,10 @@ html,body{width:100%;max-width:none}
     <div class="card"><div class="label">Υπόλοιπο σύμβασης με ΦΠΑ</div><div class="value" id="remainingWithVat">0,00 €</div></div>
   </div>
 
+  <section class="panel" id="groupBalancePanel" style="display:none">
+    <div class="panel-title">ΥΠΟΛΟΙΠΟ ΑΝΑ ΟΜΑΔΑ — ΣΥΝΟΛΟ ΣΥΜΒΑΣΗΣ</div>
+    <div class="table-wrap"><table style="min-width:760px"><thead><tr><th>ΟΜΑΔΑ</th><th class="num">ΑΞΙΑ ΣΥΜΒΑΣΗΣ ΧΩΡΙΣ ΦΠΑ</th><th class="num">ΠΑΡΑΛΑΒΕΣ ΧΩΡΙΣ ΦΠΑ</th><th class="num">ΥΠΟΛΟΙΠΟ ΧΩΡΙΣ ΦΠΑ</th><th class="num">ΥΠΟΛΟΙΠΟ ΜΕ ΦΠΑ</th></tr></thead><tbody id="groupBalanceBody"></tbody></table></div>
+  </section>
   <div id="reportsArea" class="hidden">
   <section class="panel">
     <div class="panel-title"><span>Συγκεντρωτικός πίνακας παραλαβών — έως την τελευταία παραλαβή</span><span id="lineCount" class="muted"></span></div>
@@ -321,6 +325,42 @@ function getLedger(create=true){
  if(!l&&create){const c=getContract();if(!c)return null;l={contractId:c.id,studyNo:c.studyNo||"",title:c.title||"",vat:Number(c.vat??24),excelPath:c.excelPath||"",excelSheet:c.excelSheet||"ΣΥΜΒΑΣΗ",items:[],receipts:[],summary:{}};parData.contracts.push(l)}
  return l
 }
+// Ομάδες: σταθερό πεδίο στο είδος, δεν επηρεάζει την ταυτότητα ή τον υπολογισμό παραλαβών.
+const NO_GROUP='ΧΩΡΙΣ ΟΜΑΔΑ';
+function itemGroup(item){return String(item?.group||'').trim()||NO_GROUP;}
+function groupHeading(value){
+ const v=toUpperText(String(value??'').replace(/\s+/g,' ').trim());
+ // Αναγνωρίζουμε μόνο πραγματική επικεφαλίδα, όχι κάθε περιγραφή που περιέχει τη λέξη.
+ if(/^(?:ΟΜΑΔΑ|ΤΜΗΜΑ|GROUP)\s*(?:[Α-ΩA-Z0-9]+)(?:\s*[-–:.)]\s*.*|\s+.{3,})?$/i.test(v)&&v.length<180)return v;
+ return null;
+}
+function groupFromRow(row,descCol,qtyCol,priceCol,groupCol=-1){
+ if(groupCol>=0&&String(row[groupCol]??'').trim())return toUpperText(String(row[groupCol]).trim());
+ return null;
+}
+function groupsOf(items){const m=new Map();for(const it of items||[]){const k=itemGroup(it);if(!m.has(k))m.set(k,[]);m.get(k).push(it);}return m;}
+function hasGroups(items){return (items||[]).some(it=>itemGroup(it)!==NO_GROUP);}
+function renderGroupBalances(l){
+ const panel=document.getElementById('groupBalancePanel'),body=document.getElementById('groupBalanceBody');
+ if(!panel||!body)return;
+ if(!l||!l.items?.length||!hasGroups(l.items)){panel.style.display='none';body.innerHTML='';return;}
+ panel.style.display='';const vat=Number(l.vat??24)/100,groups=groupsOf(l.items);
+ let html='',allInitial=0,allReceived=0,allRemaining=0;
+ for(const [name,items] of groups){
+  let initial=0,received=0,remaining=0;
+  for(const it of items){const calc=computeLine(it,l),base=Number(it.initialNet||0)+(l.entryMode==='app'?Number(it.optionQty||0)*Number(it.unitPrice||0):0);
+   initial+=base;remaining+=calc.remainingNet;received+=base-calc.remainingNet;}
+  allInitial+=initial;allReceived+=received;allRemaining+=remaining;
+  html+=`<tr><td><strong>${esc(name)}</strong> <span class="muted">(${items.length} είδη)</span></td><td class="num">${euro(initial)}</td><td class="num">${euro(received)}</td><td class="num"><strong>${euro(remaining)}</strong></td><td class="num"><strong>${euro(remaining*(1+vat))}</strong></td></tr>`;
+ }
+ html+=`<tr style="background:#ede9fe;font-weight:700"><td>ΓΕΝΙΚΟ ΣΥΝΟΛΟ ΣΥΜΒΑΣΗΣ</td><td class="num">${euro(allInitial)}</td><td class="num">${euro(allReceived)}</td><td class="num">${euro(allRemaining)}</td><td class="num">${euro(allRemaining*(1+vat))}</td></tr>`;
+ body.innerHTML=html;
+}
+function excelGroupForRow(row,descCol,qtyCol,priceCol,groupCol,current){
+ const explicit=groupFromRow(row,descCol,qtyCol,priceCol,groupCol);
+ return explicit||current;
+}
+
 function computeLine(item,ledger){
  if(ledger.entryMode==="app"){
   // Ενιαίος λογαριασμός είδους: αρχική σύμβαση + εγκεκριμένες ποσότητες προαίρεσης.
@@ -501,7 +541,7 @@ async function selectContract(id){
 }
 
 function groupedReceiptHistory(items, receipts, head, body, foot){
-  head.innerHTML='<tr><th>Α/Α</th><th>Περιγραφή είδους</th><th>Μ.Μ.</th><th>Τρόπος παραλαβής</th><th class="num">Ποσότητα</th><th class="num">Αξία χωρίς ΦΠΑ</th><th class="no-print">Διόρθωση</th></tr>';
+  head.innerHTML='<tr><th>Α/Α</th><th>Περιγραφή είδους</th><th>ΟΜΑΔΑ</th><th>Μ.Μ.</th><th>Τρόπος παραλαβής</th><th class="num">Ποσότητα</th><th class="num">Αξία χωρίς ΦΠΑ</th><th class="no-print">Διόρθωση</th></tr>';
   body.innerHTML=""; foot.innerHTML="";
   const groups=new Map();
   for(const r of receipts){
@@ -509,24 +549,24 @@ function groupedReceiptHistory(items, receipts, head, body, foot){
     if(!groups.has(key))groups.set(key,[]);
     groups.get(key).push(r);
   }
-  if(!groups.size){body.innerHTML='<tr><td colspan="7" style="padding:20px;text-align:center">Δεν υπάρχουν παραλαβές.</td></tr>';return;}
+  if(!groups.size){body.innerHTML='<tr><td colspan="8" style="padding:20px;text-align:center">Δεν υπάρχουν παραλαβές.</td></tr>';return;}
   const fmtQty=v=>Number(v).toLocaleString("el-GR",{maximumFractionDigits:3});
   const fmtDate=d=>/^\d{4}-\d{2}-\d{2}$/.test(d)?d.split("-").reverse().join("/"):(d||"ΧΩΡΙΣ ΗΜΕΡΟΜΗΝΙΑ");
   let grand=0, html="";
   const dates=[...groups.keys()].sort((a,b)=>a===b?0:!a?1:!b?-1:a.localeCompare(b));
   dates.forEach((d,i)=>{
     const alt=i%2?" alt":"", rs=groups.get(d); let daily=0;
-    html+=`<tr class="day-heading${alt}"><td colspan="7">${esc(fmtDate(d))} — ${rs.length} ${rs.length===1?"ΠΑΡΑΛΑΒΗ":"ΠΑΡΑΛΑΒΕΣ"}</td></tr>`;
+    html+=`<tr class="day-heading${alt}"><td colspan="8">${esc(fmtDate(d))} — ${rs.length} ${rs.length===1?"ΠΑΡΑΛΑΒΗ":"ΠΑΡΑΛΑΒΕΣ"}</td></tr>`;
     rs.forEach((r,j)=>{
       const it=items.find(x=>x.id===r.itemId), val=Number(r.netValue||0), isUnits=r.mode==="units";
       daily+=val;
-      html+=`<tr class="day-entry${alt}"><td>${j+1}</td><td>${esc(it?.description||"ΜΗ ΑΝΑΓΝΩΡΙΣΜΕΝΟ ΕΙΔΟΣ")}</td><td>${esc(it?.unit||"")}</td><td>${isUnits?"ΠΟΣΟΤΗΤΑ":"ΧΡΗΜΑΤΙΚΗ ΑΞΙΑ"}</td><td class="num">${isUnits?fmtQty(r.units||0):"—"}</td><td class="num">${euro(val)}</td><td class="no-print">${getLedger(false)?.entryMode==="app"?`<button class="blue" style="padding:5px 8px;font-size:12px" onclick="openReceiptEditor('${esc(r.id)}')">✎ Διόρθωση</button>`:"—"}</td></tr>`;
+      html+=`<tr class="day-entry${alt}"><td>${j+1}</td><td>${esc(it?.description||"ΜΗ ΑΝΑΓΝΩΡΙΣΜΕΝΟ ΕΙΔΟΣ")}</td><td>${esc(itemGroup(it))}</td><td>${esc(it?.unit||"")}</td><td>${isUnits?"ΠΟΣΟΤΗΤΑ":"ΧΡΗΜΑΤΙΚΗ ΑΞΙΑ"}</td><td class="num">${isUnits?fmtQty(r.units||0):"—"}</td><td class="num">${euro(val)}</td><td class="no-print">${getLedger(false)?.entryMode==="app"?`<button class="blue" style="padding:5px 8px;font-size:12px" onclick="openReceiptEditor('${esc(r.id)}')">✎ Διόρθωση</button>`:"—"}</td></tr>`;
     });
     grand+=daily;
-    html+=`<tr class="day-total${alt}"><td colspan="5">ΣΥΝΟΛΟ ΗΜΕΡΑΣ ${esc(fmtDate(d))}</td><td class="num">${euro(daily)}</td><td class="no-print"></td></tr>`;
+    html+=`<tr class="day-total${alt}"><td colspan="6">ΣΥΝΟΛΟ ΗΜΕΡΑΣ ${esc(fmtDate(d))}</td><td class="num">${euro(daily)}</td><td class="no-print"></td></tr>`;
   });
   body.innerHTML=html;
-  foot.innerHTML=`<tr><td colspan="5">ΓΕΝΙΚΟ ΣΥΝΟΛΟ ΠΑΡΑΛΑΒΩΝ ΧΩΡΙΣ ΦΠΑ</td><td class="num">${euro(grand)}</td><td class="no-print"></td></tr>`;
+  foot.innerHTML=`<tr><td colspan="6">ΓΕΝΙΚΟ ΣΥΝΟΛΟ ΠΑΡΑΛΑΒΩΝ ΧΩΡΙΣ ΦΠΑ</td><td class="num">${euro(grand)}</td><td class="no-print"></td></tr>`;
 }
 function renderDateHistoryMatrix(){
  const l=getLedger(false), table=document.getElementById("dateHistoryTable");
@@ -543,7 +583,7 @@ function formatDateGR(s){
 
 function render(){
  const c=getContract(),l=getLedger(false);
- if(!c||!l){contractTitle.textContent="ΔΕΝ ΥΠΑΡΧΟΥΝ ΣΥΜΒΑΣΕΙΣ ΓΙΑ ΤΑ ΕΠΙΛΕΓΜΕΝΑ ΤΜΗΜΑΤΑ";contractMeta.textContent="ΕΠΙΛΕΞΕ ΕΝΑ Ή ΠΕΡΙΣΣΟΤΕΡΑ ΤΜΗΜΑΤΑ Ή ΔΗΜΙΟΥΡΓΗΣΕ ΕΓΓΡΑΦΗ ΣΤΟ ΠΡΟΓΡΑΜΜΑ ΣΥΜΒΑΣΕΩΝ.";itemsBody.innerHTML="";renderDateHistoryMatrix();return}
+ if(!c||!l){contractTitle.textContent="ΔΕΝ ΥΠΑΡΧΟΥΝ ΣΥΜΒΑΣΕΙΣ ΓΙΑ ΤΑ ΕΠΙΛΕΓΜΕΝΑ ΤΜΗΜΑΤΑ";contractMeta.textContent="ΕΠΙΛΕΞΕ ΕΝΑ Ή ΠΕΡΙΣΣΟΤΕΡΑ ΤΜΗΜΑΤΑ Ή ΔΗΜΙΟΥΡΓΗΣΕ ΕΓΓΡΑΦΗ ΣΤΟ ΠΡΟΓΡΑΜΜΑ ΣΥΜΒΑΣΕΩΝ.";itemsBody.innerHTML="";renderGroupBalances(null);renderDateHistoryMatrix();return}
  l.vat=Number(l.vat??c.vat??24);excelPath.value=l.excelPath||c.excelPath||"";excelSheet.value=l.excelSheet||c.excelSheet||"ΣΥΜΒΑΣΗ";
  contractTitle.textContent=toUpperText((c.studyNo?c.studyNo+" — ":"")+c.title);
  contractMeta.textContent=toUpperText(`ΤΜΗΜΑ: ${c.department||"—"} | ΑΝΑΔΟΧΟΣ: ${c.contractor||"—"} | ΦΠΑ: ${l.vat}% | EXCEL: ${excelPath.value||"ΔΕΝ ΕΧΕΙ ΔΗΛΩΘΕΙ"}`);
@@ -552,7 +592,10 @@ function render(){
  lineCount.textContent=`${l.items.length} γραμμές`;
  itemsBody.innerHTML="";
  const qtyFmt=v=>Number(v||0).toLocaleString("el-GR",{maximumFractionDigits:3});
+ let currentGroup=null;
  l.items.forEach((it,i)=>{
+   const group=itemGroup(it);
+   if(hasGroups(l.items)&&group!==currentGroup){const gr=document.createElement("tr");gr.innerHTML=`<td colspan="13" style="background:#e9e1f6;color:#39216d;font-weight:700;padding:12px 14px">${esc(group)}</td>`;itemsBody.appendChild(gr);currentGroup=group;}
    const x=computeLine(it,l);
    const rs=(l.receipts||[]).filter(r=>r.itemId===it.id && r.source==="excel");
    const totalQty=l.entryMode==='app'?Number(it.initialQty||0)+Number(it.optionQty||0):Number(it.initialQty||0);
@@ -760,11 +803,15 @@ async function syncFromExcel(showMessage=true){
   const historyStartCol=Math.max(cReceived,cRemValue,cRemUnits,cExpense,cPrice,cQty,cUnit,cDesc)+1;
   const excelReceiptCols=findExcelReceiptColumns(rows,historyStartCol,sh,h.row+h.depth);
 
-  const newItems=[];let blanks=0;
+  const cGroup=findCol(H,x=>x==='ΟΜΑΔΑ'||x.startsWith('ΟΜΑΔΑ ')||x==='ΤΜΗΜΑ');
+  const newItems=[];let blanks=0,activeGroup=null;
   for(let rr=h.row+h.depth;rr<rows.length;rr++){
     const row=rows[rr]||[],desc=toUpperText(String(row[cDesc]??"").trim()),qty=num(row[cQty]),price=num(row[cPrice]),expense=cExpense>=0?num(row[cExpense]):qty*price;
+    const heading=(!qty&&!price&&!expense)?groupHeading(desc||row.find(v=>groupHeading(v))):null;
+    if(heading){activeGroup=heading;blanks=0;continue;}
     if(!desc&&!qty&&!price&&!expense){blanks++;if(blanks>=8&&newItems.length)break;continue}else blanks=0;
     if(!desc||(!(qty||price||expense)))continue;
+    const group=excelGroupForRow(row,cDesc,cQty,cPrice,cGroup,activeGroup);
     const unit=cUnit>=0?toUpperText(String(row[cUnit]??"").trim()):"";
     const excelRemainingUnitsProvided=cRemUnits>=0&&String(row[cRemUnits]??"").trim()!=="";
     const excelRemainingNetProvided=cRemValue>=0&&String(row[cRemValue]??"").trim()!=="";
@@ -819,7 +866,7 @@ async function syncFromExcel(showMessage=true){
     const net=initialNet-chosen.target;
     const baseUnits=excelRemainingUnitsProvided?num(row[cRemUnits]):(price>0?qty-chosen.target/price:qty);
     const itemId=hash(norm(desc)+"|"+norm(unit)+"|"+price.toFixed(6)+"|"+(rr+1));
-    newItems.push({id:itemId,sourceRow:rr+1,description:desc,unit,initialQty:qty,unitPrice:price,initialNet,baseRemainingUnits:baseUnits,baseRemainingNet:net,excelRemainingUnitsProvided:true,excelRemainingNetProvided:true,originalExcelRemainingUnitsProvided:excelRemainingUnitsProvided,receiptEntries:entries.map((e,i)=>({...e,mode:chosen.choices[i]}))});
+    newItems.push({id:itemId,sourceRow:rr+1,description:desc,group,unit,initialQty:qty,unitPrice:price,initialNet,baseRemainingUnits:baseUnits,baseRemainingNet:net,excelRemainingUnitsProvided:true,excelRemainingNetProvided:true,originalExcelRemainingUnitsProvided:excelRemainingUnitsProvided,receiptEntries:entries.map((e,i)=>({...e,mode:chosen.choices[i]}))});
   }
   if(!newItems.length)throw new Error("Δεν βρέθηκαν γραμμές ειδών στον πίνακα.");
 
@@ -1128,9 +1175,12 @@ function renderBulkReceiptItems(){
  const tbody=el('bulkReceiptItems');
  // Keep an unfinished draft if the page renders the same contract.
  const old=new Map([...tbody.querySelectorAll('tr[data-item-id]')].map(row=>[row.dataset.itemId,{qty:row.querySelector('.bulk-qty')?.value||'',money:row.querySelector('.bulk-money')?.value||''}]));
+ let currentGroup=null;
  tbody.innerHTML=l.items.map((it,i)=>{
+   const group=itemGroup(it),header=hasGroups(l.items)&&group!==currentGroup?`<tr class="bulk-group-heading"><td colspan="8" style="background:#e9e1f6;color:#39216d;font-weight:700;padding:12px 14px">${esc(group)}</td></tr>`:'';
+   currentGroup=group;
    const x=computeLine(it,l),saved=old.get(it.id)||{qty:'',money:''};
-   return `<tr data-item-id="${esc(it.id)}"><td>${i+1}</td><td>${esc(it.description)}</td><td>${esc(it.unit||'')}</td><td class="num">${euro(it.unitPrice)}</td><td class="num">${Number(x.totalQty||0).toLocaleString('el-GR',{maximumFractionDigits:6})}</td><td class="num"><strong>${euro(x.remainingNet)}</strong></td><td><input class="bulk-qty" inputmode="decimal" value="${esc(saved.qty)}" placeholder="Ποσότητα" style="width:155px" oninput="this.closest('tr').querySelector('.bulk-money').value='';previewBulkReceipt()"></td><td><input class="bulk-money" inputmode="decimal" value="${esc(saved.money)}" placeholder="Αξία €" style="width:155px" oninput="this.closest('tr').querySelector('.bulk-qty').value='';previewBulkReceipt()"></td></tr>`;
+   return header+`<tr data-item-id="${esc(it.id)}"><td>${i+1}</td><td>${esc(it.description)}</td><td>${esc(it.unit||'')}</td><td class="num">${euro(it.unitPrice)}</td><td class="num">${Number(x.totalQty||0).toLocaleString('el-GR',{maximumFractionDigits:6})}</td><td class="num"><strong>${euro(x.remainingNet)}</strong></td><td><input class="bulk-qty" inputmode="decimal" value="${esc(saved.qty)}" placeholder="Ποσότητα" style="width:155px" oninput="this.closest('tr').querySelector('.bulk-money').value='';previewBulkReceipt()"></td><td><input class="bulk-money" inputmode="decimal" value="${esc(saved.money)}" placeholder="Αξία €" style="width:155px" oninput="this.closest('tr').querySelector('.bulk-qty').value='';previewBulkReceipt()"></td></tr>`;
  }).join('');
  previewBulkReceipt();
 }
@@ -1281,7 +1331,7 @@ function previewAppReceipt(){
 }
 
 async function commitAppReceipt(){if(busy)return;busy=true;const cid=currentId;try{const r=draftAppReceipt();if(!r.date)throw Error('Επίλεξε ημερομηνία.');const latest=await readJson(PAR_FILE),old=latest?.contracts?.find(x=>x.contractId===cid);if(!old||old.entryMode!=='app')throw Error('Δεν βρέθηκε ενεργή καταχώριση.');const local=getLedger(false);if(currentId!==cid||JSON.stringify(old.receipts)!==JSON.stringify(local.receipts))throw Error('Τα δεδομένα άλλαξαν. Ανανέωσε τη σελίδα.');const duplicate=old.receipts.some(z=>z.itemId===r.itemId&&z.date===r.date&&z.mode===r.mode&&Number(z.units)===r.units&&cents(z.netValue)===cents(r.netValue)&&String(z.note||'')===r.note);if(duplicate&&!confirm('Βρέθηκε ίδια παραλαβή. Είναι πράγματι διαφορετική εγγραφή;'))return;const candidate=JSON.parse(JSON.stringify(old));candidate.receipts.push(r);validateOptionLedger(candidate,getContract());summarizeApp(candidate,getContract());await persistAppLedger(candidate,old);el('appQty').value='';el('appMoney').value='';el('appNote').value='';render();setStatus('Η παραλαβή αποθηκεύτηκε στο OneDrive.','ok');}catch(e){setStatus('ΔΕΝ ΑΠΟΘΗΚΕΥΤΗΚΕ: '+e.message,'err');}finally{busy=false;previewAppReceipt();}}
-function exportAppExcel(){const l=getLedger(false);if(!l||l.entryMode!=='app')return;const wb=XLSX.utils.book_new();const data=[['Ημερομηνία','Είδος','Μ.Μ.','Τρόπος','Ποσότητα','Αξία χωρίς ΦΠΑ','Παρατήρηση']];for(const r of [...l.receipts].sort((a,b)=>a.date.localeCompare(b.date))){const it=l.items.find(i=>i.id===r.itemId);data.push([r.date,it?.description,it?.unit,r.mode==='units'?'ΠΟΣΟΤΗΤΑ':'ΧΡΗΜΑΤΙΚΗ ΑΞΙΑ',r.mode==='units'?r.units:null,r.netValue,r.note]);}XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),'ΠΑΡΑΛΑΒΕΣ');XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['Είδος','Αρχική ποσότητα','Προαίρεση','Συνολική ποσότητα','Τιμή μονάδας','Συνολική αξία','Υπόλοιπο αξίας'],...l.items.map(it=>[it.description,it.initialQty,Number(it.optionQty||0),Number(it.initialQty)+Number(it.optionQty||0),it.unitPrice,Number(it.initialNet)+Number(it.optionQty||0)*Number(it.unitPrice),computeLine(it,l).remainingNet])]),'ΣΥΜΒΑΣΗ');XLSX.writeFile(wb,'ΠΑΡΑΛΑΒΕΣ-'+String(l.studyNo||'ΣΥΜΒΑΣΗ').replace(/[^\p{L}\p{N}-]/gu,'_')+'.xlsx');}
+function exportAppExcel(){const l=getLedger(false);if(!l||l.entryMode!=='app')return;const wb=XLSX.utils.book_new();const data=[['Ημερομηνία','Είδος','ΟΜΑΔΑ','Μ.Μ.','Τρόπος','Ποσότητα','Αξία χωρίς ΦΠΑ','Παρατήρηση']];for(const r of [...l.receipts].sort((a,b)=>a.date.localeCompare(b.date))){const it=l.items.find(i=>i.id===r.itemId);data.push([r.date,it?.description,itemGroup(it),it?.unit,r.mode==='units'?'ΠΟΣΟΤΗΤΑ':'ΧΡΗΜΑΤΙΚΗ ΑΞΙΑ',r.mode==='units'?r.units:null,r.netValue,r.note]);}XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),'ΠΑΡΑΛΑΒΕΣ');XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['Είδος','ΟΜΑΔΑ','Αρχική ποσότητα','Προαίρεση','Συνολική ποσότητα','Τιμή μονάδας','Συνολική αξία','Υπόλοιπο αξίας'],...l.items.map(it=>[it.description,itemGroup(it),it.initialQty,Number(it.optionQty||0),Number(it.initialQty)+Number(it.optionQty||0),it.unitPrice,Number(it.initialNet)+Number(it.optionQty||0)*Number(it.unitPrice),computeLine(it,l).remainingNet])]),'ΣΥΜΒΑΣΗ');XLSX.writeFile(wb,'ΠΑΡΑΛΑΒΕΣ-'+String(l.studyNo||'ΣΥΜΒΑΣΗ').replace(/[^\p{L}\p{N}-]/gu,'_')+'.xlsx');}
 
 /* Εισαγωγή από μελέτη .docx με υποχρεωτική επιβεβαίωση, μόνο χωρίς προηγούμενες παραλαβές. */
 let studyWordDraft=null;
@@ -1296,11 +1346,13 @@ function numberFromWord(v){
 }
 function extractStudyRows(html){
  const dom=new DOMParser().parseFromString(html,'text/html');
- const candidates=[];
+ const candidates=[];let activeGroup=null;
  for(const table of dom.querySelectorAll('table')){
   const rows=[];
   for(const tr of table.querySelectorAll('tr')){
    const cs=[...tr.children].filter(el=>/^(TD|TH)$/.test(el.tagName)).map(el=>el.textContent.replace(/\s+/g,' ').trim());
+   const heading=cs.length<=3?cs.map(groupHeading).find(Boolean):null;
+   if(heading){activeGroup=heading;continue;}
    if(cs.length<4)continue;
    const tail=cs.slice(-3).map(numberFromWord);
    if(!tail.every(Number.isFinite)||tail[0]<=0||tail[1]<=0||tail[2]<=0)continue;
@@ -1311,7 +1363,7 @@ function extractStudyRows(html){
    const unit=parts.length>=2?parts[parts.length-1]:'ΤΕΜ';
    const name=parts.length>=2?parts.slice(0,-1).join(' — '):description;
    if(!name||name.length>500)continue;
-   rows.push({description:name,unit,initialQty:tail[0],unitPrice:tail[1],initialNet:tail[2]});
+   rows.push({description:name,group:activeGroup,unit,initialQty:tail[0],unitPrice:tail[1],initialNet:tail[2]});
   }
   if(rows.length)candidates.push(rows);
  }
@@ -1376,7 +1428,7 @@ function normalizeCatalogItems(rows){
   if(!description||!(q>0)||!(p>0)||!(v>0))continue;
   if(Math.abs(q*p-v)>Math.max(.051,v*.00002))continue;
   if(/^(ΣΥΝΟΛ|ΦΠΑ|ΔΑΠΑΝΗ|ΥΠΟΣΥΝΟΛ|ΓΕΝΙΚΟ)/i.test(description))continue;
-  items.push({description:toUpperText(description),unit:toUpperText(unit),initialQty:q,unitPrice:p,initialNet:v});
+  items.push({description:toUpperText(description),group:String(x.group||"").trim()?toUpperText(x.group):null,unit:toUpperText(unit),initialQty:q,unitPrice:p,initialNet:v});
  }
  return items;
 }
@@ -1392,12 +1444,15 @@ function catalogFromExcel(buffer){
  const v=findCol(H,x=>(x.includes('ΔΑΠΑΝ')||x.includes('ΑΞΙΑ'))&&!x.includes('ΥΠΟΛΟΙΠ')&&!x.includes('ΠΑΡΑΛΑΒ'));
  if(d<0||q<0||p<0)throw Error('Δεν βρέθηκαν στήλες περιγραφής, ποσότητας και τιμής μονάδας.');
  const from=hdr.row+hdr.depth;
- const out=[];
+ const g=findCol(H,x=>x==='ΟΜΑΔΑ'||x.startsWith('ΟΜΑΔΑ ')||x==='ΤΜΗΜΑ');
+ const out=[];let activeGroup=null;
  for(let r=from;r<rows.length;r++){
   const a=rows[r]||[],qty=num(a[q]),price=num(a[p]);
+  const heading=(!qty&&!price)?groupHeading(a[d]||a.find(v=>groupHeading(v))):null;
+  if(heading){activeGroup=heading;continue;}
   if(!String(a[d]||'').trim()||!(qty>0)||!(price>0))continue;
   const value=v>=0&&String(a[v]??'').trim()!==''?num(a[v]):qty*price;
-  out.push({description:a[d],unit:u<0?'ΤΕΜ':a[u],initialQty:qty,unitPrice:price,initialNet:value});
+  out.push({description:a[d],group:excelGroupForRow(a,d,q,p,g,activeGroup),unit:u<0?'ΤΕΜ':a[u],initialQty:qty,unitPrice:price,initialNet:value});
  }
  const headers=rows.slice(0,Math.min(8,rows.length));
  const hasDates=headers.some(row=>row.some(cell=>typeof cell==='string'&&!!excelHeaderToDate(cell)));
@@ -1405,9 +1460,10 @@ function catalogFromExcel(buffer){
  return normalizeCatalogItems(out);
 }
 function catalogFromPdfText(lines){
- const out=[];
+ const out=[];let activeGroup=null;
  for(const line of lines){
   const text=line.replace(/\s+/g,' ').trim();
+  const heading=groupHeading(text);if(heading){activeGroup=heading;continue;}
   // Last three numbers: ποσότητα, τιμή μονάδας, αξία. Keep units prior to the numbers.
   const m=text.match(/^(.*?)\s+(\d[\d.,]*)\s+(\d[\d.,]*)\s+(\d[\d.,]*)\s*€?$/);
   if(!m)continue;
@@ -1416,7 +1472,7 @@ function catalogFromPdfText(lines){
   const um=prefix.match(/\s+(m²|m2|m3|m³|τμ|τεμ(?:άχιο)?|τεμάχια|ώρα|ώρες|kg|lt|κ\.μ\.|μ²|μ³)$/i);
   const unit=um?um[1]:'ΤΕΜ';
   if(um)prefix=prefix.slice(0,-um[0].length);
-  out.push({description:prefix,unit,initialQty:qty,unitPrice:price,initialNet:value});
+  out.push({description:prefix,group:activeGroup,unit,initialQty:qty,unitPrice:price,initialNet:value});
  }
  return normalizeCatalogItems(out);
 }
