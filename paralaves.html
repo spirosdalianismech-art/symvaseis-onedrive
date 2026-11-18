@@ -110,7 +110,7 @@ html,body{width:100%;max-width:none}
 </head>
 <body>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v25.0 — ΟΜΑΔΕΣ & ΥΠΟΛΟΙΠΑ — ΠΙΝΑΚΕΣ ΚΑΤΟΠΙΝ ΕΠΙΛΟΓΗΣ · ΜΑΖΙΚΗ ΠΑΡΑΛΑΒΗ</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v25.1 — ΟΜΑΔΕΣ & ΥΠΟΛΟΙΠΑ — ΠΙΝΑΚΕΣ ΚΑΤΟΠΙΝ ΕΠΙΛΟΓΗΣ · ΜΑΖΙΚΗ ΠΑΡΑΛΑΒΗ</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -157,6 +157,15 @@ html,body{width:100%;max-width:none}
         <div class="table-wrap"><table style="min-width:600px"><thead><tr><th>Είδος</th><th>Μ.Μ.</th><th>Ποσότητα</th><th>Τιμή μονάδας</th><th>Αξία χωρίς ΦΠΑ</th></tr></thead><tbody id="catalogPreview"></tbody></table></div>
         <button class="green hidden" id="catalogActivate" onclick="activateCatalogFile()">✓ ΕΠΙΒΕΒΑΙΩΣΗ & ΕΝΕΡΓΟΠΟΙΗΣΗ</button>
         <p class="muted" style="font-size:12px">Για συμβάσεις με ήδη καταχωρισμένες παραλαβές από Excel χρησιμοποίησε την επιλογή «ΕΛΕΓΧΟΣ EXCEL» παρακάτω ώστε να μεταφερθεί ολόκληρο το ιστορικό. Το αρχείο εδώ χρησιμοποιείται ως βάση μόνο για νέες συμβάσεις.</p>
+      </div>
+      <div style="background:#f0fdf4;border:1px solid #86efac;padding:14px;border-radius:9px" id="quantitiesOnlyImportPanel">
+        <strong>ΕΙΣΑΓΩΓΗ ΥΛΙΚΩΝ ΚΑΙ ΠΑΛΑΙΩΝ ΠΑΡΑΛΑΒΩΝ — ΜΟΝΟ ΠΟΣΟΤΗΤΕΣ</strong>
+        <p style="font-size:13px;margin:7px 0">Για Excel με στήλες Α/Α, ΠΕΡΙΓΡΑΦΗ, Μ.Μ., ΠΟΣΟΤΗΤΑ, ΤΙΜΗ, ΠΡΟΑΙΡΕΣΗ και ημερομηνίες δεξιά. Διαβάζονται μόνο τα υλικά, οι ποσότητες, οι τιμές μονάδας και οι παραλαβές ανά ημερομηνία. Οι χρηματικοί τύποι, τα έτοιμα σύνολα και τα υπόλοιπα του Excel αγνοούνται πλήρως. Όλα υπολογίζονται από την εφαρμογή.</p>
+        <input type="file" id="quantityExcelFile" accept=".xlsx,.xlsm,.xls" aria-label="Excel ποσοτήτων παραλαβών">
+        <button type="button" class="blue" onclick="previewQuantityExcel()">🔎 ΕΛΕΓΧΟΣ ΠΟΣΟΤΗΤΩΝ EXCEL</button>
+        <div id="quantityImportStatus" role="status" style="white-space:pre-wrap;margin:10px 0;font-weight:600"></div>
+        <label style="display:flex;gap:8px;align-items:start;font-size:13px"><input type="checkbox" id="quantityOptionApproved" onchange="updateQuantityImportButton()" style="margin-top:2px"> Επιβεβαιώνω ότι οι ποσότητες στη στήλη «ΠΡΟΑΙΡΕΣΗ» του Excel είναι εγκεκριμένες και ότι το αντίστοιχο ποσό έχει καταχωριστεί στο index.html. Δεν θα ενεργοποιήσω προαίρεση χωρίς έγκριση.</label>
+        <button type="button" class="green" id="quantityImportCommit" onclick="commitQuantityExcel()" disabled>💾 ΜΕΤΑΦΟΡΑ ΠΟΣΟΤΗΤΩΝ ΣΤΗΝ ΕΦΑΡΜΟΓΗ</button>
       </div>
       <div><strong>ΥΠΑΡΧΟΥΣΕΣ ΠΑΡΑΛΑΒΕΣ ΑΠΟ EXCEL ΣΤΟ ONEDRIVE:</strong> εισάγονται τα είδη, οι ποσότητες, οι τιμές και το προηγούμενο ιστορικό.</div>
       <button class="green" onclick="activateAppMode()">ΕΛΕΓΧΟΣ EXCEL ΚΑΙ ΕΝΕΡΓΟΠΟΙΗΣΗ ΚΑΤΑΧΩΡΙΣΕΩΝ</button>
@@ -1416,6 +1425,121 @@ async function activateStudyWord(){
   studyWordDraft=null;document.getElementById('studyWordConfirm').classList.add('hidden');
   render();setStatus('Η βάση ειδών εισήχθη από τη μελέτη Word. Οι νέες παραλαβές καταχωρίζονται στην εφαρμογή.','ok');
  }catch(e){wordStatus().textContent='ΔΕΝ ΑΠΟΘΗΚΕΥΤΗΚΕ: '+e.message;}
+}
+
+
+/* v25.1 — Ασφαλής εισαγωγή ΜΟΝΟ πρώτων δεδομένων και ποσοτήτων από Excel.
+   Οι τύποι, τα συνολικά ποσά και τα υπόλοιπα του αρχείου δεν αποτελούν πηγή δεδομένων. */
+let quantityDraft=null;
+function quantityImportStatus(message,ok=false){const e=el('quantityImportStatus');e.textContent=message;e.style.color=ok?'#166534':'#92400e';}
+function updateQuantityImportButton(){
+ const d=quantityDraft,c=getContract(),l=getLedger(false);
+ const approved=!!el('quantityOptionApproved').checked;
+ const can=!!d&&!busy&&l?.entryMode!=='app'&&(!d.optionNet||approved)&&
+   d.optionNet<=optionBudgetNet(c)+.011;
+ el('quantityImportCommit').disabled=!can;
+}
+function readQuantityOnlyWorkbook(bytes){
+ const wb=XLSX.read(bytes,{type:'array',cellDates:false,cellNF:true});
+ const sheet=wb.Sheets[wb.SheetNames.find(n=>norm(n)==='ΣΥΜΒΑΣΗ')||wb.SheetNames[0]];
+ if(!sheet)throw Error('Δεν βρέθηκε φύλλο Excel.');
+ const rows=XLSX.utils.sheet_to_json(sheet,{header:1,raw:true,defval:''});
+ const h=(rows[0]||[]).map(norm);
+ const expected=[['Α/Α','ΑΑ'],['ΠΕΡΙΓΡΑΦ'],['Μ.Μ.','ΜΜ'],['ΠΟΣΟΤ'],['ΤΙΜΗ'],['ΠΡΟΑΙΡΕΣ']];
+ for(let i=0;i<expected.length;i++)if(!expected[i].some(t=>h[i]?.includes(t)))
+   throw Error('Δεν αναγνωρίζεται η στήλη '+(i+1)+'. Χρειάζεται η μορφή Α/Α, ΠΕΡΙΓΡΑΦΗ, Μ.Μ., ΠΟΣΟΤΗΤΑ, ΤΙΜΗ ΜΟΝΑΔΟΣ, ΠΡΟΑΙΡΕΣΗ.');
+ const dateCols=[];
+ for(let j=13;j<(rows[0]||[]).length;j++){
+  const cell=sheet[XLSX.utils.encode_cell({r:0,c:j})];
+  const date=excelHeaderToDate(cell?.v??rows[0][j]);
+  if(date)dateCols.push({col:j,date});
+ }
+ if(!dateCols.length)throw Error('Δεν βρέθηκαν ημερομηνίες παραλαβής στις στήλες από Ν και μετά.');
+ let activeGroup='ΟΜΑΔΑ 1',items=[],receipts=[],invalid=[],optionNet=0,initialNet=0;
+ const seen=new Set();
+ for(let ri=1;ri<rows.length;ri++){
+  const row=rows[ri]||[],first=String(row[0]??'').trim(),description=String(row[1]??'').trim();
+  const gm=(first+' '+description).match(/\bΟΜΑΔΑ\s+(\d+)\b/i);
+  if(gm && !(num(row[3])>0) && !(num(row[4])>0)){activeGroup='ΟΜΑΔΑ '+gm[1];continue;}
+  if(!/^\d+(?:\.0+)?$/.test(first)||!description)continue;
+  const initialQty=num(row[3]),price=num(row[4]),optionQty=num(row[5]);
+  if(!(initialQty>0)||!(price>0)||!Number.isFinite(optionQty)||optionQty<0){invalid.push(ri+1);continue;}
+  const id=hash(activeGroup+'|'+first+'|'+norm(description)+'|'+(ri+1));
+  if(seen.has(id))throw Error('Διπλό είδος στη γραμμή '+(ri+1));seen.add(id);
+  const itemNet=Math.round(initialQty*price*100)/100;
+  const item={id,sourceRow:ri+1,description:toUpperText(description),group:activeGroup,
+    unit:toUpperText(String(row[2]||'ΤΕΜ').trim()),initialQty,unitPrice:price,initialNet:itemNet,
+    optionQty,baseRemainingUnits:initialQty,baseRemainingNet:itemNet,
+    excelRemainingUnitsProvided:false,excelRemainingNetProvided:false};
+  items.push(item);initialNet+=itemNet;optionNet+=optionQty*price;
+  let used=0;
+  for(const {col,date} of dateCols){
+   const cell=sheet[XLSX.utils.encode_cell({r:ri,c:col})];
+   if(cell?.f)throw Error('Η παραλαβή '+date+' στη γραμμή '+(ri+1)+' είναι τύπος, όχι καταχωρισμένη ποσότητα.');
+   const raw=row[col];if(raw===''||raw===null||raw===undefined)continue;
+   const quantity=typeof raw==='number'?raw:strictAmount(String(raw).trim());
+   if(!Number.isFinite(quantity)||quantity<0)throw Error('Μη έγκυρη ποσότητα στη γραμμή '+(ri+1)+', στήλη '+(col+1));
+   if(quantity===0)continue;
+   used+=quantity;
+   receipts.push({id:'excel-'+hash(id+'|'+date+'|'+col),itemId:id,mode:'units',units:quantity,
+     netValue:quantity*price,date,note:'ΠΑΡΑΛΑΒΗ ΑΠΟ EXCEL',source:'excel',excelColumn:col,
+     createdAt:new Date().toISOString()});
+  }
+  if(used>initialQty+optionQty+1e-7)throw Error('Οι παραλαβές υπερβαίνουν την αρχική ποσότητα και την προαίρεση στη γραμμή '+(ri+1));
+ }
+ if(invalid.length)throw Error('Ελλιπή βασικά στοιχεία στις γραμμές '+invalid.slice(0,12).join(', '));
+ if(!items.length)throw Error('Δεν βρέθηκαν έγκυρα υλικά.');
+ const groups=[...new Set(items.map(it=>it.group))];
+ return {items,receipts,groups,initialNet,optionNet,
+   receiptNet:receipts.reduce((sum,r)=>sum+r.netValue,0),
+   remainingNet:initialNet+optionNet-receipts.reduce((sum,r)=>sum+r.netValue,0)};
+}
+async function previewQuantityExcel(){
+ quantityDraft=null;el('quantityImportCommit').disabled=true;
+ try{
+  const f=el('quantityExcelFile').files?.[0];if(!f)throw Error('Επίλεξε το Excel.');
+  const d=readQuantityOnlyWorkbook(await f.arrayBuffer());quantityDraft={...d,filename:f.name,contractId:currentId};
+  const gross=d.optionNet*(1+Number(getLedger(false)?.vat??24)/100);
+  const warnings=[];
+  if(d.optionNet>optionBudgetNet(getContract())+.011)
+    warnings.push('ΠΡΟΣΟΧΗ: Η αξία προαίρεσης του αρχείου ('+euro(gross)+') ξεπερνά την ενεργοποιημένη προαίρεση στο index.html ('+euro(optionBudgetGross())+'). Διόρθωσε το ποσό στο index.html πριν από την εισαγωγή.');
+  const baseContract=Number(getContract()?.contractBudget||0);
+  if(baseContract>0&&Math.abs(cents(d.initialNet*(1+Number(getLedger(false)?.vat??24)/100))-cents(baseContract))>2)
+    warnings.push('ΠΡΟΣΟΧΗ: Η αρχική αξία του Excel ('+euro(d.initialNet*(1+Number(getLedger(false)?.vat??24)/100))+') διαφέρει από τον προϋπολογισμό της επιλεγμένης σύμβασης ('+euro(baseContract)+'). Έλεγξε ότι επέλεξες τη σωστή σύμβαση.');
+  const e=getLedger(false);if(e?.entryMode==='app')warnings.push('Η επιλεγμένη σύμβαση έχει ήδη ενεργοποιηθεί. Δεν επιτρέπεται αντικατάσταση ιστορικού.');
+  quantityImportStatus('ΕΛΕΓΧΟΣ ΑΡΧΕΙΟΥ: '+f.name+'\n'+d.items.length+' είδη · '+d.groups.length+' ομάδες · '+d.receipts.length+' παραλαβές ποσοτήτων.\nΑρχική συμβατική αξία χωρίς ΦΠΑ: '+euro(d.initialNet)+'\nΠρόσθετη ποσότητα προαίρεσης σε αξία χωρίς ΦΠΑ: '+euro(d.optionNet)+'\nΠαραλαβές υπολογισμένες από ποσότητες × τιμή μονάδας: '+euro(d.receiptNet)+'\nΥπόλοιπο υπολογισμένο από την εφαρμογή χωρίς ΦΠΑ: '+euro(d.remainingNet)+'\n'+warnings.join('\n'),warnings.length===0);
+  updateQuantityImportButton();
+ }catch(e){quantityImportStatus('ΔΕΝ ΕΓΙΝΕ ΑΝΑΓΝΩΣΗ: '+e.message);}
+}
+async function commitQuantityExcel(){
+ if(busy)return;busy=true;const cid=currentId;
+ try{
+  const d=quantityDraft,c=getContract(),local=getLedger(false);
+  if(!d||d.contractId!==cid||!c||!local)throw Error('Κάνε ξανά έλεγχο αρχείου για την επιλεγμένη σύμβαση.');
+  if(local.entryMode==='app')throw Error('Η σύμβαση έχει ήδη ενεργοποιηθεί. Δεν θα αντικατασταθεί ιστορικό.');
+  if(d.optionNet>0&&!el('quantityOptionApproved').checked)throw Error('Επιβεβαίωσε την εγκεκριμένη προαίρεση.');
+  if(d.optionNet>optionBudgetNet(c)+.011)throw Error('Ενημέρωσε πρώτα το ενεργοποιημένο ποσό προαίρεσης στο index.html.');
+  if(Number(c.contractBudget||0)>0&&Math.abs(cents(d.initialNet*(1+Number(c.vat??24)/100))-cents(c.contractBudget))>2)
+    throw Error('Η αρχική αξία του αρχείου δεν συμφωνεί με τη σύμβαση. Δεν θα γίνει αντιστοίχιση σε λάθος σύμβαση.');
+  const latest=await readJson(PAR_FILE)||{version:1,contracts:[]};
+  const expected=latest.contracts.find(x=>x.contractId===cid)||null;
+  if(expected?.entryMode==='app'||expected?.receipts?.some(r=>r.source!=='excel'))throw Error('Υπάρχει ήδη ιστορικό εφαρμογής. Δεν θα αντικατασταθεί.');
+  const candidate=JSON.parse(JSON.stringify(expected||local));
+  candidate.contractId=cid;candidate.studyNo=c.studyNo||'';candidate.title=c.title||'';
+  candidate.vat=Number(c.vat??24);candidate.items=d.items;candidate.receipts=d.receipts;
+  candidate.entryMode='app';candidate.migrationVerified=true;
+  candidate.importMethod='quantities-only';candidate.importFileName=d.filename;
+  candidate.importedAt=new Date().toISOString();candidate.migratedAt=candidate.importedAt;
+  // Τα ποσά προέρχονται αποκλειστικά από πρώτη ύλη: ποσότητα, τιμή μονάδας, παραλαβές.
+  summarizeApp(candidate,c);
+  if(!confirm('ΕΙΣΑΓΩΓΗ ΑΠΟ EXCEL ΜΟΝΟ ΠΟΣΟΤΗΤΕΣ\nΣύμβαση: '+(c.studyNo||c.title)+'\n'+d.items.length+' είδη σε '+d.groups.length+' ομάδες\n'+d.receipts.length+' παραλαβές\nΥπόλοιπο με ΦΠΑ: '+euro(candidate.summary.remainingWithVat)+'\n\nΘα δημιουργηθεί αντίγραφο ασφαλείας και μετά το Excel δεν θα συγχρονίζεται αυτόματα. Συνέχεια;'))return;
+  if(currentId!==cid)throw Error('Άλλαξε η επιλεγμένη σύμβαση.');
+  await writeJson('paralaves-backup-'+cid+'-'+Date.now()+'.json',expected||local);
+  await persistAppLedger(candidate,expected);
+  quantityDraft=null;render();setExcelAudit('','');
+  setStatus('ΕΙΣΗΧΘΗΣΑΝ '+d.items.length+' ΥΛΙΚΑ ΚΑΙ '+d.receipts.length+' ΠΑΡΑΛΑΒΕΣ ΠΟΣΟΤΗΤΩΝ. Οι υπολογισμοί γίνονται πλέον στην εφαρμογή.','ok');
+ }catch(e){setStatus('ΔΕΝ ΟΛΟΚΛΗΡΩΘΗΚΕ Η ΕΙΣΑΓΩΓΗ: '+e.message,'err');}
+ finally{busy=false;updateQuantityImportButton();}
 }
 
 /* v20: Εισαγωγή της αρχικής βάσης ειδών από επιλεγμένο Word / PDF / Excel. */
