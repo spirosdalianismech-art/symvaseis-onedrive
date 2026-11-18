@@ -79,11 +79,37 @@ input[type="text"], textarea, select {
 #dateHistoryTable .day-total.alt td{background:#e9f2fa}
 #dateHistoryTable .day-heading td,#dateHistoryTable .day-total td{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 #dateHistoryTable td:nth-child(2){width:45%}
+
+/* v22.1 — Πλήρες διαθέσιμο πλάτος, σταθερά μονογραμμικές περιγραφές.
+   Δεν επηρεάζει δεδομένα, υπολογισμούς ή αποθήκευση OneDrive. */
+html,body{width:100%;max-width:none}
+.container{width:100%;max-width:none;margin:0;padding:12px 12px 24px}
+.toolbar{width:100%}
+.contract-head,.panel,.cards,#status,#excelAudit,.readonly-note{max-width:none}
+.table-wrap{width:100%;max-width:100%;overflow-x:auto;overflow-y:visible}
+#itemsTable{width:max-content;min-width:100%;table-layout:auto}
+#itemsTable th,#itemsTable td{white-space:nowrap;vertical-align:middle}
+#itemsTable th:nth-child(2),#itemsTable td:nth-child(2){min-width:540px;text-align:left}
+#itemsTable th:not(:nth-child(2)),#itemsTable td:not(:nth-child(2)){padding-left:12px;padding-right:12px}
+#dateHistoryTable{width:max-content;min-width:100%;table-layout:auto}
+#dateHistoryTable tr.day-entry td{white-space:nowrap}
+#dateHistoryTable tr.day-entry td:nth-child(2){min-width:540px;width:auto}
+#dateHistoryTable tr.day-heading td,#dateHistoryTable tr.day-total td{white-space:normal}
+@media(max-width:950px){
+ .container{padding:10px 8px}
+ #itemsTable th:nth-child(2),#itemsTable td:nth-child(2),#dateHistoryTable tr.day-entry td:nth-child(2){min-width:400px}
+}
+@media print{
+ .container{width:100%;max-width:none;padding:0}
+ #itemsTable,#dateHistoryTable{width:100%;min-width:0;table-layout:auto}
+ #itemsTable th,#itemsTable td,#dateHistoryTable tr.day-entry td{white-space:normal}
+ #itemsTable th:nth-child(2),#itemsTable td:nth-child(2),#dateHistoryTable tr.day-entry td:nth-child(2){min-width:0}
+}
 </style>
 </head>
 <body>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v20.0 — ΕΙΣΑΓΩΓΗ ΑΡΧΕΙΩΝ & ΔΙΟΡΘΩΣΕΙΣ</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v22.1 — ΠΛΗΡΕΣ ΠΛΑΤΟΣ ΟΘΟΝΗΣ</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -143,12 +169,23 @@ input[type="text"], textarea, select {
       </div>
     </div>
   </section>
+  <section class="panel no-print hidden" id="optionPanel">
+    <div class="panel-title">ΠΡΟΑΙΡΕΣΗ ΑΝΑ ΥΛΙΚΟ — ΕΓΚΕΚΡΙΜΕΝΕΣ ΠΡΟΣΘΕΤΕΣ ΠΟΣΟΤΗΤΕΣ</div>
+    <div style="padding:15px">
+      <p class="muted">Η προαίρεση ορίζεται σε συνολικό ποσό με ΦΠΑ στις Συμβάσεις. Εδώ καταχωρίζεις εσύ την πρόσθετη ποσότητα σε κάθε είδος. Δεν αλλάζει η αρχική ποσότητα ούτε οι παλαιές παραλαβές.</p>
+      <div id="optionBudgetInfo" style="font-weight:bold;margin:10px 0"></div>
+      <div class="table-wrap"><table style="min-width:740px"><thead><tr><th>Υλικό / Είδος</th><th>Μ.Μ.</th><th class="num">Τιμή μονάδας</th><th>Πρόσθετη ποσότητα προαίρεσης</th><th class="num">Αξία με ΦΠΑ</th></tr></thead><tbody id="optionItemsBody"></tbody></table></div>
+      <div id="optionAllocationInfo" style="margin:10px 0;font-weight:bold"></div>
+      <button class="green" onclick="saveOptionAllocations()">💾 ΑΠΟΘΗΚΕΥΣΗ ΠΟΣΟΤΗΤΩΝ ΠΡΟΑΙΡΕΣΗΣ</button>
+    </div>
+  </section>
   <section class="panel no-print hidden" id="entryPanel">
     <div class="panel-title">ΝΕΑ ΠΑΡΑΛΑΒΗ — ποσότητα Ή χρηματική αξία χωρίς ΦΠΑ</div>
     <div style="padding:15px;display:grid;gap:10px">
       <label>Είδος σύμβασης <select id="appItem" onchange="previewAppReceipt()" style="width:100%"></select></label>
       <div id="appItemInfo" class="muted"></div>
       <div class="receipt-form" style="padding:0;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+        <label>Χρέωση σε <select id="appBucket" onchange="previewAppReceipt()"><option value="base">ΑΡΧΙΚΗ ΣΥΜΒΑΣΗ</option><option value="option">ΠΡΟΑΙΡΕΣΗ</option></select></label>
         <label>Ημερομηνία<input type="date" id="appDate" onchange="previewAppReceipt()"></label>
         <label>Ποσότητα<input id="appQty" inputmode="decimal" placeholder="π.χ. 100" oninput="if(this.value.trim())document.getElementById('appMoney').value='';previewAppReceipt()"></label>
         <label>Αξία χωρίς ΦΠΑ (€)<input id="appMoney" inputmode="decimal" placeholder="π.χ. 1.000,00" oninput="if(this.value.trim())document.getElementById('appQty').value='';previewAppReceipt()"></label>
@@ -163,6 +200,7 @@ input[type="text"], textarea, select {
     <div style="padding:18px;display:grid;gap:10px">
       <label>Ημερομηνία <input id="editReceiptDate" type="date" style="width:100%"></label>
       <label>Είδος / υλικό <select id="editReceiptItem" style="width:100%"></select></label>
+      <label>Χρέωση σε <select id="editReceiptBucket" style="width:100%"><option value="base">ΑΡΧΙΚΗ ΣΥΜΒΑΣΗ</option><option value="option">ΠΡΟΑΙΡΕΣΗ</option></select></label>
       <label>Τρόπος παραλαβής <select id="editReceiptMode" onchange="refreshReceiptEditor()" style="width:100%"><option value="units">ΠΟΣΟΤΗΤΑ</option><option value="value">ΧΡΗΜΑΤΙΚΗ ΑΞΙΑ</option></select></label>
       <label id="editReceiptAmountLabel">Ποσότητα <input id="editReceiptAmount" inputmode="decimal" style="width:100%"></label>
       <label>Παρατήρηση <input id="editReceiptNote" maxlength="300" style="width:100%"></label>
@@ -180,7 +218,7 @@ input[type="text"], textarea, select {
   <section class="panel">
     <div class="panel-title"><span>Συγκεντρωτικός πίνακας παραλαβών — έως την τελευταία παραλαβή</span><span id="lineCount" class="muted"></span></div>
     <div class="table-wrap">
-      <table>
+      <table id="itemsTable">
         <thead><tr>
           <th>Α/Α</th><th>Περιγραφή</th><th>Μ.Μ.</th><th class="num">Αρχική ποσότητα</th><th class="num">Τιμή μονάδας</th>
           <th class="num">Αρχική αξία χωρίς ΦΠΑ</th><th class="num">Παραληφθείσα ποσότητα (σύνολο)</th><th class="num">Παραληφθείσα αξία χωρίς ΦΠΑ (σύνολο)</th><th class="num">Υπόλοιπο μονάδων</th><th class="num">Υπόλοιπο αξίας χωρίς ΦΠΑ</th><th class="num">Υπόλοιπο με ΦΠΑ</th>
@@ -262,13 +300,16 @@ function getLedger(create=true){
 function computeLine(item,ledger){
  if(ledger.entryMode==="app"){
   const rs=(ledger.receipts||[]).filter(r=>r.itemId===item.id);
-   // Διατηρούμε την ακρίβεια του αρχικού Excel (π.χ. 80,5 × 82,65 = 6.653,325 €).
-   // Δεν στρογγυλοποιούμε κάθε ιστορική παραλαβή χωριστά: θα άλλαζε το υπόλοιπο κατά λεπτά.
-   // Οι νέες χρηματικές παραλαβές αποθηκεύονται ούτως ή άλλως σε ακέραια λεπτά.
-   const usedNet=rs.reduce((a,r)=>a+Number(r.netValue||0),0);
-  const used=rs.reduce((a,r)=>a+(r.mode==="units"?Number(r.units||0):0),0);
-  const money=rs.some(r=>r.mode==="value");
-  return {remainingNet:Number((Number(item.initialNet)-usedNet).toFixed(8)),remainingUnits:money?null:Number(item.initialQty)-used};
+  const baseRs=rs.filter(r=>r.bucket!=="option"), optRs=rs.filter(r=>r.bucket==="option");
+  const totalValue=arr=>arr.reduce((a,r)=>a+Number(r.netValue||0),0);
+  const units=arr=>arr.reduce((a,r)=>a+(r.mode==="units"?Number(r.units||0):0),0);
+  const optQty=Number(item.optionQty||0), price=Number(item.unitPrice||0);
+  const originalNet=Number((Number(item.initialNet)-totalValue(baseRs)).toFixed(8));
+  const optionNet=Number((optQty*price-totalValue(optRs)).toFixed(8));
+  return {remainingNet:Number((originalNet+optionNet).toFixed(8)),
+    remainingUnits:rs.some(r=>r.mode==="value")?null:Number(item.initialQty)+optQty-units(rs),
+    originalNet,optionNet,originalUnits:baseRs.some(r=>r.mode==="value")?null:Number(item.initialQty)-units(baseRs),
+    optionUnits:optRs.some(r=>r.mode==="value")?null:optQty-units(optRs)};
  }
 
  // Το Excel μπορεί να περιέχει ήδη το υπόλοιπο μετά τις παραλαβές.
@@ -959,9 +1000,59 @@ let reviewContractId=null, busy=false, catalogDraft=null, editingReceiptId=null;
 const el=id=>document.getElementById(id);
 const cents=v=>Math.round(Number(v)*100);
 function strictAmount(v){let a=String(v).trim();if(!/^(?:\d+(?:[.,]\d+)?|\d{1,3}(?:\.\d{3})+,\d+)$/.test(a))return NaN;if(a.includes(','))a=a.replace(/\./g,'').replace(',','.');return Number(a);}
+function optionBudgetGross(contract=getContract()){return Math.max(0,Number(contract?.optionAmount||0));}
+function optionBudgetNet(contract=getContract()){return optionBudgetGross(contract)/(1+Number(contract?.vat??24)/100);}
+function optionAllocatedNet(ledger){return (ledger.items||[]).reduce((n,it)=>n+Number(it.optionQty||0)*Number(it.unitPrice||0),0);}
+function optionReceiptsNet(ledger){return (ledger.receipts||[]).filter(r=>r.bucket==='option').reduce((n,r)=>n+Number(r.netValue||0),0);}
+function validateOptionLedger(ledger,contract=getContract()){
+ const budget=optionBudgetNet(contract),allocated=optionAllocatedNet(ledger),spent=optionReceiptsNet(ledger);
+ if(allocated>budget+.011)throw Error('Οι πρόσθετες ποσότητες υπερβαίνουν το εγκεκριμένο ποσό προαίρεσης.');
+ if(spent>budget+.011)throw Error('Οι παραλαβές προαίρεσης υπερβαίνουν το εγκεκριμένο ποσό.');
+ for(const it of ledger.items||[]){
+  const q=Number(it.optionQty||0);if(!Number.isFinite(q)||q<0)throw Error('Μη έγκυρη ποσότητα προαίρεσης: '+it.description);
+  const opt=ledger.receipts.filter(r=>r.itemId===it.id && r.bucket==='option');
+  const used=opt.reduce((a,r)=>a+Number(r.netValue||0),0);
+  const usedUnits=opt.filter(r=>r.mode==='units').reduce((a,r)=>a+Number(r.units||0),0);
+  if(used>q*Number(it.unitPrice||0)+.011 || usedUnits>q+1e-8)throw Error('Υπέρβαση προαίρεσης στο είδος: '+it.description);
+  const base=ledger.receipts.filter(r=>r.itemId===it.id && r.bucket!=='option');
+  if(base.reduce((a,r)=>a+Number(r.netValue||0),0)>Number(it.initialNet)+.011 || base.filter(r=>r.mode==='units').reduce((a,r)=>a+Number(r.units||0),0)>Number(it.initialQty)+1e-8)throw Error('Υπέρβαση αρχικής σύμβασης στο είδος: '+it.description);
+ }
+}
+function renderOptionAllocations(){
+ const l=getLedger(false),c=getContract(),panel=el('optionPanel');
+ panel.classList.toggle('hidden',!(l?.entryMode==='app'));
+ if(l?.entryMode!=='app')return;
+ const vat=Number(l.vat??24)/100;
+ el('optionBudgetInfo').textContent='ΕΓΚΕΚΡΙΜΕΝΗ ΠΡΟΑΙΡΕΣΗ: '+euro(optionBudgetGross(c))+' με ΦΠΑ. Καταχώρισε πρόσθετες ποσότητες μόνο για τα είδη που εγκρίθηκαν.';
+ el('optionItemsBody').innerHTML=l.items.map((it,i)=>`<tr><td>${esc(it.description)}</td><td>${esc(it.unit||'')}</td><td class="num">${euro(it.unitPrice)}</td><td><input class="option-qty" data-item-id="${esc(it.id)}" inputmode="decimal" value="${Number(it.optionQty||0).toLocaleString('el-GR',{maximumFractionDigits:6})}" style="width:160px" oninput="previewOptionAllocations()"></td><td class="num">${euro(Number(it.optionQty||0)*Number(it.unitPrice||0)*(1+vat))}</td></tr>`).join('');
+ previewOptionAllocations();
+}
+function readOptionDraft(){
+ const l=getLedger(false);if(!l)return [];
+ return [...document.querySelectorAll('#optionItemsBody .option-qty')].map(x=>{
+ const raw=x.value.trim()||'0';const cleaned=/^\d{1,3}(?:\.\d{3})+$/.test(raw)?raw.replace(/\./g,''):raw;const qty=strictAmount(cleaned);if(!Number.isFinite(qty)||qty<0)throw Error('Μη έγκυρη πρόσθετη ποσότητα.');
+ return {id:x.dataset.itemId,qty};});
+}
+function previewOptionAllocations(){
+ try{const l=getLedger(false),draft=readOptionDraft(),net=draft.reduce((s,d)=>s+d.qty*Number(l.items.find(it=>it.id===d.id)?.unitPrice||0),0),gross=net*(1+Number(l.vat??24)/100);
+  el('optionAllocationInfo').textContent='ΚΑΤΑΝΟΜΗ ΣΕ ΕΙΔΗ: '+euro(gross)+' με ΦΠΑ · ΜΗ ΚΑΤΑΝΕΜΗΜΕΝΗ ΠΡΟΑΙΡΕΣΗ: '+euro(optionBudgetGross()-gross)+(gross>optionBudgetGross()+.02?' · ΥΠΕΡΒΑΣΗ!':'');
+ }catch(e){el('optionAllocationInfo').textContent=e.message;}
+}
+async function saveOptionAllocations(){
+ if(busy)return;busy=true;const cid=currentId;
+ try{
+  const draft=readOptionDraft(),current=await readJson(PAR_FILE),stored=current?.contracts?.find(x=>x.contractId===cid),local=getLedger(false);
+  if(!stored||stored.entryMode!=='app'||currentId!==cid||JSON.stringify(stored.receipts)!==JSON.stringify(local.receipts)||JSON.stringify(stored.items)!==JSON.stringify(local.items))throw Error('Τα στοιχεία άλλαξαν. Ανανέωσε τη σελίδα.');
+  const candidate=JSON.parse(JSON.stringify(stored));for(const d of draft){const it=candidate.items.find(x=>x.id===d.id);if(!it)throw Error('Το είδος δεν υπάρχει.');it.optionQty=d.qty;}
+  validateOptionLedger(candidate,getContract());summarizeApp(candidate,getContract());
+  if(!confirm('Να αποθηκευτούν οι πρόσθετες ποσότητες προαίρεσης ανά υλικό;'))return;
+  await writeJson('paralaves-backup-'+cid+'-'+Date.now()+'.json',stored);
+  await persistAppLedger(candidate,stored);render();setStatus('Οι ποσότητες προαίρεσης αποθηκεύτηκαν στο OneDrive.','ok');
+ }catch(e){setStatus('ΔΕΝ ΑΠΟΘΗΚΕΥΤΗΚΕ Η ΠΡΟΑΙΡΕΣΗ: '+e.message,'err');}finally{busy=false;}
+}
 function renderEntryMode(){
  const l=getLedger(false), active=l?.entryMode==='app';
- el('migrationPanel').classList.toggle('hidden',!l||active);el('entryPanel').classList.toggle('hidden',!active);
+ el('migrationPanel').classList.toggle('hidden',!l||active);el('entryPanel').classList.toggle('hidden',!active);renderOptionAllocations();
  el('sourceSettings').classList.toggle('hidden',!!active);el('excelSyncButton').disabled=!!active;el('saveButton').disabled=!!active;
  el('modeNote').textContent=active?'ΚΑΤΑΧΩΡΙΣΗ ΣΤΗΝ ΕΦΑΡΜΟΓΗ — Το Excel διατηρείται ως αρχείο. Οι νέες παραλαβές αποθηκεύονται στο OneDrive.':'Εισαγωγή από Excel — ενεργοποίησε τις καταχωρίσεις μετά τον έλεγχο.';
  if(reviewContractId!==currentId){reviewContractId=currentId;el('appQty').value='';el('appMoney').value='';el('appNote').value='';}
@@ -973,20 +1064,25 @@ async function persistAppLedger(candidate,expected){
  if(JSON.stringify(old||null)!==JSON.stringify(expected||null))throw Error('Τα δεδομένα άλλαξαν από άλλη συνεδρία. Ανανέωσε τη σελίδα και δοκίμασε ξανά.');
  const i=latest.contracts.findIndex(x=>x.contractId===candidate.contractId);if(i<0)latest.contracts.push(candidate);else latest.contracts[i]=candidate;latest.updatedAt=new Date().toISOString();await writeJson(PAR_FILE,latest);parData=latest;
 }
-function summarizeApp(l){
- let netExact=0,initialExact=0;
+function summarizeApp(l,contract=getContract()){
+ let originalNet=0,allocated=0,optionUsed=0,initialExact=0;
  for(const it of l.items){
   const x=computeLine(it,l);
-  if(x.remainingNet< -0.001)throw Error('Υπέρβαση συμβατικής αξίας.');
-  initialExact+=Number(it.initialNet);netExact+=x.remainingNet;
-  it.baseRemainingNet=x.remainingNet;it.baseRemainingUnits=x.remainingUnits;
-  it.excelRemainingNetProvided=true;it.excelRemainingUnitsProvided=true;
+  if(x.originalNet<-.011||x.optionNet<-.011)throw Error('Υπέρβαση ποσότητας ή αξίας στο είδος: '+it.description);
+  initialExact+=Number(it.initialNet);originalNet+=x.originalNet;
+  allocated+=Number(it.optionQty||0)*Number(it.unitPrice||0);
+  const opt=l.receipts.filter(r=>r.itemId===it.id&&r.bucket==='option');optionUsed+=opt.reduce((n,r)=>n+Number(r.netValue||0),0);
+  it.baseRemainingNet=x.remainingNet;it.baseRemainingUnits=x.remainingUnits;it.excelRemainingNetProvided=true;it.excelRemainingUnitsProvided=true;
  }
- const vatRate=Number(l.vat??24)/100;
- // Εξωτερική εμφάνιση: δύο δεκαδικά. Εσωτερικά κρατάμε την ακρίβεια των τιμών μονάδας.
- l.summary={initialNet:cents(initialExact)/100,remainingNet:cents(netExact)/100,
-  remainingVat:cents(netExact*vatRate)/100,
-  remainingWithVat:cents(netExact*(1+vatRate))/100,updatedAt:new Date().toISOString()};
+ const vat=Number(l.vat??contract?.vat??24)/100,budgetGross=optionBudgetGross(contract),budgetNet=budgetGross/(1+vat);
+ if(allocated>budgetNet+.011||optionUsed>budgetNet+.011)throw Error('Η προαίρεση υπερβαίνει το εγκεκριμένο ποσό της σύμβασης.');
+ const totalNet=originalNet+budgetNet-optionUsed;
+ l.summary={initialNet:cents(initialExact)/100,originalRemainingNet:cents(originalNet)/100,
+  originalRemainingWithVat:cents(originalNet*(1+vat))/100,
+  optionAmountGross:budgetGross,optionAllocatedNet:cents(allocated)/100,optionReceivedNet:cents(optionUsed)/100,
+  optionRemainingWithVat:cents((budgetNet-optionUsed)*(1+vat))/100,
+  includesOption:true,remainingNet:cents(totalNet)/100,remainingVat:cents(totalNet*vat)/100,
+  remainingWithVat:cents(totalNet*(1+vat))/100,updatedAt:new Date().toISOString()};
 }
 async function activateAppMode(){
  if(busy)return;busy=true;const cid=currentId;
@@ -1012,16 +1108,37 @@ async function activateAppMode(){
   if(!(Number(c.contractBudget)>0)||Math.abs(gross-cents(c.contractBudget))>2)throw Error('Η αρχική αξία Excel δεν συμφωνεί με τον προϋπολογισμό της σύμβασης.');
   const oldTotal=candidate.summary.remainingWithVat;
   candidate.entryMode='app';summarizeApp(candidate);
-  if(cents(candidate.summary.remainingWithVat)!==cents(oldTotal))throw Error('Το ιστορικό δεν συμφωνεί με το συνολικό υπόλοιπο Excel.');
+  if(cents(candidate.summary.originalRemainingWithVat)!==cents(oldTotal))throw Error('Το ιστορικό δεν συμφωνεί με το συνολικό υπόλοιπο Excel.');
   if(!confirm('Ενεργοποίηση καταχωρίσεων; '+candidate.items.length+' είδη, '+candidate.receipts.length+' παλαιές παραλαβές. Υπόλοιπο με ΦΠΑ: '+euro(candidate.summary.remainingWithVat)+' . Μετά την ενεργοποίηση το Excel δεν επανεισάγεται.'))return;
   if(currentId!==cid)throw Error('Άλλαξε η επιλεγμένη σύμβαση.');
   await writeJson('paralaves-backup-'+cid+'-'+Date.now()+'.json',expected);
   candidate.migratedAt=new Date().toISOString();await persistAppLedger(candidate,expected);render();setExcelAudit('','');setStatus('Η εισαγωγή ολοκληρώθηκε. Καταχώρισε τις νέες παραλαβές στην εφαρμογή.','ok');
  }catch(e){setStatus('ΔΕΝ ΕΓΙΝΕ ΕΝΕΡΓΟΠΟΙΗΣΗ: '+e.message,'err');}finally{busy=false;if(getLedger(false)?.entryMode==='app')previewAppReceipt();}
 }
-function draftAppReceipt(){const l=getLedger(false),it=l?.items.find(x=>x.id===el('appItem').value);if(!l||!it||l.entryMode!=='app')throw Error('Δεν έχει ενεργοποιηθεί η σύμβαση.');const qs=el('appQty').value.trim(),ms=el('appMoney').value.trim();if(Boolean(qs)===Boolean(ms))throw Error('Συμπλήρωσε μόνο ποσότητα ή χρηματική αξία.');const mode=qs?'units':'value',a=strictAmount(qs||ms);if(!(a>0))throw Error('Μη έγκυρο ποσό ή ποσότητα.');if(mode==='value'&&Math.abs(a*100-Math.round(a*100))>1e-6)throw Error('Η χρηματική αξία πρέπει να έχει έως 2 δεκαδικά.');const net=cents(mode==='units'?a*it.unitPrice:a)/100,x=computeLine(it,l);if(!(net>0)||cents(net)>cents(x.remainingNet))throw Error('Η παραλαβή υπερβαίνει το υπόλοιπο ή είναι μηδενική.');if(mode==='units'&&x.remainingUnits!==null&&a>x.remainingUnits+1e-9)throw Error('Υπέρβαση ποσότητας.');if(mode==='units'&&x.remainingUnits===null){const used=(l.receipts||[]).filter(r=>r.itemId===it.id&&r.mode==='units').reduce((s,r)=>s+Number(r.units),0);if(a+used>it.initialQty+1e-9)throw Error('Υπέρβαση γνωστής συμβατικής ποσότητας.');}return {id:uid(),itemId:it.id,mode,units:mode==='units'?a:0,netValue:net,date:el('appDate').value,note:el('appNote').value.trim(),source:'app',createdAt:new Date().toISOString()};}
-function previewAppReceipt(){const l=getLedger(false),it=l?.items.find(x=>x.id===el('appItem').value);if(!it)return;const x=computeLine(it,l);el('appItemInfo').textContent='Τιμή μονάδας: '+it.unitPrice.toLocaleString('el-GR',{maximumFractionDigits:8})+' € / '+it.unit+' · Υπόλοιπο: '+euro(x.remainingNet)+(x.remainingUnits===null?' · Ποσότητα μη τεκμηριωμένη λόγω χρηματικών παραλαβών':' · '+x.remainingUnits.toLocaleString('el-GR')+' '+it.unit);try{const r=draftAppReceipt();el('appPreview').textContent=(r.mode==='units'?'ΠΟΣΟΤΗΤΑ':'ΧΡΗΜΑΤΙΚΗ ΑΞΙΑ')+' — '+euro(r.netValue)+' χωρίς ΦΠΑ · '+euro(r.netValue*(1+l.vat/100))+' με ΦΠΑ';el('appSubmit').disabled=!r.date||busy;}catch(e){el('appPreview').textContent=e.message;el('appSubmit').disabled=true;}}
-async function commitAppReceipt(){if(busy)return;busy=true;const cid=currentId;try{const r=draftAppReceipt();if(!r.date)throw Error('Επίλεξε ημερομηνία.');const latest=await readJson(PAR_FILE),old=latest?.contracts?.find(x=>x.contractId===cid);if(!old||old.entryMode!=='app')throw Error('Δεν βρέθηκε ενεργή καταχώριση.');const local=getLedger(false);if(currentId!==cid||JSON.stringify(old.receipts)!==JSON.stringify(local.receipts))throw Error('Τα δεδομένα άλλαξαν. Ανανέωσε τη σελίδα.');const duplicate=old.receipts.some(z=>z.itemId===r.itemId&&z.date===r.date&&z.mode===r.mode&&Number(z.units)===r.units&&cents(z.netValue)===cents(r.netValue)&&String(z.note||'')===r.note);if(duplicate&&!confirm('Βρέθηκε ίδια παραλαβή. Είναι πράγματι διαφορετική εγγραφή;'))return;const candidate=JSON.parse(JSON.stringify(old));candidate.receipts.push(r);summarizeApp(candidate);await persistAppLedger(candidate,old);el('appQty').value='';el('appMoney').value='';el('appNote').value='';render();setStatus('Η παραλαβή αποθηκεύτηκε στο OneDrive.','ok');}catch(e){setStatus('ΔΕΝ ΑΠΟΘΗΚΕΥΤΗΚΕ: '+e.message,'err');}finally{busy=false;previewAppReceipt();}}
+function draftAppReceipt(){
+ const l=getLedger(false),it=l?.items.find(x=>x.id===el('appItem').value);
+ if(!l||!it||l.entryMode!=='app')throw Error('Δεν έχει ενεργοποιηθεί η σύμβαση.');
+ const qs=el('appQty').value.trim(),ms=el('appMoney').value.trim();
+ if(Boolean(qs)===Boolean(ms))throw Error('Συμπλήρωσε μόνο ποσότητα ή χρηματική αξία.');
+ const mode=qs?'units':'value',bucket=el('appBucket').value,a=strictAmount(qs||ms);
+ if(!(a>0))throw Error('Μη έγκυρο ποσό ή ποσότητα.');
+ if(mode==='value'&&Math.abs(a*100-Math.round(a*100))>1e-6)throw Error('Η χρηματική αξία πρέπει να έχει έως 2 δεκαδικά.');
+ const net=cents(mode==='units'?a*it.unitPrice:a)/100,x=computeLine(it,l);
+ const remaining=bucket==='option'?x.optionNet:x.originalNet;
+ const remainingQty=bucket==='option'?x.optionUnits:x.originalUnits;
+ if(!(net>0)||net>remaining+.001)throw Error('Η παραλαβή υπερβαίνει το υπόλοιπο του επιλεγμένου σκέλους.');
+ if(bucket==='option'&&!(Number(it.optionQty)>0))throw Error('Δεν έχει καταχωριστεί πρόσθετη ποσότητα προαίρεσης για το είδος.');
+ if(mode==='units'&&remainingQty!==null&&a>remainingQty+1e-9)throw Error('Υπέρβαση ποσότητας στο επιλεγμένο σκέλος.');
+ if(mode==='units'&&remainingQty===null){const used=l.receipts.filter(r=>r.itemId===it.id&&r.mode==='units'&&(bucket==='option'?r.bucket==='option':r.bucket!=='option')).reduce((s,r)=>s+Number(r.units||0),0);if(a+used>Number(bucket==='option'?it.optionQty:it.initialQty)+1e-9)throw Error('Υπέρβαση διαθέσιμης ποσότητας.');}
+ return {id:uid(),itemId:it.id,bucket,mode,units:mode==='units'?a:0,netValue:net,date:el('appDate').value,note:el('appNote').value.trim(),source:'app',createdAt:new Date().toISOString()};
+}
+function previewAppReceipt(){const l=getLedger(false),it=l?.items.find(x=>x.id===el('appItem').value);if(!it)return;
+ const x=computeLine(it,l),bucket=el('appBucket').value;
+ const remaining=bucket==='option'?x.optionNet:x.originalNet,units=bucket==='option'?x.optionUnits:x.originalUnits;
+ el('appItemInfo').textContent='Τιμή: '+Number(it.unitPrice).toLocaleString('el-GR',{maximumFractionDigits:8})+' € / '+it.unit+' · Υπόλοιπο '+(bucket==='option'?'ΠΡΟΑΙΡΕΣΗΣ':'ΑΡΧΙΚΗΣ')+': '+euro(remaining)+(units===null?' · Μη τεκμηριωμένη διαθέσιμη ποσότητα':' · '+units.toLocaleString('el-GR')+' '+it.unit);
+ try{const r=draftAppReceipt();el('appPreview').textContent=(r.mode==='units'?'ΠΟΣΟΤΗΤΑ':'ΧΡΗΜΑΤΙΚΗ ΑΞΙΑ')+' — '+euro(r.netValue)+' χωρίς ΦΠΑ · '+euro(r.netValue*(1+l.vat/100))+' με ΦΠΑ';el('appSubmit').disabled=!r.date||busy;}catch(e){el('appPreview').textContent=e.message;el('appSubmit').disabled=true;}
+}
+async function commitAppReceipt(){if(busy)return;busy=true;const cid=currentId;try{const r=draftAppReceipt();if(!r.date)throw Error('Επίλεξε ημερομηνία.');const latest=await readJson(PAR_FILE),old=latest?.contracts?.find(x=>x.contractId===cid);if(!old||old.entryMode!=='app')throw Error('Δεν βρέθηκε ενεργή καταχώριση.');const local=getLedger(false);if(currentId!==cid||JSON.stringify(old.receipts)!==JSON.stringify(local.receipts))throw Error('Τα δεδομένα άλλαξαν. Ανανέωσε τη σελίδα.');const duplicate=old.receipts.some(z=>z.itemId===r.itemId&&z.date===r.date&&z.mode===r.mode&&Number(z.units)===r.units&&cents(z.netValue)===cents(r.netValue)&&String(z.note||'')===r.note);if(duplicate&&!confirm('Βρέθηκε ίδια παραλαβή. Είναι πράγματι διαφορετική εγγραφή;'))return;const candidate=JSON.parse(JSON.stringify(old));candidate.receipts.push(r);validateOptionLedger(candidate,getContract());summarizeApp(candidate,getContract());await persistAppLedger(candidate,old);el('appQty').value='';el('appMoney').value='';el('appNote').value='';render();setStatus('Η παραλαβή αποθηκεύτηκε στο OneDrive.','ok');}catch(e){setStatus('ΔΕΝ ΑΠΟΘΗΚΕΥΤΗΚΕ: '+e.message,'err');}finally{busy=false;previewAppReceipt();}}
 function exportAppExcel(){const l=getLedger(false);if(!l||l.entryMode!=='app')return;const wb=XLSX.utils.book_new();const data=[['Ημερομηνία','Είδος','Μ.Μ.','Τρόπος','Ποσότητα','Αξία χωρίς ΦΠΑ','Παρατήρηση']];for(const r of [...l.receipts].sort((a,b)=>a.date.localeCompare(b.date))){const it=l.items.find(i=>i.id===r.itemId);data.push([r.date,it?.description,it?.unit,r.mode==='units'?'ΠΟΣΟΤΗΤΑ':'ΧΡΗΜΑΤΙΚΗ ΑΞΙΑ',r.mode==='units'?r.units:null,r.netValue,r.note]);}XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),'ΠΑΡΑΛΑΒΕΣ');XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['Είδος','Αρχική ποσότητα','Τιμή μονάδας','Αρχική αξία','Υπόλοιπο αξίας'],...l.items.map(it=>[it.description,it.initialQty,it.unitPrice,it.initialNet,computeLine(it,l).remainingNet])]),'ΣΥΜΒΑΣΗ');XLSX.writeFile(wb,'ΠΑΡΑΛΑΒΕΣ-'+String(l.studyNo||'ΣΥΜΒΑΣΗ').replace(/[^\p{L}\p{N}-]/gu,'_')+'.xlsx');}
 
 /* Εισαγωγή από μελέτη .docx με υποχρεωτική επιβεβαίωση, μόνο χωρίς προηγούμενες παραλαβές. */
@@ -1230,7 +1347,7 @@ function openReceiptEditor(id){
  editingReceiptId=id;
  el('editReceiptItem').innerHTML=l.items.map(it=>`<option value="${esc(it.id)}">${esc(it.description)}</option>`).join('');
  el('editReceiptItem').value=r.itemId;el('editReceiptDate').value=r.date;
- el('editReceiptMode').value=r.mode==='units'?'units':'value';
+ el('editReceiptMode').value=r.mode==='units'?'units':'value';el('editReceiptBucket').value=r.bucket==='option'?'option':'base';
  el('editReceiptAmount').value=String(r.mode==='units'?r.units:r.netValue).replace('.',',');
  el('editReceiptNote').value=r.note||'';refreshReceiptEditor();el('editReceiptDialog').showModal();
 }
@@ -1239,7 +1356,7 @@ async function saveReceiptCorrection(){
  try{
   const l=getLedger(false),oldReceipt=l?.receipts.find(x=>x.id===id);
   if(!oldReceipt||l.entryMode!=='app')throw Error('Η παραλαβή δεν βρέθηκε.');
-  const itemId=el('editReceiptItem').value,mode=el('editReceiptMode').value,amount=strictAmount(el('editReceiptAmount').value),date=el('editReceiptDate').value;
+  const bucket=el('editReceiptBucket').value,itemId=el('editReceiptItem').value,mode=el('editReceiptMode').value,amount=strictAmount(el('editReceiptAmount').value),date=el('editReceiptDate').value;
   if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!(amount>0))throw Error('Συμπλήρωσε σωστή ημερομηνία και θετική ποσότητα/αξία.');
   const item=l.items.find(it=>it.id===itemId);if(!item)throw Error('Μη έγκυρο είδος.');
   if(mode==='value'&&Math.abs(amount*100-Math.round(amount*100))>1e-6)throw Error('Τα ποσά έχουν έως δύο δεκαδικά.');
@@ -1250,13 +1367,8 @@ async function saveReceiptCorrection(){
   const candidate=JSON.parse(JSON.stringify(stored)),ix=candidate.receipts.findIndex(r=>r.id===id);
   if(ix<0)throw Error('Η εγγραφή δεν υπάρχει πλέον.');
   const before=JSON.parse(JSON.stringify(candidate.receipts[ix]));
-  candidate.receipts[ix]={...before,itemId,date,mode,units:mode==='units'?amount:0,netValue:net,note:el('editReceiptNote').value.trim(),editedAt:new Date().toISOString()};
-  for(const it of candidate.items){
-   const rs=candidate.receipts.filter(r=>r.itemId===it.id),value=rs.reduce((sum,r)=>sum+Number(r.netValue),0);
-   if(value>Number(it.initialNet)+.001)throw Error('Υπέρβαση αξίας στο είδος: '+it.description);
-   const qty=rs.filter(r=>r.mode==='units').reduce((sum,r)=>sum+Number(r.units),0);
-   if(qty>Number(it.initialQty)+1e-8)throw Error('Υπέρβαση ποσότητας στο είδος: '+it.description);
-  }
+  candidate.receipts[ix]={...before,itemId,date,bucket,mode,units:mode==='units'?amount:0,netValue:net,note:el('editReceiptNote').value.trim(),editedAt:new Date().toISOString()};
+  validateOptionLedger(candidate,getContract());
   candidate.correctionHistory=Array.isArray(candidate.correctionHistory)?candidate.correctionHistory:[];
   candidate.correctionHistory.push({receiptId:id,at:new Date().toISOString(),before,after:JSON.parse(JSON.stringify(candidate.receipts[ix]))});
   summarizeApp(candidate);
