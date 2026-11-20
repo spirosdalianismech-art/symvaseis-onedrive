@@ -110,7 +110,7 @@ html,body{width:100%;max-width:none}
 </head>
 <body>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v27 — ΚΑΤΑΧΩΡΙΣΗ ΣΤΗΝ ΕΦΑΡΜΟΓΗ ΚΑΙ ΕΙΣΑΓΩΓΗ EXCEL</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v28 — ΟΛΑ ΤΑ ΥΛΙΚΑ ΚΑΙ ΠΡΟΑΙΡΕΣΗ ΣΕ ΕΝΑΝ ΠΙΝΑΚΑ</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -219,7 +219,7 @@ html,body{width:100%;max-width:none}
       <button class="green" onclick="saveOptionAllocations()">💾 ΑΠΟΘΗΚΕΥΣΗ ΠΟΣΟΤΗΤΩΝ ΠΡΟΑΙΡΕΣΗΣ</button>
     </div>
   </section>
-  <section class="panel no-print hidden" id="entryPanel">
+  <section class="panel no-print hidden" id="entryPanel" style="display:none!important">
     <div class="panel-title">ΚΑΤΑΧΩΡΙΣΗ ΠΑΡΑΛΑΒΗΣ ΑΠΕΥΘΕΙΑΣ ΣΤΗΝ ΕΦΑΡΜΟΓΗ</div>
     <div style="padding:15px;display:grid;gap:10px">
       <label>Είδος σύμβασης <select id="appItem" onchange="previewAppReceipt()" style="width:100%"></select></label>
@@ -236,21 +236,23 @@ html,body{width:100%;max-width:none}
   </section>
   <div class="no-print hidden" id="receiptActions" style="display:flex;flex-wrap:wrap;gap:10px;margin:0 0 16px">
     <button class="purple" id="toggleReportsButton" type="button" aria-expanded="false" aria-controls="reportsArea" onclick="toggleReceiptsArea('reports')">▤ ΣΥΓΚΕΝΤΡΩΤΙΚΟΣ ΠΙΝΑΚΑΣ & ΙΣΤΟΡΙΚΟ</button>
-    <button class="green" id="toggleBulkButton" type="button" aria-expanded="false" aria-controls="bulkReceiptPanel" onclick="toggleReceiptsArea('bulk')">＋ ΚΑΤΑΧΩΡΙΣΗ ΠΑΡΑΛΑΒΩΝ ΑΝΑ ΥΛΙΚΟ</button>
+    
     <button class="gray" type="button" onclick="exportAppExcel()" id="bulkExportButton">ΕΞΑΓΩΓΗ EXCEL</button>
   </div>
   <section class="panel no-print hidden" id="bulkReceiptPanel">
-    <div class="panel-title">ΚΑΤΑΧΩΡΙΣΗ ΠΑΡΑΛΑΒΩΝ — ΟΛΑ ΤΑ ΥΛΙΚΑ ΜΑΖΙ</div>
+    <div class="panel-title">ΚΑΤΑΧΩΡΙΣΗ ΠΑΡΑΛΑΒΗΣ — ΟΛΑ ΤΑ ΥΛΙΚΑ ΚΑΙ ΠΡΟΑΙΡΕΣΗ</div>
     <div style="padding:14px">
-      <p class="muted">Συμπλήρωσε μόνο ποσότητα ή χρηματική αξία χωρίς ΦΠΑ δίπλα σε όσα είδη παρέλαβες. Η αρχική σύμβαση και η εγκεκριμένη προαίρεση υπολογίζονται μαζί. Τα κενά είδη παραλείπονται.</p>
+      <p class="muted">Συμπλήρωσε μόνο ποσότητα ή χρηματική αξία χωρίς ΦΠΑ δίπλα σε όσα είδη παρέλαβες. Η αρχική σύμβαση και η εγκεκριμένη προαίρεση υπολογίζονται μαζί. Τα κενά είδη παραλείπονται. Για προαίρεση συμπλήρωσε την πρόσθετη ποσότητα στην αντίστοιχη στήλη και αποθήκευσέ την ξεχωριστά πριν καταχωρίσεις παραλαβή. Η προαίρεση πρέπει να έχει ήδη εγκριθεί και να έχει καταχωριστεί στο ποσό της σύμβασης.</p>
       <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-bottom:12px">
         <label>ΗΜΕΡΟΜΗΝΙΑ ΠΑΡΑΛΑΒΗΣ <input type="date" id="bulkDate" style="display:block;margin-top:5px" onchange="previewBulkReceipt()"></label>
         <label style="flex:1;min-width:240px">ΑΡ. ΠΡΩΤΟΚΟΛΛΟΥ / ΠΑΡΑΤΗΡΗΣΗ <input id="bulkNote" maxlength="300" style="display:block;width:100%;margin-top:5px"></label>
       </div>
       <div class="table-wrap"><table id="bulkReceiptTable" style="min-width:1100px">
-        <thead><tr><th>Α/Α</th><th style="min-width:480px">ΥΛΙΚΟ / ΕΙΔΟΣ</th><th>Μ.Μ.</th><th class="num">ΤΙΜΗ ΜΟΝ.</th><th class="num">ΣΥΝ. ΠΟΣΟΤΗΤΑ</th><th class="num">ΥΠΟΛΟΙΠΟ ΧΩΡΙΣ ΦΠΑ</th><th>ΠΟΣΟΤΗΤΑ ΠΑΡΑΛΑΒΗΣ</th><th>ΑΞΙΑ ΧΩΡΙΣ ΦΠΑ (€)</th></tr></thead>
+        <thead><tr><th>Α/Α</th><th style="min-width:480px">ΥΛΙΚΟ / ΕΙΔΟΣ</th><th>Μ.Μ.</th><th class="num">ΤΙΜΗ ΜΟΝ.</th><th class="num">ΑΡΧΙΚΗ ΠΟΣ.</th><th class="num">ΠΡΟΑΙΡΕΣΗ (+)</th><th class="num">ΣΥΝ. ΠΟΣ.</th><th class="num">ΥΠΟΛΟΙΠΟ ΧΩΡΙΣ ΦΠΑ</th><th>ΠΟΣΟΤΗΤΑ ΠΑΡΑΛΑΒΗΣ</th><th>ΑΞΙΑ ΧΩΡΙΣ ΦΠΑ (€)</th></tr></thead>
         <tbody id="bulkReceiptItems"></tbody>
       </table></div>
+      <div id="inlineOptionInfo" role="status" style="white-space:pre-wrap;margin:12px 0;font-weight:600"></div>
+      <button class="orange" type="button" id="inlineOptionSave" onclick="saveOptionAllocations()">💾 ΑΠΟΘΗΚΕΥΣΗ ΠΡΟΑΙΡΕΣΗΣ</button>
       <div id="bulkPreview" role="status" style="white-space:pre-wrap;margin:12px 0;font-weight:600"></div>
       <button class="green" id="bulkSaveButton" type="button" onclick="saveBulkReceipts()" disabled>💾 ΑΠΟΘΗΚΕΥΣΗ ΠΑΡΑΛΑΒΩΝ</button>
     </div>
@@ -1168,9 +1170,11 @@ function renderOptionAllocations(){
 }
 function readOptionDraft(){
  const l=getLedger(false);if(!l)return [];
- return [...document.querySelectorAll('#optionItemsBody .option-qty')].map(x=>{
+ const bulk=[...document.querySelectorAll('#bulkReceiptItems .inline-option-qty')];
+ const inputs=bulk.length?bulk:[...document.querySelectorAll('#optionItemsBody .option-qty')];
+ return inputs.map(x=>{
  const raw=x.value.trim()||'0';const cleaned=/^\d{1,3}(?:\.\d{3})+$/.test(raw)?raw.replace(/\./g,''):raw;const qty=strictAmount(cleaned);if(!Number.isFinite(qty)||qty<0)throw Error('Μη έγκυρη πρόσθετη ποσότητα.');
- return {id:x.dataset.itemId,qty};});
+ return {id:x.dataset.itemId||x.closest('tr')?.dataset.itemId,qty};});
 }
 function previewOptionAllocations(){
  try{const l=getLedger(false),draft=readOptionDraft(),net=draft.reduce((s,d)=>s+d.qty*Number(l.items.find(it=>it.id===d.id)?.unitPrice||0),0),gross=net*(1+Number(l.vat??24)/100);
@@ -1204,36 +1208,44 @@ function toggleReceiptsArea(which){
 function updateReceiptAreas(){
  const l=getLedger(false),active=l?.entryMode==='app';
  if(receiptAreaContractId!==currentId){
-   receiptAreaContractId=currentId;reportsOpen=false;bulkOpen=false;el('bulkReceiptItems').innerHTML='';el('bulkDate').value='';el('bulkNote').value='';
+   receiptAreaContractId=currentId;reportsOpen=false;bulkOpen=true;el('bulkReceiptItems').innerHTML='';el('bulkDate').value='';el('bulkNote').value='';
  }
  const action=el('receiptActions');
  action.classList.toggle('hidden',!l);
  // inline flex must not override .hidden
  action.style.display=l?'flex':'none';
  el('reportsArea').classList.toggle('hidden',!reportsOpen);
- el('bulkReceiptPanel').classList.toggle('hidden',!active||!bulkOpen);
+ bulkOpen=true;el('bulkReceiptPanel').classList.toggle('hidden',!active);
  el('toggleReportsButton').setAttribute('aria-expanded',String(reportsOpen));
- el('toggleBulkButton').setAttribute('aria-expanded',String(active&&bulkOpen));
+
  el('toggleReportsButton').textContent=reportsOpen?'✕ ΚΛΕΙΣΙΜΟ ΠΙΝΑΚΩΝ':'▤ ΣΥΓΚΕΝΤΡΩΤΙΚΟΣ ΠΙΝΑΚΑΣ & ΙΣΤΟΡΙΚΟ';
- el('toggleBulkButton').textContent=bulkOpen?'✕ ΚΛΕΙΣΙΜΟ ΚΑΤΑΧΩΡΙΣΗΣ':'＋ ΚΑΤΑΧΩΡΙΣΗ ΠΑΡΑΛΑΒΩΝ ΑΝΑ ΥΛΙΚΟ';
- el('toggleBulkButton').disabled=!active;
+
+
  el('bulkExportButton').disabled=!active;
- if(active&&bulkOpen)renderBulkReceiptItems();
+ if(active)renderBulkReceiptItems();
 }
 function renderBulkReceiptItems(){
  const l=getLedger(false);if(!l||l.entryMode!=='app')return;
  el('bulkDate').value=el('bulkDate').value||localDateISO(new Date());
  const tbody=el('bulkReceiptItems');
  // Keep an unfinished draft if the page renders the same contract.
- const old=new Map([...tbody.querySelectorAll('tr[data-item-id]')].map(row=>[row.dataset.itemId,{qty:row.querySelector('.bulk-qty')?.value||'',money:row.querySelector('.bulk-money')?.value||''}]));
+ const old=new Map([...tbody.querySelectorAll('tr[data-item-id]')].map(row=>[row.dataset.itemId,{qty:row.querySelector('.bulk-qty')?.value||'',money:row.querySelector('.bulk-money')?.value||'',option:row.querySelector('.inline-option-qty')?.value}]));
  let currentGroup=null;
  tbody.innerHTML=l.items.map((it,i)=>{
-   const group=itemGroup(it),header=hasGroups(l.items)&&group!==currentGroup?`<tr class="bulk-group-heading"><td colspan="8" style="background:#e9e1f6;color:#39216d;font-weight:700;padding:12px 14px">${esc(group)}</td></tr>`:'';
+   const group=itemGroup(it),header=hasGroups(l.items)&&group!==currentGroup?`<tr class="bulk-group-heading"><td colspan="10" style="background:#e9e1f6;color:#39216d;font-weight:700;padding:12px 14px">${esc(group)}</td></tr>`:'';
    currentGroup=group;
    const x=computeLine(it,l),saved=old.get(it.id)||{qty:'',money:''};
-   return header+`<tr data-item-id="${esc(it.id)}"><td>${i+1}</td><td>${esc(it.description)}</td><td>${esc(it.unit||'')}</td><td class="num">${euro(it.unitPrice)}</td><td class="num">${Number(x.totalQty||0).toLocaleString('el-GR',{maximumFractionDigits:6})}</td><td class="num"><strong>${euro(x.remainingNet)}</strong></td><td><input class="bulk-qty" inputmode="decimal" value="${esc(saved.qty)}" placeholder="Ποσότητα" style="width:155px" oninput="this.closest('tr').querySelector('.bulk-money').value='';previewBulkReceipt()"></td><td><input class="bulk-money" inputmode="decimal" value="${esc(saved.money)}" placeholder="Αξία €" style="width:155px" oninput="this.closest('tr').querySelector('.bulk-qty').value='';previewBulkReceipt()"></td></tr>`;
+   return header+`<tr data-item-id="${esc(it.id)}"><td>${i+1}</td><td>${esc(it.description)}</td><td>${esc(it.unit||'')}</td><td class="num">${euro(it.unitPrice)}</td><td class="num">${Number(it.initialQty||0).toLocaleString('el-GR',{maximumFractionDigits:6})}</td><td><input class="inline-option-qty" inputmode="decimal" value="${esc(saved.option===undefined?String(Number(it.optionQty||0)).replace('.',','):saved.option)}" style="width:110px" aria-label="Πρόσθετη ποσότητα προαίρεσης" oninput="previewInlineOption()"></td><td class="num">${Number(x.totalQty||0).toLocaleString('el-GR',{maximumFractionDigits:6})}</td><td class="num"><strong>${euro(x.remainingNet)}</strong></td><td><input class="bulk-qty" inputmode="decimal" value="${esc(saved.qty)}" placeholder="Ποσότητα" style="width:155px" oninput="this.closest('tr').querySelector('.bulk-money').value='';previewBulkReceipt()"></td><td><input class="bulk-money" inputmode="decimal" value="${esc(saved.money)}" placeholder="Αξία €" style="width:155px" oninput="this.closest('tr').querySelector('.bulk-qty').value='';previewBulkReceipt()"></td></tr>`;
  }).join('');
- previewBulkReceipt();
+ previewInlineOption();previewBulkReceipt();
+}
+function previewInlineOption(){
+ const out=el('inlineOptionInfo'),l=getLedger(false);if(!out||!l)return;
+ try{const rows=[...document.querySelectorAll('#bulkReceiptItems .inline-option-qty')];
+ const entries=rows.map(x=>{const v=x.value.trim()||'0';const q=strictAmount(v);if(!Number.isFinite(q)||q<0)throw Error('Η ποσότητα προαίρεσης δεν είναι έγκυρη.');return {id:x.closest('tr').dataset.itemId,qty:q};});
+ const total=entries.reduce((sum,e)=>sum+e.qty*Number(l.items.find(it=>it.id===e.id)?.unitPrice||0),0);const gross=total*(1+Number(l.vat??24)/100);const limit=optionBudgetGross();
+ out.style.color=gross>limit+.02?'#991b1b':'#166534';out.textContent='ΕΓΚΕΚΡΙΜΕΝΟ ΟΡΙΟ ΠΡΟΑΙΡΕΣΗΣ (ΜΕ ΦΠΑ): '+euro(limit)+' · ΚΑΤΑΝΟΜΗ: '+euro(gross)+(gross>limit+.02?' — ΥΠΕΡΒΑΣΗ, ΔΕΝ ΕΠΙΤΡΕΠΕΤΑΙ ΑΠΟΘΗΚΕΥΣΗ':'');
+ }catch(e){out.style.color='#991b1b';out.textContent=e.message;}
 }
 function draftBulkReceipts(){
  const l=getLedger(false);if(!l||l.entryMode!=='app')throw Error('Δεν έχει ενεργοποιηθεί η σύμβαση.');
@@ -1289,7 +1301,7 @@ let receiptSetupExpanded=false;
 function toggleReceiptSetup(){receiptSetupExpanded=!receiptSetupExpanded;renderEntryMode();}
 function renderEntryMode(){
  const l=getLedger(false), active=l?.entryMode==='app';
- el('migrationPanel').classList.toggle('hidden',!l||active||!receiptSetupExpanded);el('entryPanel').classList.toggle('hidden',!active);el('setupHint').classList.toggle('hidden',!l||active);renderOptionAllocations();
+ el('migrationPanel').classList.toggle('hidden',!l||active||!receiptSetupExpanded);el('entryPanel').classList.add('hidden');el('setupHint').classList.toggle('hidden',!l||active);renderOptionAllocations();
  el('sourceSettings').classList.toggle('hidden',!!active);el('excelSyncButton').disabled=!!active;el('saveButton').disabled=!!active;el('simpleExcelSync').disabled=!!active;el('simpleActivate').style.display=active?'none':'';el('simpleReceiptFile').disabled=!active;el('simpleReceiptCommit').disabled=!active||!simpleReceiptDraft;el('simpleReceiptPanel').style.display=l?'':'none';
  el('modeNote').textContent=active?'ΚΑΤΑΧΩΡΙΣΗ ΣΤΗΝ ΕΦΑΡΜΟΓΗ — Το Excel διατηρείται ως αρχείο. Οι νέες παραλαβές αποθηκεύονται στο OneDrive.':'Εισαγωγή από Excel — ενεργοποίησε τις καταχωρίσεις μετά τον έλεγχο.';
  if(reviewContractId!==currentId){receiptSetupExpanded=false;el('migrationPanel').classList.add('hidden');simpleReceiptReset();el('simpleReceiptDate').value=localDateISO(new Date());reviewContractId=currentId;el('appQty').value='';el('appMoney').value='';el('appNote').value='';}
