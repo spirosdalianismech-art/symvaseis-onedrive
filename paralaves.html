@@ -110,7 +110,7 @@ html,body{width:100%;max-width:none}
 </head>
 <body>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v28 — ΟΛΑ ΤΑ ΥΛΙΚΑ ΚΑΙ ΠΡΟΑΙΡΕΣΗ ΣΕ ΕΝΑΝ ΠΙΝΑΚΑ</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v29 — ΑΝΟΙΓΜΑ / ΚΛΕΙΣΙΜΟ ΚΑΤΑΧΩΡΙΣΗΣ</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -235,6 +235,7 @@ html,body{width:100%;max-width:none}
     </div>
   </section>
   <div class="no-print hidden" id="receiptActions" style="display:flex;flex-wrap:wrap;gap:10px;margin:0 0 16px">
+    <button class="green" id="toggleEntryButton" type="button" aria-expanded="false" aria-controls="simpleReceiptPanel bulkReceiptPanel" onclick="toggleReceiptEntry()">+ ΑΝΟΙΓΜΑ ΚΑΤΑΧΩΡΙΣΗΣ</button>
     <button class="purple" id="toggleReportsButton" type="button" aria-expanded="false" aria-controls="reportsArea" onclick="toggleReceiptsArea('reports')">▤ ΣΥΓΚΕΝΤΡΩΤΙΚΟΣ ΠΙΝΑΚΑΣ & ΙΣΤΟΡΙΚΟ</button>
     
     <button class="gray" type="button" onclick="exportAppExcel()" id="bulkExportButton">ΕΞΑΓΩΓΗ EXCEL</button>
@@ -1196,6 +1197,12 @@ async function saveOptionAllocations(){
 let receiptAreaContractId=null;
 let reportsOpen=false;
 let bulkOpen=false;
+let entryOpen=false;
+function toggleReceiptEntry(){
+ entryOpen=!entryOpen;
+ updateReceiptAreas();
+ renderEntryMode();
+}
 function toggleReceiptsArea(which){
  const l=getLedger(false);
  if(which==='bulk' && l?.entryMode!=='app'){
@@ -1208,21 +1215,25 @@ function toggleReceiptsArea(which){
 function updateReceiptAreas(){
  const l=getLedger(false),active=l?.entryMode==='app';
  if(receiptAreaContractId!==currentId){
-   receiptAreaContractId=currentId;reportsOpen=false;bulkOpen=true;el('bulkReceiptItems').innerHTML='';el('bulkDate').value='';el('bulkNote').value='';
+   receiptAreaContractId=currentId;reportsOpen=false;bulkOpen=false;entryOpen=false;el('bulkReceiptItems').innerHTML='';el('bulkDate').value='';el('bulkNote').value='';
  }
  const action=el('receiptActions');
  action.classList.toggle('hidden',!l);
  // inline flex must not override .hidden
  action.style.display=l?'flex':'none';
  el('reportsArea').classList.toggle('hidden',!reportsOpen);
- bulkOpen=true;el('bulkReceiptPanel').classList.toggle('hidden',!active);
+ bulkOpen=entryOpen;el('bulkReceiptPanel').classList.toggle('hidden',!active||!entryOpen);
+ const tb=el('toggleEntryButton');
+ tb.setAttribute('aria-expanded',String(entryOpen));
+ tb.textContent=entryOpen?'✕ ΚΛΕΙΣΙΜΟ ΚΑΤΑΧΩΡΙΣΗΣ':'+ ΑΝΟΙΓΜΑ ΚΑΤΑΧΩΡΙΣΗΣ';
+ tb.className=entryOpen?'orange':'green';
  el('toggleReportsButton').setAttribute('aria-expanded',String(reportsOpen));
 
  el('toggleReportsButton').textContent=reportsOpen?'✕ ΚΛΕΙΣΙΜΟ ΠΙΝΑΚΩΝ':'▤ ΣΥΓΚΕΝΤΡΩΤΙΚΟΣ ΠΙΝΑΚΑΣ & ΙΣΤΟΡΙΚΟ';
 
 
  el('bulkExportButton').disabled=!active;
- if(active)renderBulkReceiptItems();
+ if(active && entryOpen)renderBulkReceiptItems();
 }
 function renderBulkReceiptItems(){
  const l=getLedger(false);if(!l||l.entryMode!=='app')return;
@@ -1302,7 +1313,7 @@ function toggleReceiptSetup(){receiptSetupExpanded=!receiptSetupExpanded;renderE
 function renderEntryMode(){
  const l=getLedger(false), active=l?.entryMode==='app';
  el('migrationPanel').classList.toggle('hidden',!l||active||!receiptSetupExpanded);el('entryPanel').classList.add('hidden');el('setupHint').classList.toggle('hidden',!l||active);renderOptionAllocations();
- el('sourceSettings').classList.toggle('hidden',!!active);el('excelSyncButton').disabled=!!active;el('saveButton').disabled=!!active;el('simpleExcelSync').disabled=!!active;el('simpleActivate').style.display=active?'none':'';el('simpleReceiptFile').disabled=!active;el('simpleReceiptCommit').disabled=!active||!simpleReceiptDraft;el('simpleReceiptPanel').style.display=l?'':'none';
+ el('sourceSettings').classList.toggle('hidden',!!active);el('excelSyncButton').disabled=!!active;el('saveButton').disabled=!!active;el('simpleExcelSync').disabled=!!active;el('simpleActivate').style.display=active?'none':'';el('simpleReceiptFile').disabled=!active;el('simpleReceiptCommit').disabled=!active||!simpleReceiptDraft;el('simpleReceiptPanel').style.display=l&&entryOpen?'':'none';
  el('modeNote').textContent=active?'ΚΑΤΑΧΩΡΙΣΗ ΣΤΗΝ ΕΦΑΡΜΟΓΗ — Το Excel διατηρείται ως αρχείο. Οι νέες παραλαβές αποθηκεύονται στο OneDrive.':'Εισαγωγή από Excel — ενεργοποίησε τις καταχωρίσεις μετά τον έλεγχο.';
  if(reviewContractId!==currentId){receiptSetupExpanded=false;el('migrationPanel').classList.add('hidden');simpleReceiptReset();el('simpleReceiptDate').value=localDateISO(new Date());reviewContractId=currentId;el('appQty').value='';el('appMoney').value='';el('appNote').value='';}
  if(active){const old=el('appItem').value;el('appItem').innerHTML=l.items.map(it=>`<option value="${esc(it.id)}">${esc(it.description)}</option>`).join('');if(l.items.some(it=>it.id===old))el('appItem').value=old;el('appDate').value=el('appDate').value||localDateISO(new Date());previewAppReceipt();}
