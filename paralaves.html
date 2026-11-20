@@ -110,7 +110,7 @@ html,body{width:100%;max-width:none}
 </head>
 <body>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v26 — ΑΠΛΟΠΟΙΗΜΕΝΗ ΕΙΣΑΓΩΓΗ ΠΑΡΑΛΑΒΩΝ</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v27 — ΚΑΤΑΧΩΡΙΣΗ ΣΤΗΝ ΕΦΑΡΜΟΓΗ ΚΑΙ ΕΙΣΑΓΩΓΗ EXCEL</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -147,12 +147,16 @@ html,body{width:100%;max-width:none}
   </section>
 
   <section class="panel no-print" id="simpleReceiptPanel">
-    <div class="panel-title">ΠΑΡΑΛΑΒΕΣ — ΕΝΗΜΕΡΩΣΗ Ή ΕΙΣΑΓΩΓΗ ΑΡΧΕΙΟΥ</div>
+    <div class="panel-title">ΠΑΡΑΛΑΒΕΣ — ΚΑΤΑΧΩΡΙΣΗ ΣΤΗΝ ΕΦΑΡΜΟΓΗ Ή ΕΙΣΑΓΩΓΗ ΑΡΧΕΙΟΥ</div>
     <div style="padding:16px;display:grid;gap:14px">
       <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
         <button class="green" type="button" id="simpleExcelSync" onclick="syncFromExcel(true)">↻ ΕΝΗΜΕΡΩΣΗ ΑΠΟ ΤΟ ΣΥΝΔΕΔΕΜΕΝΟ EXCEL</button>
         <span class="muted" style="font-size:13px">Διαβάζει το Excel της σύμβασης από το OneDrive.</span>
         <button class="blue" id="simpleActivate" type="button" onclick="activateAppMode()">ΕΝΕΡΓΟΠΟΙΗΣΗ ΚΑΤΑΧΩΡΙΣΗΣ ΑΠΟ EXCEL</button>
+      </div>
+      <div id="setupHint" style="border:1px solid #e9c86a;border-radius:7px;padding:12px;background:#fff9e9">
+        Για να καταχωρίσεις παραλαβές στην εφαρμογή πρέπει πρώτα να ενεργοποιηθεί μία φορά η βάση ειδών της σύμβασης.
+        <button type="button" class="blue" onclick="toggleReceiptSetup()" style="margin-left:8px">ΡΥΘΜΙΣΗ / ΕΝΕΡΓΟΠΟΙΗΣΗ ΣΥΜΒΑΣΗΣ</button>
       </div>
       <div style="border-top:1px solid #ddd;padding-top:12px">
         <strong>ΕΙΣΑΓΩΓΗ ΝΕΑΣ ΠΑΡΑΛΑΒΗΣ ΑΠΟ EXCEL</strong>
@@ -169,7 +173,7 @@ html,body{width:100%;max-width:none}
       </div>
     </div>
   </section>
-  <section class="panel no-print" id="migrationPanel" style="display:none!important">
+  <section class="panel no-print" id="migrationPanel">
     <div class="panel-title" style="font-size:18px">ΕΝΕΡΓΟΠΟΙΗΣΗ ΚΑΤΑΧΩΡΙΣΕΩΝ</div>
     <div style="padding:15px;display:grid;gap:10px">
       <div style="background:#eff6ff;border:1px solid #bfdbfe;padding:12px;border-radius:8px">
@@ -215,8 +219,8 @@ html,body{width:100%;max-width:none}
       <button class="green" onclick="saveOptionAllocations()">💾 ΑΠΟΘΗΚΕΥΣΗ ΠΟΣΟΤΗΤΩΝ ΠΡΟΑΙΡΕΣΗΣ</button>
     </div>
   </section>
-  <section class="panel no-print hidden" id="entryPanel" style="display:none!important">
-    <div class="panel-title">ΝΕΑ ΠΑΡΑΛΑΒΗ — ποσότητα Ή χρηματική αξία χωρίς ΦΠΑ</div>
+  <section class="panel no-print hidden" id="entryPanel">
+    <div class="panel-title">ΚΑΤΑΧΩΡΙΣΗ ΠΑΡΑΛΑΒΗΣ ΑΠΕΥΘΕΙΑΣ ΣΤΗΝ ΕΦΑΡΜΟΓΗ</div>
     <div style="padding:15px;display:grid;gap:10px">
       <label>Είδος σύμβασης <select id="appItem" onchange="previewAppReceipt()" style="width:100%"></select></label>
       <div id="appItemInfo" class="muted"></div>
@@ -230,12 +234,12 @@ html,body{width:100%;max-width:none}
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="appSubmit" class="green" onclick="commitAppReceipt()" disabled>+ ΚΑΤΑΧΩΡΙΣΗ ΠΑΡΑΛΑΒΗΣ</button><button class="gray" onclick="exportAppExcel()">ΕΞΑΓΩΓΗ EXCEL</button></div>
     </div>
   </section>
-  <div class="no-print hidden" id="receiptActions" style="display:none!important;flex-wrap:wrap;gap:10px;margin:0 0 16px">
+  <div class="no-print hidden" id="receiptActions" style="display:flex;flex-wrap:wrap;gap:10px;margin:0 0 16px">
     <button class="purple" id="toggleReportsButton" type="button" aria-expanded="false" aria-controls="reportsArea" onclick="toggleReceiptsArea('reports')">▤ ΣΥΓΚΕΝΤΡΩΤΙΚΟΣ ΠΙΝΑΚΑΣ & ΙΣΤΟΡΙΚΟ</button>
     <button class="green" id="toggleBulkButton" type="button" aria-expanded="false" aria-controls="bulkReceiptPanel" onclick="toggleReceiptsArea('bulk')">＋ ΚΑΤΑΧΩΡΙΣΗ ΠΑΡΑΛΑΒΩΝ ΑΝΑ ΥΛΙΚΟ</button>
     <button class="gray" type="button" onclick="exportAppExcel()" id="bulkExportButton">ΕΞΑΓΩΓΗ EXCEL</button>
   </div>
-  <section class="panel no-print hidden" id="bulkReceiptPanel" style="display:none!important">
+  <section class="panel no-print hidden" id="bulkReceiptPanel">
     <div class="panel-title">ΚΑΤΑΧΩΡΙΣΗ ΠΑΡΑΛΑΒΩΝ — ΟΛΑ ΤΑ ΥΛΙΚΑ ΜΑΖΙ</div>
     <div style="padding:14px">
       <p class="muted">Συμπλήρωσε μόνο ποσότητα ή χρηματική αξία χωρίς ΦΠΑ δίπλα σε όσα είδη παρέλαβες. Η αρχική σύμβαση και η εγκεκριμένη προαίρεση υπολογίζονται μαζί. Τα κενά είδη παραλείπονται.</p>
@@ -1281,12 +1285,14 @@ async function saveBulkReceipts(){
  }catch(e){setStatus('ΔΕΝ ΑΠΟΘΗΚΕΥΤΗΚΑΝ: '+e.message,'err');}
  finally{busy=false;previewBulkReceipt();}
 }
+let receiptSetupExpanded=false;
+function toggleReceiptSetup(){receiptSetupExpanded=!receiptSetupExpanded;renderEntryMode();}
 function renderEntryMode(){
  const l=getLedger(false), active=l?.entryMode==='app';
- el('migrationPanel').classList.toggle('hidden',!l||active);el('entryPanel').classList.toggle('hidden',!active);renderOptionAllocations();
- el('sourceSettings').classList.toggle('hidden',!!active);el('excelSyncButton').disabled=!!active;el('saveButton').disabled=!!active;el('simpleExcelSync').disabled=!!active;el('simpleActivate').style.display=active?'none':'';el('simpleReceiptFile').disabled=!active;el('simpleReceiptPanel').style.display=l?'':'none';
+ el('migrationPanel').classList.toggle('hidden',!l||active||!receiptSetupExpanded);el('entryPanel').classList.toggle('hidden',!active);el('setupHint').classList.toggle('hidden',!l||active);renderOptionAllocations();
+ el('sourceSettings').classList.toggle('hidden',!!active);el('excelSyncButton').disabled=!!active;el('saveButton').disabled=!!active;el('simpleExcelSync').disabled=!!active;el('simpleActivate').style.display=active?'none':'';el('simpleReceiptFile').disabled=!active;el('simpleReceiptCommit').disabled=!active||!simpleReceiptDraft;el('simpleReceiptPanel').style.display=l?'':'none';
  el('modeNote').textContent=active?'ΚΑΤΑΧΩΡΙΣΗ ΣΤΗΝ ΕΦΑΡΜΟΓΗ — Το Excel διατηρείται ως αρχείο. Οι νέες παραλαβές αποθηκεύονται στο OneDrive.':'Εισαγωγή από Excel — ενεργοποίησε τις καταχωρίσεις μετά τον έλεγχο.';
- if(reviewContractId!==currentId){simpleReceiptReset();el('simpleReceiptDate').value=localDateISO(new Date());reviewContractId=currentId;el('appQty').value='';el('appMoney').value='';el('appNote').value='';}
+ if(reviewContractId!==currentId){receiptSetupExpanded=false;el('migrationPanel').classList.add('hidden');simpleReceiptReset();el('simpleReceiptDate').value=localDateISO(new Date());reviewContractId=currentId;el('appQty').value='';el('appMoney').value='';el('appNote').value='';}
  if(active){const old=el('appItem').value;el('appItem').innerHTML=l.items.map(it=>`<option value="${esc(it.id)}">${esc(it.description)}</option>`).join('');if(l.items.some(it=>it.id===old))el('appItem').value=old;el('appDate').value=el('appDate').value||localDateISO(new Date());previewAppReceipt();}
 }
 async function persistAppLedger(candidate,expected){
