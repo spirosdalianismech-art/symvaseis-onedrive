@@ -581,7 +581,7 @@ async function selectContract(id){
 }
 
 function groupedReceiptHistory(items, receipts, head, body, foot){
-  head.innerHTML='<tr><th>Α/Α</th><th>Περιγραφή είδους</th><th>ΟΜΑΔΑ</th><th>Μ.Μ.</th><th>Τρόπος παραλαβής</th><th class="num">Ποσότητα</th><th class="num">Αξία χωρίς ΦΠΑ</th><th class="no-print">Διόρθωση</th></tr>';
+  head.innerHTML='<tr><th>Α/Α</th><th>Περιγραφή είδους</th><th>ΟΜΑΔΑ</th><th>Μ.Μ.</th><th>Τρόπος παραλαβής</th><th class="num">Ποσότητα</th><th class="num">Αξία χωρίς ΦΠΑ</th><th class="no-print">Ενέργειες</th></tr>';
   body.innerHTML=""; foot.innerHTML="";
   const groups=new Map();
   for(const r of receipts){
@@ -600,7 +600,7 @@ function groupedReceiptHistory(items, receipts, head, body, foot){
     rs.forEach((r,j)=>{
       const it=items.find(x=>x.id===r.itemId), val=Number(r.netValue||0), isUnits=r.mode==="units";
       daily+=val;
-      html+=`<tr class="day-entry${alt}"><td>${j+1}</td><td>${esc(it?.description||"ΜΗ ΑΝΑΓΝΩΡΙΣΜΕΝΟ ΕΙΔΟΣ")}</td><td>${esc(itemGroup(it))}</td><td>${esc(it?.unit||"")}</td><td>${isUnits?"ΠΟΣΟΤΗΤΑ":"ΧΡΗΜΑΤΙΚΗ ΑΞΙΑ"}</td><td class="num">${isUnits?fmtQty(r.units||0):"—"}</td><td class="num">${euro(val)}</td><td class="no-print">${getLedger(false)?.entryMode==="app"?`<button class="blue" style="padding:5px 8px;font-size:12px" onclick="openReceiptEditor('${esc(r.id)}')">✎ Διόρθωση</button>`:"—"}</td></tr>`;
+      html+=`<tr class="day-entry${alt}"><td>${j+1}</td><td>${esc(it?.description||"ΜΗ ΑΝΑΓΝΩΡΙΣΜΕΝΟ ΕΙΔΟΣ")}</td><td>${esc(itemGroup(it))}</td><td>${esc(it?.unit||"")}</td><td>${isUnits?"ΠΟΣΟΤΗΤΑ":"ΧΡΗΜΑΤΙΚΗ ΑΞΙΑ"}</td><td class="num">${isUnits?fmtQty(r.units||0):"—"}</td><td class="num">${euro(val)}</td><td class="no-print">${getLedger(false)?.entryMode==="app"?`<button class="blue" style="padding:5px 8px;font-size:12px" onclick="openReceiptEditor(decodeURIComponent('${encodeURIComponent(r.id)}'))">✎ Διόρθωση</button> <button type="button" class="red" style="padding:5px 8px;font-size:12px;margin-top:3px" onclick="deleteStoredReceipt(decodeURIComponent('${encodeURIComponent(r.id)}'))">🗑 Διαγραφή</button>`:"—"}</td></tr>`;
     });
     grand+=daily;
     html+=`<tr class="day-total${alt}"><td colspan="6">ΣΥΝΟΛΟ ΗΜΕΡΑΣ ${esc(fmtDate(d))}</td><td class="num">${euro(daily)}</td><td class="no-print"></td></tr>`;
@@ -1768,6 +1768,40 @@ async function saveReceiptCorrection(){
  }catch(e){setStatus('ΔΕΝ ΑΠΟΘΗΚΕΥΤΗΚΕ Η ΔΙΟΡΘΩΣΗ: '+e.message,'err');}finally{busy=false;}
 }
 
+
+/* v30 — Διαγραφή μίας παραλαβής από το αποθηκευμένο ιστορικό, με backup και έλεγχο ταυτόχρονης επεξεργασίας. */
+async function deleteStoredReceipt(id){
+ if(busy)return;
+ const cid=currentId;
+ const local=getLedger(false);
+ if(!local||local.entryMode!=='app'){
+  setStatus('Η διαγραφή επιτρέπεται μόνο για παραλαβές που έχουν ενεργοποιηθεί για καταχώριση στην εφαρμογή.','err');return;
+ }
+ const record=local.receipts.find(r=>r.id===id);
+ if(!record){setStatus('Η παραλαβή δεν βρέθηκε. Ανανέωσε τη σελίδα.','err');return;}
+ const item=local.items.find(i=>i.id===record.itemId);
+ const summary='Ημερομηνία: '+formatDateGR(record.date)+'\nΥλικό: '+(item?.description||'Μη αναγνωρισμένο')+'\nΠοσότητα: '+(record.mode==='units'?record.units:'—')+'\nΔαπάνη χωρίς ΦΠΑ: '+euro(Number(record.netValue||0));
+ if(!confirm('ΟΡΙΣΤΙΚΗ ΔΙΑΓΡΑΦΗ ΠΑΡΑΛΑΒΗΣ;\n\n'+summary+'\n\nΘα ενημερωθούν τα υπόλοιπα. Θα κρατηθεί αντίγραφο ασφαλείας και αρχείο ιστορικού διαγραφών.'))return;
+ busy=true;
+ try{
+  const latest=await readJson(PAR_FILE);
+  const stored=latest?.contracts?.find(x=>x.contractId===cid);
+  if(!stored||stored.entryMode!=='app'||currentId!==cid||JSON.stringify(stored.receipts)!==JSON.stringify(local.receipts)||JSON.stringify(stored.items)!==JSON.stringify(local.items))throw Error('Τα στοιχεία της σύμβασης έχουν αλλάξει. Ανανέωσε τη σελίδα πριν από τη διαγραφή.');
+  const ix=stored.receipts.findIndex(r=>r.id===id);
+  if(ix<0)throw Error('Η παραλαβή δεν υπάρχει πλέον στο OneDrive.');
+  const candidate=JSON.parse(JSON.stringify(stored));
+  const removed=candidate.receipts.splice(ix,1)[0];
+  candidate.deletionHistory=Array.isArray(candidate.deletionHistory)?candidate.deletionHistory:[];
+  candidate.deletionHistory.push({receiptId:id,deletedAt:new Date().toISOString(),receipt:removed});
+  validateOptionLedger(candidate,getContract());
+  summarizeApp(candidate,getContract());
+  await writeJson('paralaves-backup-'+cid+'-'+Date.now()+'.json',stored);
+  await persistAppLedger(candidate,stored);
+  render();
+  setStatus('Διαγράφηκε μόνο η επιλεγμένη παραλαβή. Το ιστορικό, οι ποσότητες και τα οικονομικά υπόλοιπα ενημερώθηκαν στο OneDrive.','ok');
+ }catch(e){setStatus('ΔΕΝ ΕΓΙΝΕ ΔΙΑΓΡΑΦΗ: '+e.message,'err');}
+ finally{busy=false;}
+}
 
 // Απλή εισαγωγή παραλαβής από αρχείο τριών στηλών, με προεπισκόπηση πριν από τη μόνιμη αποθήκευση.
 let simpleReceiptDraft=null;
