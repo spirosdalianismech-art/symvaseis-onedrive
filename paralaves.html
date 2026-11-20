@@ -110,7 +110,7 @@ html,body{width:100%;max-width:none}
 </head>
 <body>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v25.2 — ΟΜΑΔΕΣ & ΥΠΟΛΟΙΠΑ — ΠΙΝΑΚΕΣ ΚΑΤΟΠΙΝ ΕΠΙΛΟΓΗΣ · ΜΑΖΙΚΗ ΠΑΡΑΛΑΒΗ</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v26 — ΑΠΛΟΠΟΙΗΜΕΝΗ ΕΙΣΑΓΩΓΗ ΠΑΡΑΛΑΒΩΝ</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -123,8 +123,8 @@ html,body{width:100%;max-width:none}
   <label class="dept-filter"><input type="checkbox" class="deptCheck" value="ΚΟΙΝΟΧΡΗΣΤΩΝ" checked onchange="applyDepartmentFilter()"> ΚΟΙΝΟΧΡΗΣΤΩΝ</label>
   <label class="dept-filter"><input type="checkbox" class="deptCheck" value="ΗΛΕΚΤΡΟΦΩΤΙΣΜΟΥ" checked onchange="applyDepartmentFilter()"> ΗΛΕΚΤΡΟΦΩΤΙΣΜΟΥ</label>
 
-  <button id="excelSyncButton" class="green" onclick="syncFromExcel(true)">↻ Ενημέρωση από Excel</button>
-  <button id="saveButton" class="purple" onclick="saveAll()">💾 Αποθήκευση</button>
+  <button id="excelSyncButton" class="green" style="display:none" onclick="syncFromExcel(true)">↻ Ενημέρωση από Excel</button>
+  <button id="saveButton" class="purple" style="display:none" onclick="saveAll()">💾 Αποθήκευση</button>
   <button class="gray" onclick="window.print()">🖨 Εκτύπωση</button>
   <button class="purple" onclick="window.open('./paralaves-view.html','_blank')">👁 ΔΗΜΟΣΙΑ ΠΡΟΒΟΛΗ</button>
 </div>
@@ -146,7 +146,30 @@ html,body{width:100%;max-width:none}
     </div>
   </section>
 
-  <section class="panel no-print" id="migrationPanel">
+  <section class="panel no-print" id="simpleReceiptPanel">
+    <div class="panel-title">ΠΑΡΑΛΑΒΕΣ — ΕΝΗΜΕΡΩΣΗ Ή ΕΙΣΑΓΩΓΗ ΑΡΧΕΙΟΥ</div>
+    <div style="padding:16px;display:grid;gap:14px">
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <button class="green" type="button" id="simpleExcelSync" onclick="syncFromExcel(true)">↻ ΕΝΗΜΕΡΩΣΗ ΑΠΟ ΤΟ ΣΥΝΔΕΔΕΜΕΝΟ EXCEL</button>
+        <span class="muted" style="font-size:13px">Διαβάζει το Excel της σύμβασης από το OneDrive.</span>
+        <button class="blue" id="simpleActivate" type="button" onclick="activateAppMode()">ΕΝΕΡΓΟΠΟΙΗΣΗ ΚΑΤΑΧΩΡΙΣΗΣ ΑΠΟ EXCEL</button>
+      </div>
+      <div style="border-top:1px solid #ddd;padding-top:12px">
+        <strong>ΕΙΣΑΓΩΓΗ ΝΕΑΣ ΠΑΡΑΛΑΒΗΣ ΑΠΟ EXCEL</strong>
+        <p class="muted" style="font-size:13px">Το αρχείο πρέπει να έχει τρεις στήλες: ΠΕΡΙΓΡΑΦΗ ΥΛΙΚΟΥ, ΠΟΣΟΤΗΤΑ, ΔΑΠΑΝΗ ΧΩΡΙΣ ΦΠΑ. Η περιγραφή πρέπει να αντιστοιχεί σε είδος της επιλεγμένης σύμβασης.</p>
+        <div style="display:flex;gap:12px;align-items:end;flex-wrap:wrap">
+          <label>Αρχείο Excel<input id="simpleReceiptFile" type="file" accept=".xlsx,.xls,.xlsm" style="display:block;margin-top:5px"></label>
+          <label>Ημερομηνία παραλαβής<input id="simpleReceiptDate" type="date" style="display:block;margin-top:5px"></label>
+          <label>Πρωτόκολλο / παρατήρηση<input id="simpleReceiptNote" maxlength="300" placeholder="προαιρετικό" style="display:block;margin-top:5px"></label>
+          <button class="blue" type="button" onclick="previewSimpleReceiptFile()">ΕΛΕΓΧΟΣ ΑΡΧΕΙΟΥ</button>
+        </div>
+        <div id="simpleReceiptStatus" role="status" style="white-space:pre-wrap;margin:12px 0;font-weight:600"></div>
+        <div class="table-wrap"><table style="min-width:650px"><thead><tr><th>ΠΕΡΙΓΡΑΦΗ ΥΛΙΚΟΥ</th><th>ΠΟΣΟΤΗΤΑ</th><th>ΔΑΠΑΝΗ ΧΩΡΙΣ ΦΠΑ</th></tr></thead><tbody id="simpleReceiptPreview"></tbody></table></div>
+        <button type="button" class="green" id="simpleReceiptCommit" onclick="commitSimpleReceiptFile()" disabled>ΑΠΟΘΗΚΕΥΣΗ ΠΑΡΑΛΑΒΗΣ</button>
+      </div>
+    </div>
+  </section>
+  <section class="panel no-print" id="migrationPanel" style="display:none!important">
     <div class="panel-title" style="font-size:18px">ΕΝΕΡΓΟΠΟΙΗΣΗ ΚΑΤΑΧΩΡΙΣΕΩΝ</div>
     <div style="padding:15px;display:grid;gap:10px">
       <div style="background:#eff6ff;border:1px solid #bfdbfe;padding:12px;border-radius:8px">
@@ -179,10 +202,10 @@ html,body{width:100%;max-width:none}
       </div>
     </div>
   </section>
-  <div class="no-print hidden" id="optionToggleRow" style="margin:0 0 14px">
+  <div class="no-print hidden" id="optionToggleRow" style="display:none!important">
     <button id="optionToggleButton" class="orange" type="button" onclick="toggleOptionPanel()" aria-controls="optionPanel" aria-expanded="false">✓ ΕΓΚΡΙΣΗ ΠΡΟΑΙΡΕΣΗΣ</button>
   </div>
-  <section class="panel no-print hidden" id="optionPanel">
+  <section class="panel no-print hidden" id="optionPanel" style="display:none!important">
     <div class="panel-title">ΠΡΟΑΙΡΕΣΗ ΑΝΑ ΥΛΙΚΟ — ΕΓΚΕΚΡΙΜΕΝΕΣ ΠΡΟΣΘΕΤΕΣ ΠΟΣΟΤΗΤΕΣ</div>
     <div style="padding:15px">
       <p class="muted">Η εγκεκριμένη προαίρεση προστίθεται στην ποσότητα κάθε ίδιου είδους. Στις παραλαβές βλέπεις μία ενιαία γραμμή και ένα κοινό υπόλοιπο. Οι παλιές παραλαβές δεν τροποποιούνται.</p>
@@ -207,12 +230,12 @@ html,body{width:100%;max-width:none}
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="appSubmit" class="green" onclick="commitAppReceipt()" disabled>+ ΚΑΤΑΧΩΡΙΣΗ ΠΑΡΑΛΑΒΗΣ</button><button class="gray" onclick="exportAppExcel()">ΕΞΑΓΩΓΗ EXCEL</button></div>
     </div>
   </section>
-  <div class="no-print hidden" id="receiptActions" style="display:flex;flex-wrap:wrap;gap:10px;margin:0 0 16px">
+  <div class="no-print hidden" id="receiptActions" style="display:none!important;flex-wrap:wrap;gap:10px;margin:0 0 16px">
     <button class="purple" id="toggleReportsButton" type="button" aria-expanded="false" aria-controls="reportsArea" onclick="toggleReceiptsArea('reports')">▤ ΣΥΓΚΕΝΤΡΩΤΙΚΟΣ ΠΙΝΑΚΑΣ & ΙΣΤΟΡΙΚΟ</button>
     <button class="green" id="toggleBulkButton" type="button" aria-expanded="false" aria-controls="bulkReceiptPanel" onclick="toggleReceiptsArea('bulk')">＋ ΚΑΤΑΧΩΡΙΣΗ ΠΑΡΑΛΑΒΩΝ ΑΝΑ ΥΛΙΚΟ</button>
     <button class="gray" type="button" onclick="exportAppExcel()" id="bulkExportButton">ΕΞΑΓΩΓΗ EXCEL</button>
   </div>
-  <section class="panel no-print hidden" id="bulkReceiptPanel">
+  <section class="panel no-print hidden" id="bulkReceiptPanel" style="display:none!important">
     <div class="panel-title">ΚΑΤΑΧΩΡΙΣΗ ΠΑΡΑΛΑΒΩΝ — ΟΛΑ ΤΑ ΥΛΙΚΑ ΜΑΖΙ</div>
     <div style="padding:14px">
       <p class="muted">Συμπλήρωσε μόνο ποσότητα ή χρηματική αξία χωρίς ΦΠΑ δίπλα σε όσα είδη παρέλαβες. Η αρχική σύμβαση και η εγκεκριμένη προαίρεση υπολογίζονται μαζί. Τα κενά είδη παραλείπονται.</p>
@@ -1261,9 +1284,9 @@ async function saveBulkReceipts(){
 function renderEntryMode(){
  const l=getLedger(false), active=l?.entryMode==='app';
  el('migrationPanel').classList.toggle('hidden',!l||active);el('entryPanel').classList.toggle('hidden',!active);renderOptionAllocations();
- el('sourceSettings').classList.toggle('hidden',!!active);el('excelSyncButton').disabled=!!active;el('saveButton').disabled=!!active;
+ el('sourceSettings').classList.toggle('hidden',!!active);el('excelSyncButton').disabled=!!active;el('saveButton').disabled=!!active;el('simpleExcelSync').disabled=!!active;el('simpleActivate').style.display=active?'none':'';el('simpleReceiptFile').disabled=!active;el('simpleReceiptPanel').style.display=l?'':'none';
  el('modeNote').textContent=active?'ΚΑΤΑΧΩΡΙΣΗ ΣΤΗΝ ΕΦΑΡΜΟΓΗ — Το Excel διατηρείται ως αρχείο. Οι νέες παραλαβές αποθηκεύονται στο OneDrive.':'Εισαγωγή από Excel — ενεργοποίησε τις καταχωρίσεις μετά τον έλεγχο.';
- if(reviewContractId!==currentId){reviewContractId=currentId;el('appQty').value='';el('appMoney').value='';el('appNote').value='';}
+ if(reviewContractId!==currentId){simpleReceiptReset();el('simpleReceiptDate').value=localDateISO(new Date());reviewContractId=currentId;el('appQty').value='';el('appMoney').value='';el('appNote').value='';}
  if(active){const old=el('appItem').value;el('appItem').innerHTML=l.items.map(it=>`<option value="${esc(it.id)}">${esc(it.description)}</option>`).join('');if(l.items.some(it=>it.id===old))el('appItem').value=old;el('appDate').value=el('appDate').value||localDateISO(new Date());previewAppReceipt();}
 }
 async function persistAppLedger(candidate,expected){
@@ -1716,6 +1739,80 @@ async function saveReceiptCorrection(){
  }catch(e){setStatus('ΔΕΝ ΑΠΟΘΗΚΕΥΤΗΚΕ Η ΔΙΟΡΘΩΣΗ: '+e.message,'err');}finally{busy=false;}
 }
 
+
+// Απλή εισαγωγή παραλαβής από αρχείο τριών στηλών, με προεπισκόπηση πριν από τη μόνιμη αποθήκευση.
+let simpleReceiptDraft=null;
+function simpleReceiptKey(value){return String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-ZΑ-Ω0-9]+/g,' ').trim().replace(/\s+/g,' ');}
+function simpleReceiptReset(message=''){
+ simpleReceiptDraft=null;const b=el('simpleReceiptCommit');if(b)b.disabled=true;
+ const t=el('simpleReceiptPreview');if(t)t.innerHTML='';const s=el('simpleReceiptStatus');if(s)s.textContent=message;
+}
+async function previewSimpleReceiptFile(){
+ simpleReceiptReset();
+ try{
+  const file=el('simpleReceiptFile').files[0],l=getLedger(false);
+  if(!file)throw Error('Επίλεξε αρχείο Excel.');
+  if(!l||l.entryMode!=='app')throw Error('Πρώτα ενεργοποίησε την εισαγωγή στη σύμβαση από το συνδεδεμένο Excel. Δεν τροποποιήθηκαν δεδομένα.');
+  const date=el('simpleReceiptDate').value;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date))throw Error('Συμπλήρωσε ημερομηνία παραλαβής.');
+  const wb=XLSX.read(await file.arrayBuffer(),{type:'array'}),sh=wb.Sheets[wb.SheetNames[0]];
+  const all=XLSX.utils.sheet_to_json(sh,{header:1,defval:'',raw:true});
+  const headIndex=all.findIndex(row=>{
+   const h=row.map(simpleReceiptKey);
+   return h.some(x=>x.includes('ΠΕΡΙΓΡΑΦ')||x.includes('DESCRIPTION')) && h.some(x=>x.includes('ΠΟΣΟΤ')||x.includes('QUANTITY')) && h.some(x=>x.includes('ΔΑΠΑΝ')||x.includes('ΑΞΙΑ')||x.includes('AMOUNT'));
+  });
+  if(headIndex<0)throw Error('Δεν βρέθηκαν επικεφαλίδες ΠΕΡΙΓΡΑΦΗ ΥΛΙΚΟΥ, ΠΟΣΟΤΗΤΑ, ΔΑΠΑΝΗ.');
+  const h=all[headIndex].map(simpleReceiptKey),di=h.findIndex(x=>x.includes('ΠΕΡΙΓΡΑΦ')||x.includes('DESCRIPTION')),qi=h.findIndex(x=>x.includes('ΠΟΣΟΤ')||x.includes('QUANTITY')),ai=h.findIndex(x=>x.includes('ΔΑΠΑΝ')||x.includes('ΑΞΙΑ')||x.includes('AMOUNT'));
+  const rs=[],seen=new Set();
+  for(let i=headIndex+1;i<all.length;i++){
+   const row=all[i],description=String(row[di]??'').trim();
+   if(!description && !String(row[qi]??'').trim() && !String(row[ai]??'').trim())continue;
+   if(!description||/^(ΣΥΝΟΛ|ΦΠΑ|ΓΕΝΙΚΟ)/.test(simpleReceiptKey(description)))continue;
+   const key=simpleReceiptKey(description),matches=l.items.filter(it=>simpleReceiptKey(it.description)===key);
+   if(matches.length!==1)throw Error('Γραμμή '+(i+1)+': '+(matches.length?'Αμφίσημη':'Άγνωστη')+' περιγραφή «'+description+'». Χρησιμοποίησε ακριβώς την περιγραφή της σύμβασης.');
+   const it=matches[0],qty=num(row[qi]),net=Math.round(num(row[ai])*100)/100;
+   if(!Number.isFinite(qty)||qty<=0||!Number.isFinite(net)||net<=0)throw Error('Γραμμή '+(i+1)+': Χρειάζεται θετική ποσότητα και δαπάνη χωρίς ΦΠΑ.');
+   if(seen.has(it.id))throw Error('Το υλικό «'+description+'» υπάρχει δύο φορές στο αρχείο.');seen.add(it.id);
+   const x=computeLine(it,l);
+   if(net>x.remainingNet+0.001)throw Error('Υπέρβαση υπολοίπου για «'+description+'».');
+   if(x.usedKnownQty+qty>x.totalQty+1e-8)throw Error('Υπέρβαση ποσότητας για «'+description+'».');
+   const expected=Math.round(qty*Number(it.unitPrice||0)*100)/100;
+   if(Math.abs(expected-net)>0.02)throw Error('Διαφορά τιμής για «'+description+'»: ποσότητα × συμβατική τιμή = '+euro(expected)+', ενώ το αρχείο γράφει '+euro(net)+'.');
+   rs.push({id:uid(),itemId:it.id,bucket:'base',mode:'units',units:qty,netValue:net,date,note:el('simpleReceiptNote').value.trim(),source:'app',createdAt:new Date().toISOString()});
+  }
+  if(!rs.length)throw Error('Δεν βρέθηκαν γραμμές παραλαβής.');
+  // Αθροιστικός έλεγχος όλων των γραμμών πριν από την αποθήκευση.
+  const total=rs.reduce((v,r)=>v+r.netValue,0);
+  simpleReceiptDraft={contractId:currentId,receipts:rs,fileName:file.name,date,sourceSize:file.size};
+  el('simpleReceiptPreview').innerHTML=rs.map(r=>{const it=l.items.find(x=>x.id===r.itemId);return `<tr><td>${esc(it.description)}</td><td class="num">${r.units.toLocaleString('el-GR')}</td><td class="num">${euro(r.netValue)}</td></tr>`}).join('');
+  el('simpleReceiptStatus').textContent=rs.length+' υλικά · Σύνολο χωρίς ΦΠΑ: '+euro(total)+' · Με ΦΠΑ: '+euro(total*(1+Number(l.vat??24)/100));
+  el('simpleReceiptCommit').disabled=false;
+ }catch(e){simpleReceiptReset('ΔΕΝ ΕΓΙΝΕ ΕΙΣΑΓΩΓΗ: '+e.message);}
+}
+async function commitSimpleReceiptFile(){
+ if(busy||!simpleReceiptDraft)return;
+ busy=true;
+ try{
+  const d=simpleReceiptDraft,cid=currentId,l=getLedger(false);
+  if(d.contractId!==cid||l?.entryMode!=='app')throw Error('Άλλαξε η σύμβαση. Ξαναδιάβασε το αρχείο.');
+  const latest=await readJson(PAR_FILE),old=latest?.contracts?.find(x=>x.contractId===cid);
+  if(!old||JSON.stringify(old.items)!==JSON.stringify(l.items)||JSON.stringify(old.receipts)!==JSON.stringify(l.receipts))throw Error('Τα δεδομένα άλλαξαν. Ανανέωσε τη σελίδα.');
+  const candidate=JSON.parse(JSON.stringify(old));
+  for(const r of d.receipts){
+   if(candidate.receipts.some(z=>z.itemId===r.itemId&&z.date===r.date&&Math.round(Number(z.netValue)*100)===Math.round(r.netValue*100)&&Number(z.units||0)===r.units))throw Error('Πιθανή διπλοεγγραφή για '+candidate.items.find(x=>x.id===r.itemId)?.description);
+   const it=candidate.items.find(x=>x.id===r.itemId),x=computeLine(it,candidate);
+   if(r.netValue>x.remainingNet+0.001||x.usedKnownQty+r.units>x.totalQty+1e-8)throw Error('Υπέρβαση υπολοίπου: '+it.description);
+   candidate.receipts.push(r);
+  }
+  validateOptionLedger(candidate,getContract());summarizeApp(candidate,getContract());
+  if(!confirm('Αποθήκευση '+d.receipts.length+' παραλαβών από «'+d.fileName+'» στο OneDrive;'))return;
+  await writeJson('paralaves-backup-'+cid+'-'+Date.now()+'.json',old);
+  await persistAppLedger(candidate,old);
+  el('simpleReceiptFile').value='';simpleReceiptReset('Οι παραλαβές αποθηκεύτηκαν στο OneDrive.');
+  render();setStatus('Οι παραλαβές καταχωρίστηκαν επιτυχώς.','ok');
+ }catch(e){setStatus('ΔΕΝ ΑΠΟΘΗΚΕΥΤΗΚΑΝ: '+e.message,'err');}
+ finally{busy=false;}
+}
 </script>
 </body>
 </html>
