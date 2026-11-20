@@ -1190,13 +1190,25 @@ function openContractDocuments(recordId){
  document.getElementById('docsInput').value='';
  drawContractDocuments();document.getElementById('docsDialog').showModal();
 }
+// Το OneDrive απαγορεύει / \ : * ? " < > | μέσα στα ονόματα φακέλων.
+// Οι ονομασίες που εμφανίζονται στην εφαρμογή δεν αλλάζουν.
+function safeOneDriveFolderName(value){
+ const safe=String(value??'')
+  .replace(/[\\/:*?"<>|]/g,' - ')
+  .replace(/\s+/g,' ')
+  .replace(/[. ]+$/g,'')
+  .trim();
+ if(!safe)throw Error('Δεν υπάρχει έγκυρο όνομα φακέλου OneDrive.');
+ return safe;
+}
 async function ensureDocumentFolder(parentPath,folderName){
- const folderPath=parentPath+'/'+folderName;
+ const safeName=safeOneDriveFolderName(folderName);
+ const folderPath=parentPath+'/'+safeName;
  const check=await graph('https://graph.microsoft.com/v1.0/me/drive/root:/'+encPath(folderPath));
  if(check.ok)return folderPath;
  if(check.status!==404)throw Error('Σφάλμα ελέγχου φακέλου: '+await check.text());
  const create=await graph('https://graph.microsoft.com/v1.0/me/drive/root:/'+encPath(parentPath)+':/children',{
-  method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:folderName,folder:{},'@microsoft.graph.conflictBehavior':'fail'})
+  method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:safeName,folder:{},'@microsoft.graph.conflictBehavior':'fail'})
  });
  if(!create.ok&&create.status!==409)throw Error('Σφάλμα δημιουργίας φακέλου: '+await create.text());
  return folderPath;
