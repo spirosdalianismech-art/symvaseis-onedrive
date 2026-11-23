@@ -110,7 +110,7 @@ html,body{width:100%;max-width:none}
 </head>
 <body>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v35 — ΔΙΟΡΘΩΣΗ ΑΠΟΘΗΚΕΥΣΗΣ ONEDRIVE</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v36 — ΑΣΦΑΛΗΣ ΣΥΓΧΩΝΕΥΣΗ ΠΑΡΑΛΑΒΩΝ</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -1383,15 +1383,33 @@ async function saveBulkReceipts(){
  try{
   const rs=draftBulkReceipts();const latest=await readJson(PAR_FILE),old=latest?.contracts?.find(x=>x.contractId===cid),local=getLedger(false);
   if(!old||old.entryMode!=='app'||currentId!==cid)throw Error('Δεν υπάρχει ενεργή καταχώριση.');
-  if(ledgerSignature(old)!==ledgerSignature(local))throw Error('Υπάρχει νεότερη καταχώριση στο OneDrive. Ανανέωσε τη σελίδα πριν αποθηκεύσεις, για να μην αντικατασταθούν δεδομένα.');
+  // Ασφαλής προσθήκη στο νεότερο ιστορικό: δεν γράφουμε ποτέ το παλιό τοπικό αντίγραφο.
+  // Αν προστέθηκαν παραλαβές από άλλη συνεδρία, τις διατηρούμε και ελέγχουμε ξανά τα διαθέσιμα υπόλοιπα.
+  const itemSig=x=>ledgerSignature({items:x.items||[],receipts:[]});
+  if(itemSig(old)!==itemSig(local))throw Error('Έχουν αλλάξει τα είδη, οι τιμές ή η προαίρεση στο OneDrive. Ανανέωσε τη σελίδα και έλεγξε τις καταχωρίσεις σου πριν αποθηκεύσεις.');
+  const receiptSig=r=>JSON.stringify({id:String(r.id),itemId:String(r.itemId),date:String(r.date||''),mode:String(r.mode||''),units:Number(r.units||0),netValue:cents(r.netValue||0),note:String(r.note||''),source:String(r.source||'')});
+  const current=new Map((old.receipts||[]).map(r=>[String(r.id),receiptSig(r)]));
+  const seen=new Set();
+  for(const r of local.receipts||[]){
+   const id=String(r.id);
+   if(seen.has(id)||!current.has(id)||current.get(id)!==receiptSig(r))
+    throw Error('Μία παλιά παραλαβή έχει τροποποιηθεί ή διαγραφεί στο OneDrive. Ανανέωσε τη σελίδα και έλεγξε το ιστορικό πριν αποθηκεύσεις.');
+   seen.add(id);
+  }
   const candidate=JSON.parse(JSON.stringify(old));
   for(const r of rs){
-   const dup=candidate.receipts.some(z=>z.itemId===r.itemId&&z.date===r.date&&z.mode===r.mode&&Number(z.units)===r.units&&cents(z.netValue)===cents(r.netValue)&&String(z.note||'')===r.note);
-   if(dup){const it=candidate.items.find(i=>i.id===r.itemId);throw Error('Πιθανή διπλή παραλαβή για '+(it?.description||'είδος')+'. Αν είναι διαφορετική, πρόσθεσε διακριτό αριθμό πρωτοκόλλου/παρατήρηση.');}
+   const it=candidate.items.find(i=>i.id===r.itemId);
+   if(!it)throw Error('Το είδος δεν υπάρχει πλέον στο OneDrive. Ανανέωσε τη σελίδα.');
+   const dup=(candidate.receipts||[]).some(z=>z.itemId===r.itemId&&z.date===r.date&&z.mode===r.mode&&Number(z.units)===r.units&&cents(z.netValue)===cents(r.netValue)&&String(z.note||'')===r.note);
+   if(dup)throw Error('Πιθανή διπλή παραλαβή για '+it.description+'. Αν είναι διαφορετική, πρόσθεσε διακριτό αριθμό πρωτοκόλλου/παρατήρηση.');
+   const remaining=computeLine(it,candidate);
+   if(cents(r.netValue)>cents(remaining.remainingNet))throw Error('Η διαθέσιμη αξία έχει μειωθεί στο OneDrive για: '+it.description+'. Ανανέωσε τη σελίδα πριν αποθηκεύσεις.');
+   if(r.mode==='units'&&remaining.usedKnownQty+Number(r.units)>remaining.totalQty+1e-8)
+    throw Error('Η διαθέσιμη ποσότητα έχει μειωθεί στο OneDrive για: '+it.description+'. Ανανέωσε τη σελίδα.');
    candidate.receipts.push(r);
   }
   validateOptionLedger(candidate,getContract());summarizeApp(candidate,getContract());
-  if(!confirm('Να αποθηκευτούν '+rs.length+' παραλαβές, συνολικής αξίας '+euro(rs.reduce((n,r)=>n+r.netValue,0))+' χωρίς ΦΠΑ;'))return;
+  if(!confirm('Να προστεθούν '+rs.length+' παραλαβές στο υπάρχον ιστορικό, συνολικής αξίας '+euro(rs.reduce((n,r)=>n+r.netValue,0))+' χωρίς ΦΠΑ;'))return;
   await writeJson('paralaves-backup-'+cid+'-'+Date.now()+'.json',old);
   await persistAppLedger(candidate,old);
   el('bulkReceiptItems').innerHTML='';el('bulkNote').value='';
