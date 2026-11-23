@@ -110,7 +110,7 @@ html,body{width:100%;max-width:none}
 </head>
 <body>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v37 — ΕΛΕΓΧΟΣ ΕΚΔΟΣΗΣ ONEDRIVE</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v38 — ΔΙΟΡΘΩΣΗ ΕΛΕΓΧΟΥ ΑΠΟΘΗΚΕΥΣΗΣ</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -1321,7 +1321,7 @@ function renderBulkReceiptItems(){
    const group=itemGroup(it),header=hasGroups(l.items)&&group!==currentGroup?`<tr class="bulk-group-heading"><td colspan="10" style="background:#e9e1f6;color:#39216d;font-weight:700;padding:12px 14px">${esc(group)}</td></tr>`:'';
    currentGroup=group;
    const x=computeLine(it,l),saved=old.get(it.id)||{qty:'',money:''};
-   return header+`<tr data-item-id="${esc(it.id)}"><td>${i+1}</td><td>${esc(it.description)}</td><td>${esc(it.unit||'')}</td><td class="num">${euro(it.unitPrice)}</td><td class="num">${Number(it.initialQty||0).toLocaleString('el-GR',{maximumFractionDigits:6})}</td><td><input class="inline-option-qty" inputmode="decimal" value="${esc(saved.option===undefined?String(Number(it.optionQty||0)).replace('.',','):saved.option)}" style="width:110px" aria-label="Πρόσθετη ποσότητα προαίρεσης" oninput="previewInlineOption()"></td><td class="num">${Number(x.totalQty||0).toLocaleString('el-GR',{maximumFractionDigits:6})}</td><td class="num"><strong>${euro(x.remainingNet)}</strong></td><td><input class="bulk-qty" inputmode="decimal" value="${esc(saved.qty)}" placeholder="Ποσότητα" style="width:155px" oninput="this.closest('tr').querySelector('.bulk-money').value='';previewBulkReceipt()"></td><td><input class="bulk-money" inputmode="decimal" value="${esc(saved.money)}" placeholder="Αξία €" style="width:155px" oninput="this.closest('tr').querySelector('.bulk-qty').value='';previewBulkReceipt()"></td></tr>`;
+   return header+`<tr data-item-id="${esc(it.id)}" data-snapshot-price="${Number(it.unitPrice||0)}" data-snapshot-initial-qty="${Number(it.initialQty||0)}" data-snapshot-option-qty="${Number(it.optionQty||0)}" data-snapshot-initial-net="${Number(it.initialNet||0)}"><td>${i+1}</td><td>${esc(it.description)}</td><td>${esc(it.unit||'')}</td><td class="num">${euro(it.unitPrice)}</td><td class="num">${Number(it.initialQty||0).toLocaleString('el-GR',{maximumFractionDigits:6})}</td><td><input class="inline-option-qty" inputmode="decimal" value="${esc(saved.option===undefined?String(Number(it.optionQty||0)).replace('.',','):saved.option)}" style="width:110px" aria-label="Πρόσθετη ποσότητα προαίρεσης" oninput="previewInlineOption()"></td><td class="num">${Number(x.totalQty||0).toLocaleString('el-GR',{maximumFractionDigits:6})}</td><td class="num"><strong>${euro(x.remainingNet)}</strong></td><td><input class="bulk-qty" inputmode="decimal" value="${esc(saved.qty)}" placeholder="Ποσότητα" style="width:155px" oninput="this.closest('tr').querySelector('.bulk-money').value='';previewBulkReceipt()"></td><td><input class="bulk-money" inputmode="decimal" value="${esc(saved.money)}" placeholder="Αξία €" style="width:155px" oninput="this.closest('tr').querySelector('.bulk-qty').value='';previewBulkReceipt()"></td></tr>`;
  }).join('');
  previewInlineOption();previewBulkReceipt();
 }
@@ -1385,8 +1385,17 @@ async function saveBulkReceipts(){
   if(!old||old.entryMode!=='app'||currentId!==cid)throw Error('Δεν υπάρχει ενεργή καταχώριση.');
   // Ασφαλής προσθήκη στο νεότερο ιστορικό: δεν γράφουμε ποτέ το παλιό τοπικό αντίγραφο.
   // Αν προστέθηκαν παραλαβές από άλλη συνεδρία, τις διατηρούμε και ελέγχουμε ξανά τα διαθέσιμα υπόλοιπα.
-  const itemSig=x=>ledgerSignature({items:x.items||[],receipts:[]});
-  if(itemSig(old)!==itemSig(local))throw Error('Έχουν αλλάξει τα είδη, οι τιμές ή η προαίρεση στο OneDrive. Ανανέωσε τη σελίδα και έλεγξε τις καταχωρίσεις σου πριν αποθηκεύσεις.');
+  // Ελέγχουμε μόνο τα είδη της συγκεκριμένης παραλαβής ως προς το στιγμιότυπο
+  // που εμφάνισε η φόρμα. Τα υπολογιζόμενα πεδία του τοπικού ledger δεν αποτελούν σύγκρουση.
+  const nearlyEqual=(a,b)=>Math.abs(Number(a||0)-Number(b||0))<0.000001;
+  for(const r of rs){
+   const row=[...el('bulkReceiptItems').querySelectorAll('tr[data-item-id]')].find(t=>t.dataset.itemId===String(r.itemId));
+   const remote=(old.items||[]).find(i=>String(i.id)===String(r.itemId));
+   if(!row||!remote)throw Error('Το είδος παραλαβής δεν υπάρχει πλέον στο OneDrive. Ανανέωσε τη σύμβαση.');
+   const fields=[['τιμή',remote.unitPrice,row.dataset.snapshotPrice],['αρχική ποσότητα',remote.initialQty,row.dataset.snapshotInitialQty],['προαίρεση',remote.optionQty,row.dataset.snapshotOptionQty],['αρχική αξία',remote.initialNet,row.dataset.snapshotInitialNet]];
+   const mismatch=fields.find(([name,a,b])=>!nearlyEqual(a,b));
+   if(mismatch)throw Error('Το είδος «'+remote.description+'» έχει διαφορετική '+mismatch[0]+' στο OneDrive. Η καταχώριση δεν αποθηκεύτηκε. Ανανέωσε πρώτα τη σελίδα.');
+  }
   const receiptSig=r=>JSON.stringify({id:String(r.id),itemId:String(r.itemId),date:String(r.date||''),mode:String(r.mode||''),units:Number(r.units||0),netValue:cents(r.netValue||0),note:String(r.note||''),source:String(r.source||'')});
   const current=new Map((old.receipts||[]).map(r=>[String(r.id),receiptSig(r)]));
   const seen=new Set();
