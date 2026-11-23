@@ -839,7 +839,27 @@ async function syncFromExcel(showMessage=true){
   // Διαβάζουμε τις ημερομηνίες Excel ως αριθμούς σειράς, όχι ως JS Date.
    // Έτσι αποφεύγουμε μετατόπιση κατά μία ημέρα λόγω ζώνης ώρας.
    const wb=XLSX.read(await r.arrayBuffer(),{type:"array",cellDates:false,cellNF:true});
-  let sh=wb.Sheets[l.excelSheet];if(!sh){const n=wb.SheetNames.find(n=>norm(n)===norm(l.excelSheet));if(n)sh=wb.Sheets[n]}if(!sh)throw new Error("Δεν βρέθηκε το δηλωμένο φύλλο Excel.");
+  // Επιλογή φύλλου με έλεγχο πραγματικών επικεφαλίδων.
+  // Δεν επιλέγουμε ποτέ τυχαία το πρώτο φύλλο, γιατί θα μπορούσαν
+  // να εμφανιστούν λανθασμένες ποσότητες και υπόλοιπα.
+  const requestedSheet=String(l.excelSheet||"ΣΥΜΒΑΣΗ").trim();
+  const validSheets=wb.SheetNames.filter(name=>{
+    const candidate=wb.Sheets[name];
+    if(!candidate||!candidate["!ref"])return false;
+    const sample=XLSX.utils.sheet_to_json(candidate,{header:1,defval:"",raw:true,range:0,blankrows:false});
+    const h=buildHeader(sample).headers;
+    return findCol(h,x=>x.includes("ΠΕΡΙΓΡΑΦ")||x.includes("ΤΙΤΛ"))>=0 &&
+           findCol(h,x=>x.includes("ΠΟΣΟΤ")&&!x.includes("ΥΠΟΛΟΙΠ"))>=0 &&
+           findCol(h,x=>x.includes("ΤΙΜ")&&x.includes("ΜΟΝ"))>=0;
+  });
+  let sheetName=validSheets.find(n=>norm(n)===norm(requestedSheet));
+  if(!sheetName && validSheets.length===1)sheetName=validSheets[0];
+  if(!sheetName){
+    if(!validSheets.length)throw new Error("Δεν βρέθηκε φύλλο με στήλες Περιγραφή, Ποσότητα και Τιμή μονάδας. Φύλλα αρχείου: "+wb.SheetNames.join(", "));
+    throw new Error("Το φύλλο «"+requestedSheet+"» δεν βρέθηκε ή δεν έχει αναγνωρίσιμο πίνακα. Πιθανά φύλλα: "+validSheets.join(", ")+". Πληκτρολόγησε το σωστό όνομα στο πεδίο «Φύλλο Excel» και επίλεξε Εισαγωγή Excel.");
+  }
+  const sh=wb.Sheets[sheetName];
+
   const rows=XLSX.utils.sheet_to_json(sh,{header:1,defval:"",raw:true});
   const h=buildHeader(rows),H=h.headers;
   const cDesc=findCol(H,x=>x.includes("ΠΕΡΙΓΡΑΦ")||x.includes("ΤΙΤΛ"));
@@ -976,6 +996,9 @@ async function syncFromExcel(showMessage=true){
    setExcelAudit("⚠ ΔΕΝ ΒΡΕΘΗΚΕ ΤΟ ΚΕΛΙ ΤΟΥ ΣΥΝΟΛΙΚΟΥ ΥΠΟΛΟΙΠΟΥ ΣΤΟ EXCEL. Έγινε έλεγχος γραμμών όπου ήταν δυνατό, όχι διασταύρωση τελικού ποσού.","warn");
   }
   l.migrationVerified=Boolean(audit.grand);
+  l.excelSheet=sheetName;
+  c.excelSheet=sheetName;
+  excelSheet.value=sheetName;
   l.lastExcelSync=new Date().toISOString();
   recompute();
   parData.updatedAt=new Date().toISOString();
