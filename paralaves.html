@@ -1427,11 +1427,48 @@ function renderEntryMode(){
  if(reviewContractId!==currentId){receiptSetupExpanded=false;el('migrationPanel').classList.add('hidden');simpleReceiptReset();el('simpleReceiptDate').value=localDateISO(new Date());reviewContractId=currentId;el('appQty').value='';el('appMoney').value='';el('appNote').value='';}
  if(active){const old=el('appItem').value;el('appItem').innerHTML=l.items.map(it=>`<option value="${esc(it.id)}">${esc(it.description)}</option>`).join('');if(l.items.some(it=>it.id===old))el('appItem').value=old;el('appDate').value=el('appDate').value||localDateISO(new Date());previewAppReceipt();}
 }
+// v37: κανονικοποιημένος έλεγχος ιστορικού, χωρίς ψευδείς συγκρούσεις από υπολογιζόμενα πεδία.
+function persistentLedgerSignature(l){
+ if(!l)return null;
+ const volatile=new Set(['summary','baseRemainingNet','baseRemainingUnits','updatedAt','lastExcelSync']);
+ const normalize=x=>{
+  if(Array.isArray(x))return x.map(normalize);
+  if(x&&typeof x==='object'){
+   const out={};for(const key of Object.keys(x).sort())if(!volatile.has(key))out[key]=normalize(x[key]);return out;
+  }
+  return x;
+ };
+ return JSON.stringify(normalize(l));
+}
 async function persistAppLedger(candidate,expected){
- // Refresh latest ledger to avoid overwriting unrelated contracts or stale same-contract data.
- const latest=await readJson(PAR_FILE)||{version:1,contracts:[]};const old=latest.contracts.find(x=>x.contractId===candidate.contractId);
- if(JSON.stringify(old||null)!==JSON.stringify(expected||null))throw Error('Τα δεδομένα άλλαξαν από άλλη συνεδρία. Ανανέωσε τη σελίδα και δοκίμασε ξανά.');
- const i=latest.contracts.findIndex(x=>x.contractId===candidate.contractId);if(i<0)latest.contracts.push(candidate);else latest.contracts[i]=candidate;latest.updatedAt=new Date().toISOString();await writeJson(PAR_FILE,latest);parData=latest;
+ // Ελέγχουμε πρώτα το τρέχον περιεχόμενο, έπειτα απαιτούμε τον ίδιο ETag κατά το PUT.
+ const latest=await readJson(PAR_FILE)||{version:1,contracts:[]};
+ const old=latest.contracts.find(x=>x.contractId===candidate.contractId);
+ if(persistentLedgerSignature(old)!==persistentLedgerSignature(expected)){
+  const have=new Map((old?.receipts||[]).map(r=>[String(r.id),JSON.stringify(r)]));
+  const before=expected?.receipts||[];
+  const changed=before.some(r=>have.get(String(r.id))!==JSON.stringify(r));
+  throw Error(changed?'Το ιστορικό της σύμβασης άλλαξε πραγματικά στο OneDrive. Επαναφόρτωσε πρώτα τις παραλαβές.':'Τα συμβατικά στοιχεία τροποποιήθηκαν στο OneDrive. Επαναφόρτωσε τη σύμβαση πριν αποθηκεύσεις.');
+ }
+ // Η συνθήκη If-Match αποτρέπει την αντικατάσταση ενημέρωσης που μεσολάβησε μετά την ανάγνωση.
+ const url='https://graph.microsoft.com/v1.0/me/drive/root:/'+encPath(APP_FOLDER+'/'+PAR_FILE);
+ const meta=await graph(url+'?$select=id,eTag');
+ if(!meta.ok)throw Error('Αδυναμία ελέγχου έκδοσης OneDrive (HTTP '+meta.status+').');
+ const tag=(await meta.json()).eTag;
+ if(!tag)throw Error('Το OneDrive δεν επέστρεψε κωδικό έκδοσης για ασφαλή αποθήκευση.');
+ // Επαναδιαβάζουμε ύστερα από την ανάκτηση ETag, ώστε η προηγούμενη τιμή να είναι η ίδια.
+ const verify=await readJson(PAR_FILE);
+ if(persistentLedgerSignature(verify?.contracts?.find(x=>x.contractId===candidate.contractId))!==persistentLedgerSignature(expected))
+  throw Error('Νέα αλλαγή στο ιστορικό κατά την αποθήκευση. Επαναφόρτωσε τα στοιχεία.');
+ const i=verify.contracts.findIndex(x=>x.contractId===candidate.contractId);
+ if(i<0)verify.contracts.push(candidate);else verify.contracts[i]=candidate;
+ verify.updatedAt=new Date().toISOString();
+ const res=await graph('https://graph.microsoft.com/v1.0/me/drive/root:/'+encPath(APP_FOLDER+'/'+PAR_FILE)+':/content',{
+  method:'PUT',headers:{'Content-Type':'application/json;charset=utf-8','If-Match':tag},body:JSON.stringify(verify,null,2)
+ });
+ if(res.status===412)throw Error('Η αποθήκευση απορρίφθηκε γιατί άλλαξε το αρχείο στο OneDrive την ίδια στιγμή (HTTP 412). Τα δεδομένα προστατεύτηκαν.');
+ if(!res.ok){let detail='';try{const j=await res.json();detail=j?.error?.message||j?.error?.code||JSON.stringify(j)}catch{detail=await res.text()}throw Error('OneDrive HTTP '+res.status+': '+detail);}
+ parData=verify;
 }
 function summarizeApp(l,contract=getContract()){
  validateOptionLedger(l,contract);
