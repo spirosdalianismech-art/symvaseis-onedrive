@@ -110,7 +110,7 @@ html,body{width:100%;max-width:none}
 </head>
 <body>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v32 — ΟΜΑΔΑ 7 / ΔΙΑΓΡΑΦΗ ΠΑΡΑΛΑΒΗΣ</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v33 — ΟΜΑΔΑ 7 / ΔΙΑΓΡΑΦΗ ΠΑΡΑΛΑΒΗΣ</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -885,7 +885,12 @@ async function syncFromExcel(showMessage=true){
   const cReceived=findCol(H,x=>isQuantityReceiptSheet?x.includes("ΣΥΝΟΛΟ ΠΑΡΑΛΗΦΘ"):x.includes("ΠΑΡΑΛΑΒ")&&!x.includes("ΥΠΟΛΟΙΠ")&&(x.includes("€")||x.includes("ΑΞΙΑ")));
   const cOption=findCol(H,x=>x.includes("ΠΡΟΑΙΡ")&&!x.includes("ΣΥΝΟΛ"));
   const cTotalQty=findCol(H,x=>x.includes("ΣΥΝΟΛΟ ΜΕ ΠΡΟΑΙΡ")||x.includes("ΣΥΝΟΛΟ ΠΟΣΟΤ"));
-  const cRemValue=findCol(H,x=>x.includes("ΥΠΟΛΟΙΠ")&&(x.includes("€")||x.includes("ΑΞΙΑ")||x.includes("ΠΟΣΟ")||x.includes("ΣΥΜΒΑΣ")));
+  // Το «ΥΠΟΛΟΙΠΟ ΠΟΣΟΤΗΤΩΝ» είναι μονάδες, όχι χρηματικό ποσό.
+  // Προτιμάται ακριβώς το «ΥΠΟΛΟΙΠΟ ΣΥΜΒΑΣΗΣ» (στήλη K στο πρότυπο Ομάδας 7).
+  const cRemValue=findCol(H,x=>x.includes("ΥΠΟΛΟΙΠ")&&
+    (x.includes("ΣΥΜΒΑΣ")||x.includes("ΑΞΙΑ")||x.includes("€")||x.includes("ΕΥΡΩ"))&&
+    !x.includes("ΠΟΣΟΤ"));
+  if(cRemValue===cRemUnits&&cRemValue>=0)throw Error("Ασάφεια στις στήλες υπολοίπου: η ποσότητα δεν επιτρέπεται να διαβαστεί ως χρηματική αξία.");
   if(cDesc<0||cQty<0||cPrice<0)throw new Error("Δεν αναγνωρίστηκαν Περιγραφή / Ποσότητα / Τιμή μονάδας. "+diagnoseExcelHeaders(rows));
 
   // Οι στήλες δεξιά από τον βασικό πίνακα μπορούν να έχουν ημερομηνίες παραλαβής
