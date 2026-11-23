@@ -110,7 +110,7 @@ html,body{width:100%;max-width:none}
 </head>
 <body>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v33 — ΟΜΑΔΑ 7 / ΔΙΑΓΡΑΦΗ ΠΑΡΑΛΑΒΗΣ</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v34 — ΕΛΕΓΧΟΣ ΚΑΙ ΑΠΟΘΗΚΕΥΣΗ ΠΑΡΑΛΑΒΩΝ</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -247,6 +247,10 @@ html,body{width:100%;max-width:none}
       <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-bottom:12px">
         <label>ΗΜΕΡΟΜΗΝΙΑ ΠΑΡΑΛΑΒΗΣ <input type="date" id="bulkDate" style="display:block;margin-top:5px" onchange="previewBulkReceipt()"></label>
         <label style="flex:1;min-width:240px">ΑΡ. ΠΡΩΤΟΚΟΛΛΟΥ / ΠΑΡΑΤΗΡΗΣΗ <input id="bulkNote" maxlength="300" style="display:block;width:100%;margin-top:5px"></label>
+      </div>
+      <div id="bulkTopBar" style="position:sticky;top:0;z-index:20;background:#fff;border:1px solid #c4b5fd;border-radius:8px;padding:10px 12px;margin:10px 0;box-shadow:0 2px 8px #0001;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <button type="button" id="bulkSaveTop" class="green" onclick="saveBulkReceipts()" disabled>💾 ΑΠΟΘΗΚΕΥΣΗ ΠΑΡΑΛΑΒΩΝ</button>
+        <strong id="bulkTopPreview" role="status" aria-live="polite" style="flex:1;min-width:250px">Συμπλήρωσε ποσότητα ή αξία για τουλάχιστον ένα είδος.</strong>
       </div>
       <div class="table-wrap"><table id="bulkReceiptTable" style="min-width:1100px">
         <thead><tr><th>Α/Α</th><th style="min-width:480px">ΥΛΙΚΟ / ΕΙΔΟΣ</th><th>Μ.Μ.</th><th class="num">ΤΙΜΗ ΜΟΝ.</th><th class="num">ΑΡΧΙΚΗ ΠΟΣ.</th><th class="num">ΠΡΟΑΙΡΕΣΗ (+)</th><th class="num">ΣΥΝ. ΠΟΣ.</th><th class="num">ΥΠΟΛΟΙΠΟ ΧΩΡΙΣ ΦΠΑ</th><th>ΠΟΣΟΤΗΤΑ ΠΑΡΑΛΑΒΗΣ</th><th>ΑΞΙΑ ΧΩΡΙΣ ΦΠΑ (€)</th></tr></thead>
@@ -1346,10 +1350,17 @@ function draftBulkReceipts(){
  return rs;
 }
 function previewBulkReceipt(){
- const btn=el('bulkSaveButton'),target=el('bulkPreview');
- try{const rs=draftBulkReceipts();const total=rs.reduce((n,r)=>n+cents(r.netValue),0)/100;
- target.style.color='#166534';target.textContent=rs.length+' ΕΙΔΗ · ΠΑΡΑΛΑΒΗ ΧΩΡΙΣ ΦΠΑ: '+euro(total)+' · ΜΕ ΦΠΑ: '+euro(total*(1+Number(getLedger(false).vat??24)/100));btn.disabled=busy;
- }catch(e){target.style.color='#92400e';target.textContent=e.message;btn.disabled=true;}
+ const btn=el('bulkSaveButton'),topBtn=el('bulkSaveTop'),target=el('bulkPreview'),top=el('bulkTopPreview');
+ try{
+  const rs=draftBulkReceipts();const total=rs.reduce((n,r)=>n+cents(r.netValue),0)/100;
+  const msg=rs.length+' ΕΙΔΗ · ΠΑΡΑΛΑΒΗ ΧΩΡΙΣ ΦΠΑ: '+euro(total)+' · ΜΕ ΦΠΑ: '+euro(total*(1+Number(getLedger(false).vat??24)/100));
+  target.style.color='#166534';target.textContent=msg;top.style.color='#166534';top.textContent=msg;
+  btn.disabled=busy;topBtn.disabled=busy;
+ }catch(e){
+  const msg='ΔΕΝ ΜΠΟΡΕΙ ΝΑ ΑΠΟΘΗΚΕΥΤΕΙ: '+e.message;
+  target.style.color='#991b1b';target.textContent=msg;top.style.color='#991b1b';top.textContent=msg;
+  btn.disabled=true;topBtn.disabled=true;
+ }
 }
 async function saveBulkReceipts(){
  if(busy)return;busy=true;const cid=currentId;
@@ -1369,7 +1380,7 @@ async function saveBulkReceipts(){
   await persistAppLedger(candidate,old);
   el('bulkReceiptItems').innerHTML='';el('bulkNote').value='';
   render();setStatus('Αποθηκεύτηκαν '+rs.length+' παραλαβές στο OneDrive.','ok');
- }catch(e){setStatus('ΔΕΝ ΑΠΟΘΗΚΕΥΤΗΚΑΝ: '+e.message,'err');}
+ }catch(e){setStatus('ΔΕΝ ΑΠΟΘΗΚΕΥΤΗΚΑΝ: '+e.message,'err');const top=el('bulkTopPreview');if(top){top.textContent='ΔΕΝ ΑΠΟΘΗΚΕΥΤΗΚΑΝ: '+e.message;top.style.color='#991b1b';top.scrollIntoView({behavior:'smooth',block:'center'});}}
  finally{busy=false;previewBulkReceipt();}
 }
 let receiptSetupExpanded=false;
