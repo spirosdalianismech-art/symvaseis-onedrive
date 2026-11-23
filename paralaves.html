@@ -110,7 +110,7 @@ html,body{width:100%;max-width:none}
 </head>
 <body>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v29 — ΑΝΟΙΓΜΑ / ΚΛΕΙΣΙΜΟ ΚΑΤΑΧΩΡΙΣΗΣ</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v32 — ΟΜΑΔΑ 7 / ΔΙΑΓΡΑΦΗ ΠΑΡΑΛΑΒΗΣ</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -677,19 +677,31 @@ async function saveSourceSettings(){
  const c=getContract();if(c){c.excelPath=l.excelPath;c.excelSheet=l.excelSheet}
  await saveAll();setStatus("Η διαδρομή Excel αποθηκεύτηκε.","ok")
 }
+// v31: Αναζήτηση επικεφαλίδων και σε μη τυποποιημένα δημοτικά φύλλα.
+// Κάθε στήλη πρέπει να αναγνωριστεί με σαφήνεια πριν καταχωριστούν ποσά.
+function isExcelDesc(x){return /ΠΕΡΙΓΡΑΦ|ΤΙΤΛ|ΟΝΟΜΑΣΙΑ|ΕΙΔΟΣ|ΥΛΙΚ/.test(x)&&!/ΟΜΑΔΑ|ΚΩΔΙΚ/.test(x)}
+function isExcelQty(x){return /ΠΟΣΟΤ|ΠΟΣ\.|ΤΕΜΑΧ/.test(x)&&!/ΥΠΟΛΟΙΠ|ΠΑΡΑΛΑΒ|ΠΡΟΑΙΡ|ΣΥΝΟΛ|ΤΕΛΙΚ/.test(x)}
+function isExcelPrice(x){return x==="ΤΙΜΗ"||x==="ΤΙΜΗ €"||(/ΤΙΜΗ|ΤΙΜ\.|ΤΙΜΟΛ/.test(x)&&/ΜΟΝ|ΤΕΜ|ΑΝΑ|Μ\.Μ|Μ\/Μ/.test(x))}
 function buildHeader(rows){
- let best={score:-1,row:0,headers:[]};
- for(let r=0;r<Math.min(rows.length,35);r++){
-   for(const depth of [1,2]){
-     const max=Math.max(rows[r]?.length||0,rows[r+1]?.length||0),h=[];
-     for(let c=0;c<max;c++)h[c]=norm([rows[r]?.[c]??"",depth===2?(rows[r+1]?.[c]??""):""].join(" "));
-     let score=0;
-     for(const x of h){if(x.includes("ΠΕΡΙΓΡΑΦ")||x.includes("ΤΙΤΛ"))score+=3;if(x.includes("ΠΟΣΟΤ"))score+=2;if(x.includes("ΤΙΜ")&&x.includes("ΜΟΝ"))score+=3;if(x.includes("Μ.Μ")||x==="ΜΜ"||x.includes("ΜΟΝΑΔΑ ΜΕΤΡ"))score+=2;if(x.includes("ΥΠΟΛΟΙΠ"))score+=1}
-     if(score>best.score || (score===best.score && depth<best.depth))best={score,row:r,depth,headers:h}
+ let best={score:-1,row:0,depth:1,headers:[]};
+ for(let r=0;r<Math.min(rows.length,100);r++){
+   for(const depth of [1,2,3]){
+     const max=Math.max(...Array.from({length:depth},(_,d)=>rows[r+d]?.length||0)),h=[];
+     for(let c=0;c<max;c++)h[c]=norm(Array.from({length:depth},(_,d)=>rows[r+d]?.[c]??'').join(' '));
+     const desc=h.findIndex(isExcelDesc),qty=h.findIndex(isExcelQty),price=h.findIndex(isExcelPrice);
+     let score=(desc>=0?5:0)+(qty>=0?5:0)+(price>=0?5:0);
+     if(desc>=0&&qty>=0&&price>=0&&new Set([desc,qty,price]).size===3)score+=30;
+     score+=h.filter(x=>/Μ\.Μ|ΜΟΝΑΔΑ ΜΕΤΡ|ΥΠΟΛΟΙΠ|ΠΡΟΑΙΡ/.test(x)).length;
+     if(score>best.score||(score===best.score&&depth<best.depth))best={score,row:r,depth,headers:h};
    }
  }
- return best
+ return best;
 }
+function diagnoseExcelHeaders(rows){
+ const preview=rows.slice(0,20).map((r,i)=>({i,words:(r||[]).map(x=>String(x??'').trim()).filter(Boolean).slice(0,6)})).filter(x=>x.words.length);
+ return preview.slice(0,5).map(r=>'Γραμμή '+(r.i+1)+': '+r.words.join(' | ').slice(0,180)).join(' · ');
+}
+
 function findCol(headers,pred){for(let i=0;i<headers.length;i++)if(pred(headers[i]))return i;return -1}
 
 // Ημερομηνία ημερολογίου στην τοπική ώρα, χωρίς μετατροπή σε UTC.
@@ -848,29 +860,33 @@ async function syncFromExcel(showMessage=true){
     if(!candidate||!candidate["!ref"])return false;
     const sample=XLSX.utils.sheet_to_json(candidate,{header:1,defval:"",raw:true,range:0,blankrows:false});
     const h=buildHeader(sample).headers;
-    return findCol(h,x=>x.includes("ΠΕΡΙΓΡΑΦ")||x.includes("ΤΙΤΛ"))>=0 &&
-           findCol(h,x=>x.includes("ΠΟΣΟΤ")&&!x.includes("ΥΠΟΛΟΙΠ"))>=0 &&
-           findCol(h,x=>x.includes("ΤΙΜ")&&x.includes("ΜΟΝ"))>=0;
+    return findCol(h,isExcelDesc)>=0 &&
+           findCol(h,isExcelQty)>=0 &&
+           findCol(h,isExcelPrice)>=0;
   });
   let sheetName=validSheets.find(n=>norm(n)===norm(requestedSheet));
   if(!sheetName && validSheets.length===1)sheetName=validSheets[0];
   if(!sheetName){
-    if(!validSheets.length)throw new Error("Δεν βρέθηκε φύλλο με στήλες Περιγραφή, Ποσότητα και Τιμή μονάδας. Φύλλα αρχείου: "+wb.SheetNames.join(", "));
+    if(!validSheets.length){const d=wb.SheetNames.map(n=>{const rr=XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,defval:"",raw:true});return "["+n+"] "+diagnoseExcelHeaders(rr)}).join("\n");throw new Error("Δεν αναγνωρίστηκαν οι απαιτούμενες στήλες στο αρχείο (δεν έγινε καμία αλλαγή). Φύλλα: "+wb.SheetNames.join(", ")+".\nΠρώτες τιμές: "+d+"\nΈλεγξε ότι επέλεξες το σωστό Excel με την αναλυτική σύμβαση.");}
     throw new Error("Το φύλλο «"+requestedSheet+"» δεν βρέθηκε ή δεν έχει αναγνωρίσιμο πίνακα. Πιθανά φύλλα: "+validSheets.join(", ")+". Πληκτρολόγησε το σωστό όνομα στο πεδίο «Φύλλο Excel» και επίλεξε Εισαγωγή Excel.");
   }
   const sh=wb.Sheets[sheetName];
 
   const rows=XLSX.utils.sheet_to_json(sh,{header:1,defval:"",raw:true});
   const h=buildHeader(rows),H=h.headers;
-  const cDesc=findCol(H,x=>x.includes("ΠΕΡΙΓΡΑΦ")||x.includes("ΤΙΤΛ"));
+  const cDesc=findCol(H,isExcelDesc);
   const cUnit=findCol(H,x=>x.includes("Μ.Μ")||x==="ΜΜ"||x.includes("ΜΟΝΑΔΑ ΜΕΤΡ"));
-  const cQty=findCol(H,x=>x.includes("ΠΟΣΟΤ")&&!x.includes("ΥΠΟΛΟΙΠ"));
-  const cPrice=findCol(H,x=>x.includes("ΤΙΜ")&&x.includes("ΜΟΝ"));
+  const cQty=findCol(H,isExcelQty);
+  const cPrice=findCol(H,isExcelPrice);
   const cExpense=findCol(H,x=>(x.includes("ΔΑΠΑΝ")||x.includes("ΑΞΙΑ"))&&!x.includes("ΥΠΟΛΟΙΠ")&&!x.includes("ΠΑΡΑΛΑΒ"));
   const cRemUnits=findCol(H,x=>x.includes("ΥΠΟΛΟΙΠ")&&(x.includes("Μ.Μ")||x.includes("ΜΟΝΑΔ")||x.includes("ΠΟΣΟΤ")));
-  const cReceived=findCol(H,x=>x.includes("ΠΑΡΑΛΑΒ")&&!x.includes("ΥΠΟΛΟΙΠ")&&(x.includes("€")||x.includes("ΑΞΙΑ")));
+  // Στα δημοτικά Excel το «ΣΥΝΟΛΟ ΠΑΡΑΛΗΦΘΕΝΤΩΝ» είναι ΠΟΣΟΤΗΤΑ, όχι ευρώ.
+  const isQuantityReceiptSheet=H.some(x=>x.includes("ΣΥΝΟΛΟ ΠΑΡΑΛΗΦΘ")) && H.some(x=>x.includes("ΥΠΟΛΟΙΠΟ ΣΥΜΒΑΣ"));
+  const cReceived=findCol(H,x=>isQuantityReceiptSheet?x.includes("ΣΥΝΟΛΟ ΠΑΡΑΛΗΦΘ"):x.includes("ΠΑΡΑΛΑΒ")&&!x.includes("ΥΠΟΛΟΙΠ")&&(x.includes("€")||x.includes("ΑΞΙΑ")));
+  const cOption=findCol(H,x=>x.includes("ΠΡΟΑΙΡ")&&!x.includes("ΣΥΝΟΛ"));
+  const cTotalQty=findCol(H,x=>x.includes("ΣΥΝΟΛΟ ΜΕ ΠΡΟΑΙΡ")||x.includes("ΣΥΝΟΛΟ ΠΟΣΟΤ"));
   const cRemValue=findCol(H,x=>x.includes("ΥΠΟΛΟΙΠ")&&(x.includes("€")||x.includes("ΑΞΙΑ")||x.includes("ΠΟΣΟ")||x.includes("ΣΥΜΒΑΣ")));
-  if(cDesc<0||cQty<0||cPrice<0)throw new Error("Δεν μπόρεσα να αναγνωρίσω τις στήλες Περιγραφή / Ποσότητα / Τιμή μονάδας.");
+  if(cDesc<0||cQty<0||cPrice<0)throw new Error("Δεν αναγνωρίστηκαν Περιγραφή / Ποσότητα / Τιμή μονάδας. "+diagnoseExcelHeaders(rows));
 
   // Οι στήλες δεξιά από τον βασικό πίνακα μπορούν να έχουν ημερομηνίες παραλαβής
   // (π.χ. 20/05/2026 ΠΑΡΑΛΑΒΗ ΥΛΙΚΩΝ). Θα μετατραπούν αυτόματα σε ιστορικό.
@@ -889,7 +905,16 @@ async function syncFromExcel(showMessage=true){
     const unit=cUnit>=0?toUpperText(String(row[cUnit]??"").trim()):"";
     const excelRemainingUnitsProvided=cRemUnits>=0&&String(row[cRemUnits]??"").trim()!=="";
     const excelRemainingNetProvided=cRemValue>=0&&String(row[cRemValue]??"").trim()!=="";
-    const initialNet=expense||qty*price;
+    const optionQty=cOption>=0?num(row[cOption]):0;
+    const initialNet=isQuantityReceiptSheet?qty*price:(expense||qty*price);
+    const availableNet=initialNet+(isQuantityReceiptSheet?optionQty*price:0);
+    if(isQuantityReceiptSheet){
+      const fail=msg=>{throw new Error(`Γραμμή Excel ${rr+1}: ${msg}. Δεν ενημερώθηκαν δεδομένα.`)};
+      if(cTotalQty>=0&&Math.abs(num(row[cTotalQty])-qty-optionQty)>0.011)fail('ασυμφωνία συνολικής ποσότητας και προαίρεσης');
+      if(Math.abs(expense-availableNet)>0.051)fail('η δαπάνη δεν συμφωνεί με ποσότητα, προαίρεση και τιμή');
+      if(excelRemainingUnitsProvided&&Math.abs(num(row[cRemUnits])-(qty-num(row[cReceived])))>0.011)fail('το υπόλοιπο αρχικής ποσότητας δεν συμφωνεί');
+      if(excelRemainingNetProvided&&Math.abs(num(row[cRemValue])-(availableNet-num(row[cReceived])*price))>0.051)fail('το υπόλοιπο αξίας δεν συμφωνεί');
+    }
     const hasReceived=cReceived>=0 && String(row[cReceived]??"").trim()!=="";
     const received=hasReceived?num(row[cReceived]):null;
     const rawBalance=excelRemainingNetProvided?num(row[cRemValue]):null;
@@ -905,14 +930,20 @@ async function syncFromExcel(showMessage=true){
       if(money&&quantity)throw new Error(`Γραμμή Excel ${rr+1}: αντιφατική μορφή παραλαβής στη στήλη ${hc.col+1}.`);
       return {...hc,amount,modes:money?["value"]:quantity?["units"]:["units","value"]};
     }).filter(x=>x.amount!==0);
+    if(isQuantityReceiptSheet){
+      const sumDated=entries.reduce((sum,e)=>sum+e.amount,0);
+      if(Math.abs(sumDated-(received??0))>0.011)throw new Error(`Γραμμή Excel ${rr+1}: οι ημερομηνίες παραλαβών (${sumDated}) δεν συμφωνούν με το σύνολο (${received}).`);
+      // Οι ημερομηνίες του συγκεκριμένου υποδείγματος αντιστοιχούν σε ποσότητες.
+      entries.forEach(e=>e.modes=["units"]);
+    }
     const candidates=[];
     const targets=[];
     for(const gross of [false,true]){
-      const fromBalance=rawBalance===null?null:initialNet-rawBalance/(gross?factor:1);
-      const target=hasReceived?received:fromBalance;
+      const fromBalance=rawBalance===null?null:availableNet-rawBalance/(gross?factor:1);
+      const target=hasReceived?(isQuantityReceiptSheet?received*price:received):fromBalance;
       if(target===null)continue;
       if(fromBalance!==null&&!close(target,fromBalance))continue;
-      if(target< -0.05 || target>initialNet+0.05)continue;
+      if(target< -0.05 || target>availableNet+0.05)continue;
       if(excelRemainingUnitsProvided && price>0 && Math.abs(qty-target/price-num(row[cRemUnits]))>0.011)continue;
       if(!targets.some(t=>close(t.target,target)))targets.push({target,gross});
     }
@@ -937,10 +968,10 @@ async function syncFromExcel(showMessage=true){
     }
     if(candidates.length!==1)throw new Error(`Γραμμή Excel ${rr+1}: ${candidates.length?"δεν διακρίνονται με βεβαιότητα ποσά και ποσότητες":"δεν συμφωνούν οι παραλαβές, η αξία και το υπόλοιπο"}. Χρησιμοποίησε μορφή Νομισματική (€) στα χρηματικά κελιά. Δεν ενημερώθηκαν τα δεδομένα.`);
     const chosen=candidates[0];
-    const net=initialNet-chosen.target;
+    const net=availableNet-chosen.target;
     const baseUnits=excelRemainingUnitsProvided?num(row[cRemUnits]):(price>0?qty-chosen.target/price:qty);
     const itemId=hash(norm(desc)+"|"+norm(unit)+"|"+price.toFixed(6)+"|"+(rr+1));
-    newItems.push({id:itemId,sourceRow:rr+1,description:desc,group,unit,initialQty:qty,unitPrice:price,initialNet,baseRemainingUnits:baseUnits,baseRemainingNet:net,excelRemainingUnitsProvided:true,excelRemainingNetProvided:true,originalExcelRemainingUnitsProvided:excelRemainingUnitsProvided,receiptEntries:entries.map((e,i)=>({...e,mode:chosen.choices[i]}))});
+    newItems.push({id:itemId,sourceRow:rr+1,description:desc,group,unit,initialQty:qty,optionQty,unitPrice:price,initialNet,baseRemainingUnits:baseUnits,baseRemainingNet:net,excelRemainingUnitsProvided:true,excelRemainingNetProvided:true,originalExcelRemainingUnitsProvided:excelRemainingUnitsProvided,receiptEntries:entries.map((e,i)=>({...e,mode:chosen.choices[i]}))});
   }
   if(!newItems.length)throw new Error("Δεν βρέθηκαν γραμμές ειδών στον πίνακα.");
 
@@ -993,9 +1024,14 @@ async function syncFromExcel(showMessage=true){
   if(audit.grand){
    setExcelAudit(`✓ ΕΛΕΓΧΟΣ OK — Υπόλοιπο Excel ${euro(audit.grand.value)} · Υπόλοιπο εφαρμογής ${euro(audit.computedTotal)}.`,"ok");
   }else{
-   setExcelAudit("⚠ ΔΕΝ ΒΡΕΘΗΚΕ ΤΟ ΚΕΛΙ ΤΟΥ ΣΥΝΟΛΙΚΟΥ ΥΠΟΛΟΙΠΟΥ ΣΤΟ EXCEL. Έγινε έλεγχος γραμμών όπου ήταν δυνατό, όχι διασταύρωση τελικού ποσού.","warn");
+   setExcelAudit(isQuantityReceiptSheet
+    ? `✓ ΕΛΕΓΧΟΣ ΓΡΑΜΜΩΝ EXCEL OK — ${newItems.length} είδη, υπόλοιπο ${euro(audit.computedTotal)} με ΦΠΑ. Επαληθεύτηκαν τα επιμέρους υπόλοιπα, όχι ανεξάρτητο γενικό σύνολο.`
+    : "⚠ ΔΕΝ ΒΡΕΘΗΚΕ ΤΟ ΚΕΛΙ ΤΟΥ ΣΥΝΟΛΙΚΟΥ ΥΠΟΛΟΙΠΟΥ ΣΤΟ EXCEL. Έγινε έλεγχος γραμμών όπου ήταν δυνατό, όχι διασταύρωση τελικού ποσού.",isQuantityReceiptSheet?"ok":"warn");
   }
-  l.migrationVerified=Boolean(audit.grand);
+  // Το συγκεκριμένο Excel δεν έχει ξεχωριστό κελί γενικού υπολοίπου.
+  // Έχουν όμως διασταυρωθεί ανά γραμμή δαπάνη, αρχική/προαιρετική ποσότητα,
+  // σύνολο παραληφθέντων, υπόλοιπα και ιστορικό ημερομηνιών.
+  l.migrationVerified=Boolean(audit.grand || (isQuantityReceiptSheet && newItems.length && excelReceiptCols.length));
   l.excelSheet=sheetName;
   c.excelSheet=sheetName;
   excelSheet.value=sheetName;
@@ -1389,7 +1425,7 @@ async function activateAppMode(){
    if(!it.description||!it.unit||!(Number(it.initialQty)>0)||!(Number(it.unitPrice)>0)||Math.abs(cents(it.initialQty*it.unitPrice)-cents(it.initialNet))>1)throw Error('Μη έγκυρα συμβατικά στοιχεία: '+it.description);
    const rs=candidate.receipts.filter(r=>r.itemId===it.id);
    if(rs.some(r=>!/^\d{4}-\d{2}-\d{2}$/.test(r.date||'')||!Number.isFinite(Number(r.netValue))||Number(r.netValue)<0))throw Error('Μη έγκυρη παραλαβή: '+it.description);
-   const remaining=cents(it.initialNet)-rs.reduce((n,r)=>n+cents(r.netValue),0);
+   const remaining=cents(it.initialNet)+cents(Number(it.optionQty||0)*Number(it.unitPrice||0))-rs.reduce((n,r)=>n+cents(r.netValue),0);
    if(Math.abs(remaining-cents(computeLine(it,candidate).remainingNet))>1)throw Error('Το ιστορικό δεν συμφωνεί με το υπόλοιπο: '+it.description);
   }
   if(candidate.receipts.some(r=>!ids.has(r.itemId)))throw Error('Παραλαβές χωρίς αντιστοίχιση είδους.');
@@ -1398,7 +1434,7 @@ async function activateAppMode(){
   const oldTotal=candidate.summary.remainingWithVat;
   candidate.entryMode='app';summarizeApp(candidate);
   // Το παλιό Excel ελέγχεται χωριστά από την προαίρεση, ώστε να μη θεωρηθεί διπλή παραλαβή.
-  const historicalNet=candidate.items.reduce((sum,it)=>sum+Number(it.initialNet||0),0)-candidate.receipts.reduce((sum,r)=>sum+Number(r.netValue||0),0);
+  const historicalNet=candidate.items.reduce((sum,it)=>sum+Number(it.initialNet||0)+Number(it.optionQty||0)*Number(it.unitPrice||0),0)-candidate.receipts.reduce((sum,r)=>sum+Number(r.netValue||0),0);
   if(Math.abs(cents(historicalNet*(1+Number(candidate.vat??24)/100))-cents(oldTotal))>1)throw Error('Το ιστορικό δεν συμφωνεί με το συνολικό υπόλοιπο Excel.');
   if(!confirm('Ενεργοποίηση καταχωρίσεων; '+candidate.items.length+' είδη, '+candidate.receipts.length+' παλαιές παραλαβές. Υπόλοιπο με ΦΠΑ: '+euro(candidate.summary.remainingWithVat)+' . Μετά την ενεργοποίηση το Excel δεν επανεισάγεται.'))return;
   if(currentId!==cid)throw Error('Άλλαξε η επιλεγμένη σύμβαση.');
@@ -1651,9 +1687,9 @@ function catalogFromExcel(buffer){
  const sheet=wb.Sheets[wb.SheetNames.find(n=>norm(n)==='ΣΥΜΒΑΣΗ')||wb.SheetNames[0]];
  const rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:'',raw:true});
  const hdr=buildHeader(rows), H=hdr.headers;
- const d=findCol(H,x=>x.includes('ΠΕΡΙΓΡΑΦ')||x.includes('ΕΙΔΟΣ')||x.includes('ΤΙΤΛ'));
+ const d=findCol(H,isExcelDesc);
  const q=findCol(H,x=>x.includes('ΠΟΣΟΤ')&&!x.includes('ΥΠΟΛΟΙΠ'));
- const p=findCol(H,x=>x.includes('ΤΙΜ')&&x.includes('ΜΟΝ'));
+ const p=findCol(H,isExcelPrice);
  const u=findCol(H,x=>x.includes('Μ.Μ')||x==='ΜΜ'||x.includes('ΜΟΝΑΔΑ ΜΕΤΡ'));
  const v=findCol(H,x=>(x.includes('ΔΑΠΑΝ')||x.includes('ΑΞΙΑ'))&&!x.includes('ΥΠΟΛΟΙΠ')&&!x.includes('ΠΑΡΑΛΑΒ'));
  if(d<0||q<0||p<0)throw Error('Δεν βρέθηκαν στήλες περιγραφής, ποσότητας και τιμής μονάδας.');
@@ -1669,7 +1705,7 @@ function catalogFromExcel(buffer){
   out.push({description:a[d],group:excelGroupForRow(a,d,q,p,g,activeGroup),unit:u<0?'ΤΕΜ':a[u],initialQty:qty,unitPrice:price,initialNet:value});
  }
  const headers=rows.slice(0,Math.min(8,rows.length));
- const hasDates=headers.some(row=>row.some(cell=>typeof cell==='string'&&!!excelHeaderToDate(cell)));
+ const hasDates=headers.some(row=>row.some(cell=>!!excelHeaderToDate(cell)));
  if(hasDates)throw Error('Αυτό το Excel περιέχει χρονολογημένες παραλαβές. Για να μη χαθεί το ιστορικό, χρησιμοποίησε «ΕΛΕΓΧΟΣ EXCEL ΚΑΙ ΕΝΕΡΓΟΠΟΙΗΣΗ ΚΑΤΑΧΩΡΙΣΕΩΝ» από το OneDrive.');
  return normalizeCatalogItems(out);
 }
