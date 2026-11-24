@@ -107,10 +107,20 @@ html,body{width:100%;max-width:none}
 }
 @media print { #reportsArea{display:block!important} #receiptActions,#bulkReceiptPanel{display:none!important} }
 </style>
+<style>
+@media screen {
+ table tbody tr:nth-child(odd) > td {background-color:#ffffff;}
+ table tbody tr:nth-child(even) > td {background-color:#edf3fa;}
+ #dateHistoryTable tr.day-entry:nth-of-type(odd) > td {background-color:#ffffff;}
+ #dateHistoryTable tr.day-entry:nth-of-type(even) > td {background-color:#edf3fa;}
+ table tbody tr:focus-within > td {box-shadow:inset 0 1px #93b4dc,inset 0 -1px #93b4dc;}
+}
+@media print {#summaryPanel,#historyPanel{display:block!important}}
+</style>
 </head>
 <body>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v38 — ΔΙΟΡΘΩΣΗ ΕΛΕΓΧΟΥ ΑΠΟΘΗΚΕΥΣΗΣ</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v38 — ΠΙΝΑΚΕΣ ΚΑΙ ΓΡΗΓΟΡΗ ΚΑΤΑΧΩΡΙΣΗ</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -236,7 +246,8 @@ html,body{width:100%;max-width:none}
   </section>
   <div class="no-print hidden" id="receiptActions" style="display:flex;flex-wrap:wrap;gap:10px;margin:0 0 16px">
     <button class="green" id="toggleEntryButton" type="button" aria-expanded="false" aria-controls="simpleReceiptPanel bulkReceiptPanel" onclick="toggleReceiptEntry()">+ ΑΝΟΙΓΜΑ ΚΑΤΑΧΩΡΙΣΗΣ</button>
-    <button class="purple" id="toggleReportsButton" type="button" aria-expanded="false" aria-controls="reportsArea" onclick="toggleReceiptsArea('reports')">▤ ΣΥΓΚΕΝΤΡΩΤΙΚΟΣ ΠΙΝΑΚΑΣ & ΙΣΤΟΡΙΚΟ</button>
+    <button class="purple" id="toggleReportsButton" type="button" aria-expanded="false" aria-controls="summaryPanel" onclick="toggleReceiptsArea('reports')">▤ ΣΥΓΚΕΝΤΡΩΤΙΚΟΣ ΠΙΝΑΚΑΣ</button>
+    <button class="purple" id="toggleHistoryButton" type="button" aria-expanded="false" aria-controls="historyPanel" onclick="toggleReceiptsArea('history')">▤ ΙΣΤΟΡΙΚΟ ΠΑΡΑΛΑΒΩΝ</button>
     
     <button class="gray" type="button" onclick="exportAppExcel()" id="bulkExportButton">ΕΞΑΓΩΓΗ EXCEL</button>
   </div>
@@ -287,7 +298,7 @@ html,body{width:100%;max-width:none}
     <div class="table-wrap"><table style="min-width:760px"><thead><tr><th>ΟΜΑΔΑ</th><th class="num">ΑΞΙΑ ΣΥΜΒΑΣΗΣ ΧΩΡΙΣ ΦΠΑ</th><th class="num">ΠΑΡΑΛΑΒΕΣ ΧΩΡΙΣ ΦΠΑ</th><th class="num">ΥΠΟΛΟΙΠΟ ΧΩΡΙΣ ΦΠΑ</th><th class="num">ΥΠΟΛΟΙΠΟ ΜΕ ΦΠΑ</th></tr></thead><tbody id="groupBalanceBody"></tbody></table></div>
   </section>
   <div id="reportsArea" class="hidden">
-  <section class="panel">
+  <section class="panel hidden" id="summaryPanel">
     <div class="panel-title"><span>Συγκεντρωτικός πίνακας παραλαβών — έως την τελευταία παραλαβή</span><span id="lineCount" class="muted"></span></div>
     <div class="table-wrap">
       <table id="itemsTable">
@@ -300,7 +311,7 @@ html,body{width:100%;max-width:none}
     </div>
   </section>
 
-  <section class="panel">
+  <section class="panel hidden" id="historyPanel">
     <div class="panel-title">
       <span>Ιστορικό παραλαβών ανά ημερομηνία</span>
       <span class="muted">Οι παραλαβές ομαδοποιούνται ανά ημερομηνία, μία ανά γραμμή</span>
@@ -1271,6 +1282,7 @@ async function saveOptionAllocations(){
 }
 let receiptAreaContractId=null;
 let reportsOpen=false;
+let historyOpen=false;
 let bulkOpen=false;
 let entryOpen=false;
 function toggleReceiptEntry(){
@@ -1284,19 +1296,24 @@ function toggleReceiptsArea(which){
    setStatus('Για καταχώριση παραλαβών ενεργοποίησε πρώτα τη σύμβαση από το αρχείο εισαγωγής.','err');return;
  }
  if(which==='reports')reportsOpen=!reportsOpen;
+ else if(which==='history')historyOpen=!historyOpen;
  else if(which==='bulk')bulkOpen=!bulkOpen;
  updateReceiptAreas();
 }
 function updateReceiptAreas(){
  const l=getLedger(false),active=l?.entryMode==='app';
  if(receiptAreaContractId!==currentId){
-   receiptAreaContractId=currentId;reportsOpen=false;bulkOpen=false;entryOpen=false;el('bulkReceiptItems').innerHTML='';el('bulkDate').value='';el('bulkNote').value='';
+   receiptAreaContractId=currentId;reportsOpen=false;historyOpen=false;bulkOpen=false;entryOpen=false;el('bulkReceiptItems').innerHTML='';el('bulkDate').value='';el('bulkNote').value='';
  }
  const action=el('receiptActions');
  action.classList.toggle('hidden',!l);
  // inline flex must not override .hidden
  action.style.display=l?'flex':'none';
- el('reportsArea').classList.toggle('hidden',!reportsOpen);
+ el('reportsArea').classList.toggle('hidden',!reportsOpen&&!historyOpen);
+ el('summaryPanel').classList.toggle('hidden',!reportsOpen);
+ el('historyPanel').classList.toggle('hidden',!historyOpen);
+ el('toggleHistoryButton').setAttribute('aria-expanded',String(historyOpen));
+ el('toggleHistoryButton').textContent=historyOpen?'✕ ΚΛΕΙΣΙΜΟ ΙΣΤΟΡΙΚΟΥ':'▤ ΙΣΤΟΡΙΚΟ ΠΑΡΑΛΑΒΩΝ';
  bulkOpen=entryOpen;el('bulkReceiptPanel').classList.toggle('hidden',!active||!entryOpen);
  const tb=el('toggleEntryButton');
  tb.setAttribute('aria-expanded',String(entryOpen));
@@ -1304,7 +1321,7 @@ function updateReceiptAreas(){
  tb.className=entryOpen?'orange':'green';
  el('toggleReportsButton').setAttribute('aria-expanded',String(reportsOpen));
 
- el('toggleReportsButton').textContent=reportsOpen?'✕ ΚΛΕΙΣΙΜΟ ΠΙΝΑΚΩΝ':'▤ ΣΥΓΚΕΝΤΡΩΤΙΚΟΣ ΠΙΝΑΚΑΣ & ΙΣΤΟΡΙΚΟ';
+ el('toggleReportsButton').textContent=reportsOpen?'✕ ΚΛΕΙΣΙΜΟ ΣΥΓΚΕΝΤΡΩΤΙΚΟΥ':'▤ ΣΥΓΚΕΝΤΡΩΤΙΚΟΣ ΠΙΝΑΚΑΣ';
 
 
  el('bulkExportButton').disabled=!active;
@@ -1321,7 +1338,7 @@ function renderBulkReceiptItems(){
    const group=itemGroup(it),header=hasGroups(l.items)&&group!==currentGroup?`<tr class="bulk-group-heading"><td colspan="10" style="background:#e9e1f6;color:#39216d;font-weight:700;padding:12px 14px">${esc(group)}</td></tr>`:'';
    currentGroup=group;
    const x=computeLine(it,l),saved=old.get(it.id)||{qty:'',money:''};
-   return header+`<tr data-item-id="${esc(it.id)}" data-snapshot-price="${Number(it.unitPrice||0)}" data-snapshot-initial-qty="${Number(it.initialQty||0)}" data-snapshot-option-qty="${Number(it.optionQty||0)}" data-snapshot-initial-net="${Number(it.initialNet||0)}"><td>${i+1}</td><td>${esc(it.description)}</td><td>${esc(it.unit||'')}</td><td class="num">${euro(it.unitPrice)}</td><td class="num">${Number(it.initialQty||0).toLocaleString('el-GR',{maximumFractionDigits:6})}</td><td><input class="inline-option-qty" inputmode="decimal" value="${esc(saved.option===undefined?String(Number(it.optionQty||0)).replace('.',','):saved.option)}" style="width:110px" aria-label="Πρόσθετη ποσότητα προαίρεσης" oninput="previewInlineOption()"></td><td class="num">${Number(x.totalQty||0).toLocaleString('el-GR',{maximumFractionDigits:6})}</td><td class="num"><strong>${euro(x.remainingNet)}</strong></td><td><input class="bulk-qty" inputmode="decimal" value="${esc(saved.qty)}" placeholder="Ποσότητα" style="width:155px" oninput="this.closest('tr').querySelector('.bulk-money').value='';previewBulkReceipt()"></td><td><input class="bulk-money" inputmode="decimal" value="${esc(saved.money)}" placeholder="Αξία €" style="width:155px" oninput="this.closest('tr').querySelector('.bulk-qty').value='';previewBulkReceipt()"></td></tr>`;
+   return header+`<tr data-item-id="${esc(it.id)}"><td>${i+1}</td><td>${esc(it.description)}</td><td>${esc(it.unit||'')}</td><td class="num">${euro(it.unitPrice)}</td><td class="num">${Number(it.initialQty||0).toLocaleString('el-GR',{maximumFractionDigits:6})}</td><td><input class="inline-option-qty" inputmode="decimal" value="${esc(saved.option===undefined?String(Number(it.optionQty||0)).replace('.',','):saved.option)}" style="width:110px" aria-label="Πρόσθετη ποσότητα προαίρεσης" oninput="previewInlineOption()"></td><td class="num">${Number(x.totalQty||0).toLocaleString('el-GR',{maximumFractionDigits:6})}</td><td class="num"><strong>${euro(x.remainingNet)}</strong></td><td><input class="bulk-qty" inputmode="decimal" value="${esc(saved.qty)}" placeholder="Ποσότητα" style="width:155px" oninput="this.closest('tr').querySelector('.bulk-money').value='';previewBulkReceipt()"></td><td><input class="bulk-money" inputmode="decimal" value="${esc(saved.money)}" placeholder="Αξία €" style="width:155px" oninput="this.closest('tr').querySelector('.bulk-qty').value='';previewBulkReceipt()"></td></tr>`;
  }).join('');
  previewInlineOption();previewBulkReceipt();
 }
@@ -1385,17 +1402,8 @@ async function saveBulkReceipts(){
   if(!old||old.entryMode!=='app'||currentId!==cid)throw Error('Δεν υπάρχει ενεργή καταχώριση.');
   // Ασφαλής προσθήκη στο νεότερο ιστορικό: δεν γράφουμε ποτέ το παλιό τοπικό αντίγραφο.
   // Αν προστέθηκαν παραλαβές από άλλη συνεδρία, τις διατηρούμε και ελέγχουμε ξανά τα διαθέσιμα υπόλοιπα.
-  // Ελέγχουμε μόνο τα είδη της συγκεκριμένης παραλαβής ως προς το στιγμιότυπο
-  // που εμφάνισε η φόρμα. Τα υπολογιζόμενα πεδία του τοπικού ledger δεν αποτελούν σύγκρουση.
-  const nearlyEqual=(a,b)=>Math.abs(Number(a||0)-Number(b||0))<0.000001;
-  for(const r of rs){
-   const row=[...el('bulkReceiptItems').querySelectorAll('tr[data-item-id]')].find(t=>t.dataset.itemId===String(r.itemId));
-   const remote=(old.items||[]).find(i=>String(i.id)===String(r.itemId));
-   if(!row||!remote)throw Error('Το είδος παραλαβής δεν υπάρχει πλέον στο OneDrive. Ανανέωσε τη σύμβαση.');
-   const fields=[['τιμή',remote.unitPrice,row.dataset.snapshotPrice],['αρχική ποσότητα',remote.initialQty,row.dataset.snapshotInitialQty],['προαίρεση',remote.optionQty,row.dataset.snapshotOptionQty],['αρχική αξία',remote.initialNet,row.dataset.snapshotInitialNet]];
-   const mismatch=fields.find(([name,a,b])=>!nearlyEqual(a,b));
-   if(mismatch)throw Error('Το είδος «'+remote.description+'» έχει διαφορετική '+mismatch[0]+' στο OneDrive. Η καταχώριση δεν αποθηκεύτηκε. Ανανέωσε πρώτα τη σελίδα.');
-  }
+  const itemSig=x=>ledgerSignature({items:x.items||[],receipts:[]});
+  if(itemSig(old)!==itemSig(local))throw Error('Έχουν αλλάξει τα είδη, οι τιμές ή η προαίρεση στο OneDrive. Ανανέωσε τη σελίδα και έλεγξε τις καταχωρίσεις σου πριν αποθηκεύσεις.');
   const receiptSig=r=>JSON.stringify({id:String(r.id),itemId:String(r.itemId),date:String(r.date||''),mode:String(r.mode||''),units:Number(r.units||0),netValue:cents(r.netValue||0),note:String(r.note||''),source:String(r.source||'')});
   const current=new Map((old.receipts||[]).map(r=>[String(r.id),receiptSig(r)]));
   const seen=new Set();
@@ -2031,6 +2039,18 @@ async function commitSimpleReceiptFile(){
  }catch(e){setStatus('ΔΕΝ ΑΠΟΘΗΚΕΥΤΗΚΑΝ: '+e.message,'err');}
  finally{busy=false;}
 }
+</script>
+<script>
+document.addEventListener('keydown', function(event){
+ if(event.key!=='Enter'||event.isComposing||event.ctrlKey||event.altKey||event.metaKey)return;
+ const field=event.target;
+ if(!field.matches('#bulkReceiptItems input.bulk-qty, #bulkReceiptItems input.bulk-money, #bulkReceiptItems input.inline-option-qty'))return;
+ event.preventDefault();
+ const selector=field.classList.contains('bulk-qty')?'.bulk-qty':field.classList.contains('bulk-money')?'.bulk-money':'.inline-option-qty';
+ const fields=Array.from(document.querySelectorAll('#bulkReceiptItems '+selector)).filter(x=>!x.disabled&&!x.readOnly);
+ const next=fields[fields.indexOf(field)+(event.shiftKey?-1:1)];
+ if(next){next.focus();next.select();}
+});
 </script>
 </body>
 </html>
