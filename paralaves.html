@@ -120,7 +120,7 @@ html,body{width:100%;max-width:none}
 </head>
 <body>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v38 — ΠΙΝΑΚΕΣ ΚΑΙ ΓΡΗΓΟΡΗ ΚΑΤΑΧΩΡΙΣΗ</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v39 — ΑΝΑΖΗΤΗΣΗ ΥΛΙΚΩΝ</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -263,6 +263,12 @@ html,body{width:100%;max-width:none}
         <button type="button" id="bulkSaveTop" class="green" onclick="saveBulkReceipts()" disabled>💾 ΑΠΟΘΗΚΕΥΣΗ ΠΑΡΑΛΑΒΩΝ</button>
         <strong id="bulkTopPreview" role="status" aria-live="polite" style="flex:1;min-width:250px">Συμπλήρωσε ποσότητα ή αξία για τουλάχιστον ένα είδος.</strong>
       </div>
+      <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:12px 0">
+        <label style="flex:1;min-width:240px">ΑΝΑΖΗΤΗΣΗ ΥΛΙΚΟΥ <input type="search" id="bulkItemSearch" placeholder="Περιγραφή ή Α/Α υλικού…" oninput="filterBulkItems()" style="display:block;width:100%;margin-top:5px" autocomplete="off"></label>
+        <button type="button" class="gray" onclick="el('bulkItemSearch').value='';filterBulkItems();el('bulkItemSearch').focus()">ΚΑΘΑΡΙΣΜΟΣ / ΟΛΑ ΤΑ ΥΛΙΚΑ</button>
+        <span id="bulkSearchCount" role="status" aria-live="polite" class="muted"></span>
+      </div>
+      <p class="muted" style="font-size:12px">Η αναζήτηση δεν διαγράφει τις ποσότητες ή αξίες που έχεις ήδη συμπληρώσει. Η αποθήκευση περιλαμβάνει όλα τα συμπληρωμένα είδη, ακόμη και όσα δεν εμφανίζονται.</p>
       <div class="table-wrap"><table id="bulkReceiptTable" style="min-width:1100px">
         <thead><tr><th>Α/Α</th><th style="min-width:480px">ΥΛΙΚΟ / ΕΙΔΟΣ</th><th>Μ.Μ.</th><th class="num">ΤΙΜΗ ΜΟΝ.</th><th class="num">ΑΡΧΙΚΗ ΠΟΣ.</th><th class="num">ΠΡΟΑΙΡΕΣΗ (+)</th><th class="num">ΣΥΝ. ΠΟΣ.</th><th class="num">ΥΠΟΛΟΙΠΟ ΧΩΡΙΣ ΦΠΑ</th><th>ΠΟΣΟΤΗΤΑ ΠΑΡΑΛΑΒΗΣ</th><th>ΑΞΙΑ ΧΩΡΙΣ ΦΠΑ (€)</th></tr></thead>
         <tbody id="bulkReceiptItems"></tbody>
@@ -1303,7 +1309,7 @@ function toggleReceiptsArea(which){
 function updateReceiptAreas(){
  const l=getLedger(false),active=l?.entryMode==='app';
  if(receiptAreaContractId!==currentId){
-   receiptAreaContractId=currentId;reportsOpen=false;historyOpen=false;bulkOpen=false;entryOpen=false;el('bulkReceiptItems').innerHTML='';el('bulkDate').value='';el('bulkNote').value='';
+   receiptAreaContractId=currentId;reportsOpen=false;historyOpen=false;bulkOpen=false;entryOpen=false;el('bulkReceiptItems').innerHTML='';el('bulkItemSearch').value='';el('bulkDate').value='';el('bulkNote').value='';
  }
  const action=el('receiptActions');
  action.classList.toggle('hidden',!l);
@@ -1340,7 +1346,21 @@ function renderBulkReceiptItems(){
    const x=computeLine(it,l),saved=old.get(it.id)||{qty:'',money:''};
    return header+`<tr data-item-id="${esc(it.id)}"><td>${i+1}</td><td>${esc(it.description)}</td><td>${esc(it.unit||'')}</td><td class="num">${euro(it.unitPrice)}</td><td class="num">${Number(it.initialQty||0).toLocaleString('el-GR',{maximumFractionDigits:6})}</td><td><input class="inline-option-qty" inputmode="decimal" value="${esc(saved.option===undefined?String(Number(it.optionQty||0)).replace('.',','):saved.option)}" style="width:110px" aria-label="Πρόσθετη ποσότητα προαίρεσης" oninput="previewInlineOption()"></td><td class="num">${Number(x.totalQty||0).toLocaleString('el-GR',{maximumFractionDigits:6})}</td><td class="num"><strong>${euro(x.remainingNet)}</strong></td><td><input class="bulk-qty" inputmode="decimal" value="${esc(saved.qty)}" placeholder="Ποσότητα" style="width:155px" oninput="this.closest('tr').querySelector('.bulk-money').value='';previewBulkReceipt()"></td><td><input class="bulk-money" inputmode="decimal" value="${esc(saved.money)}" placeholder="Αξία €" style="width:155px" oninput="this.closest('tr').querySelector('.bulk-qty').value='';previewBulkReceipt()"></td></tr>`;
  }).join('');
- previewInlineOption();previewBulkReceipt();
+ filterBulkItems();previewInlineOption();previewBulkReceipt();
+}
+function filterBulkItems(){
+ const query=norm(el('bulkItemSearch').value), tokens=query.split(' ').filter(Boolean);
+ const rows=[...el('bulkReceiptItems').rows];let total=0,visible=0,heading=null;
+ for(const row of rows){
+  if(row.classList.contains('bulk-group-heading')){heading=row;heading.classList.add('hidden');continue;}
+  if(!row.hasAttribute('data-item-id'))continue;
+  total++;
+  const description=norm(row.cells[1].textContent), number=row.cells[0].textContent.trim();
+  const match=!query||number===query||tokens.every(t=>description.includes(t));
+  row.classList.toggle('hidden',!match);
+  if(match){visible++;if(heading)heading.classList.remove('hidden');}
+ }
+ el('bulkSearchCount').textContent=visible+' / '+total+' είδη'+(visible===0?' — Δεν βρέθηκαν υλικά':'');
 }
 function previewInlineOption(){
  const out=el('inlineOptionInfo'),l=getLedger(false);if(!out||!l)return;
@@ -2047,7 +2067,7 @@ document.addEventListener('keydown', function(event){
  if(!field.matches('#bulkReceiptItems input.bulk-qty, #bulkReceiptItems input.bulk-money, #bulkReceiptItems input.inline-option-qty'))return;
  event.preventDefault();
  const selector=field.classList.contains('bulk-qty')?'.bulk-qty':field.classList.contains('bulk-money')?'.bulk-money':'.inline-option-qty';
- const fields=Array.from(document.querySelectorAll('#bulkReceiptItems '+selector)).filter(x=>!x.disabled&&!x.readOnly);
+ const fields=Array.from(document.querySelectorAll('#bulkReceiptItems '+selector)).filter(x=>!x.disabled&&!x.readOnly&&!x.closest('tr').classList.contains('hidden'));
  const next=fields[fields.indexOf(field)+(event.shiftKey?-1:1)];
  if(next){next.focus();next.select();}
 });
