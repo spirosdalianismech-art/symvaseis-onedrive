@@ -117,10 +117,17 @@ html,body{width:100%;max-width:none}
 }
 @media print {#summaryPanel,#historyPanel{display:block!important}}
 </style>
+<style>
+#initialScreen{display:none}
+body.initial-loading > :not(#initialScreen):not(script):not(style){visibility:hidden!important}
+body.initial-loading #initialScreen{display:block;position:fixed;inset:0;background:#f1f5f9;z-index:99999}
+</style>
 </head>
-<body>
+<body class="initial-loading">
+<div id="initialScreen" role="status" aria-label="Άνοιγμα παραλαβών"></div>
+<script>window.addEventListener('error',function(e){if(e.target===window && document.body.classList.contains('initial-loading')){document.body.classList.remove('initial-loading');} });</script>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v39 — ΑΝΑΖΗΤΗΣΗ ΥΛΙΚΩΝ</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v40 — ΠΑΡΑΛΑΒΕΣ</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -1215,6 +1222,7 @@ window.addEventListener("load",async()=>{
   if(a){setStatus("Συνδεδεμένος ως "+a.username,"ok");await loadAll()}
   else setStatus("Πατήστε «Σύνδεση Microsoft».","")
  }catch(e){setStatus(e.message,"err")}
+ finally{document.body.classList.remove("initial-loading");document.getElementById("initialScreen")?.remove();}
 });
 
 // v17: migration review and app-mode ledger. Excel is never reimported after activation.
