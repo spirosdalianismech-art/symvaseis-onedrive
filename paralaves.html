@@ -122,12 +122,13 @@ html,body{width:100%;max-width:none}
 body.initial-loading > :not(#initialScreen):not(script):not(style){visibility:hidden!important}
 body.initial-loading #initialScreen{display:block;position:fixed;inset:0;background:#f1f5f9;z-index:99999}
 </style>
+<style>body.collaborator #sourceSettings,body.collaborator #simpleReceiptPanel,body.collaborator #migrationPanel,body.collaborator #optionToggleRow,body.collaborator #optionPanel,body.collaborator #entryPanel,body.collaborator #bulkReceiptPanel,body.collaborator #toggleEntryButton,body.collaborator #excelSyncButton,body.collaborator #saveButton,body.collaborator button[onclick^="openReceiptEditor("],body.collaborator button[onclick^="deleteStoredReceipt("],body.collaborator button[onclick*="paralaves-view.html"]{display:none!important}</style>
 </head>
-<body class="initial-loading">
+<body class="initial-loading collaborator">
 <div id="initialScreen" role="status" aria-label="Άνοιγμα παραλαβών"></div>
 <script>window.addEventListener('error',function(e){if(e.target===window && document.body.classList.contains('initial-loading')){document.body.classList.remove('initial-loading');} });</script>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v40 — ΠΑΡΑΛΑΒΕΣ</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v42 — ΠΑΡΑΛΑΒΕΣ</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -299,6 +300,8 @@ body.initial-loading #initialScreen{display:block;position:fixed;inset:0;backgro
       <div style="display:flex;justify-content:flex-end;gap:8px"><button class="gray" onclick="closeReceiptEditor()">ΑΚΥΡΩΣΗ</button><button class="green" onclick="saveReceiptCorrection()">ΑΠΟΘΗΚΕΥΣΗ ΔΙΟΡΘΩΣΗΣ</button></div>
     </div>
   </dialog>
+  <div class="no-print" style="margin:10px 0"><button class="gray" type="button" onclick="toggleReceiptDocuments()">📁 ΑΡΧΕΙΑ ΣΥΜΒΑΣΗΣ — ΠΡΟΒΟΛΗ / ΛΗΨΗ</button></div>
+  <section class="panel hidden" id="receiptDocsPanel"><div class="panel-title">ΑΡΧΕΙΑ ΣΥΜΒΑΣΗΣ <button class="gray" type="button" onclick="loadReceiptDocuments()">ΑΝΑΝΕΩΣΗ</button></div><div id="receiptDocsList" style="padding:15px"></div></section>
   <div class="cards">
     <div class="card"><div class="label">Αρχική αξία χωρίς ΦΠΑ</div><div class="value" id="initialNet">0,00 €</div></div>
     <div class="card"><div class="label">Υπόλοιπο χωρίς ΦΠΑ</div><div class="value" id="remainingNet">0,00 €</div></div>
@@ -400,6 +403,39 @@ async function assertWorkspaceItem(ref){
 }
 
 
+
+// Shared workspace: only the owner of the connected personal drive manages data.
+// Actual security must be provided by OneDrive ACLs; this is an additional UI/API guard.
+let workspaceAdmin=false;
+async function identifyWorkspaceRole(){
+ workspaceAdmin=false;
+ document.body.classList.add('collaborator');
+ if(!workspace()){workspaceAdmin=true;}else{
+  try{const r=await graph(GROOT+'/me/drive?$select=id');if(r.ok)workspaceAdmin=(await r.json()).id===workspace().driveId;}catch(e){console.warn('Workspace role:',e.message);}
+ }
+ document.body.classList.toggle('collaborator',!workspaceAdmin);
+}
+const SHARED_DOCS='SharedDocuments';
+function sharedRecordFolder(record){return String(record.id).replace(/[^a-zA-Z0-9_-]/g,'_');}
+function sharedCategoryFolder(label){return label.replace(/[\\/:*?"<>|]/g,'_');}
+function sharedPathURL(path){return GROOT+'/me/drive/root:/'+encPath(APP_FOLDER+'/'+path);}
+async function listSharedContractDocs(record){
+ if(!workspace()||!record)return [];
+ const out=[];
+ const base=sharedPathURL(SHARED_DOCS+'/'+sharedRecordFolder(record));
+ const folders=await listWorkspaceChildren(base+':/children');
+ for(const folder of folders.filter(f=>f.folder)){
+  const files=await listWorkspaceChildren(driveItemURL(workspace().driveId,folder.id)+'/children');
+  for(const f of files.filter(x=>x.file))out.push({categoryLabel:folder.name,name:f.name.replace(/^\d{13}-[a-z0-9]+-/i,''),id:f.id,webUrl:f.webUrl});
+ }
+ return out;
+}
+async function listWorkspaceChildren(url){
+ const all=[];while(url){const r=await graph(url);if(r.status===404)return all;if(!r.ok)throw Error('Δεν ήταν δυνατή η ανάγνωση αρχείων (HTTP '+r.status+').');const j=await r.json();all.push(...(j.value||[]));url=j['@odata.nextLink']||'';}
+ return all;
+}
+function safeDocUrl(v){try{const u=new URL(v);return u.protocol==='https:'?u.href:'';}catch{return '';}}
+
 const msalInstance=new msal.PublicClientApplication({
   auth:{clientId:CLIENT_ID,authority:"https://login.microsoftonline.com/common",redirectUri:REDIRECT_URI},
   cache:{cacheLocation:"localStorage",storeAuthStateInCookie:false}
@@ -420,7 +456,7 @@ function goBack(){location.href="./"}
 
 async function getAccount(){let a=msalInstance.getActiveAccount();if(!a){const xs=msalInstance.getAllAccounts();if(xs.length){a=xs[0];msalInstance.setActiveAccount(a)}}return a}
 async function getToken(){const a=await getAccount();if(!a)throw new Error("Πρέπει πρώτα να συνδεθείτε με Microsoft.");try{return (await msalInstance.acquireTokenSilent({scopes:["User.Read","Files.ReadWrite"],account:a})).accessToken}catch{return (await msalInstance.acquireTokenPopup({scopes:["User.Read","Files.ReadWrite"],account:a})).accessToken}}
-async function graph(url,opt={}){url=routeWorkspace(url);const tok=await getToken();opt.headers=opt.headers||{};opt.headers.Authorization="Bearer "+tok;return fetch(url,opt)}
+async function graph(url,opt={}){if(!workspaceAdmin&&!/^(GET|HEAD)$/i.test(opt.method||"GET"))throw Error("Οι παραλαβές είναι μόνο για ανάγνωση.");url=routeWorkspace(url);const tok=await getToken();opt.headers=opt.headers||{};opt.headers.Authorization="Bearer "+tok;return fetch(url,opt)}
 async function signIn(){try{const r=await msalInstance.loginPopup(loginRequest);msalInstance.setActiveAccount(r.account);setStatus("Συνδεθήκατε ως "+r.account.username,"ok");await loadAll()}catch(e){setStatus("Σφάλμα σύνδεσης:\n"+e.message,"err")}}
 async function ensureRootFolder(){
  if(await verifyWorkspace())return;
@@ -435,6 +471,22 @@ async function writeJson(name,obj){
   let detail='';try{const j=await r.json();detail=j?.error?.message||j?.error?.code||JSON.stringify(j)}catch{detail=await r.text()}
   throw new Error('Αποτυχία εγγραφής OneDrive (HTTP '+r.status+'): '+detail);
  }
+}
+
+
+function toggleReceiptDocuments(){const p=el('receiptDocsPanel');p.classList.toggle('hidden');if(!p.classList.contains('hidden'))loadReceiptDocuments();}
+async function loadReceiptDocuments(){
+ const c=getContract(),host=el('receiptDocsList');if(!c){host.textContent='Δεν επιλέχθηκε σύμβαση.';return;}
+ const cid=c.id;host.textContent='Φόρτωση αρχείων…';
+ const docs=[...(c.documentFiles||[]),...(c.assignmentFiles||[]),...(c.invoiceFiles||[])];
+ if(c.contractFileUrl)docs.push({id:c.contractFileId,name:c.contractFileName||'ΣΥΜΒΑΣΗ',webUrl:c.contractFileUrl});
+ let warning='';try{docs.push(...await listSharedContractDocs(c));}catch(e){warning=e.message;}
+ if(currentId!==cid)return;host.innerHTML='';const seen=new Set();
+ for(const d of docs){const k=d.id||d.webUrl;if(!k||seen.has(k))continue;seen.add(k);const line=document.createElement('div');line.style.margin='8px 0';
+ const name=document.createElement('span');name.textContent=(d.categoryLabel?d.categoryLabel+' — ':'')+(d.name||'ΑΡΧΕΙΟ')+' ';line.appendChild(name);
+ const url=safeDocUrl(d.webUrl);if(url){const a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener noreferrer';a.textContent='Προβολή / λήψη στο OneDrive';line.appendChild(a);}
+ host.appendChild(line);}
+ if(!seen.size)host.textContent='Δεν υπάρχουν συνδεδεμένα αρχεία.';if(warning){const p=document.createElement('p');p.textContent=warning;host.appendChild(p);}
 }
 
 function getContract(){return contracts.find(c=>c.id===currentId)}
@@ -524,6 +576,7 @@ function recompute(){
 }
 async function saveAll(){if(getLedger(false)?.entryMode==="app"){setStatus("Οι παραλαβές αποθηκεύονται κατά την καταχώριση.","ok");return;}return syncFromExcel(true)}
 async function loadAll(){
+ await identifyWorkspaceRole();
  setStatus("Φόρτωση δεδομένων...");
  const s=await readJson(DATA_FILE);contracts=Array.isArray(s?.records)?s.records:[];
  contracts=contracts.map(c=>({
@@ -574,7 +627,7 @@ async function loadAll(){
    getLedger(true);
    render();
    const l=getLedger(false);
-   if(l.entryMode!=="app" && (l.excelPath||getContract()?.excelPath)){
+   if(workspaceAdmin&&l.entryMode!=="app" && (l.excelPath||getContract()?.excelPath)){
      await syncFromExcel(true);
      return; // Διατηρούμε το αποτέλεσμα του ελέγχου στην οθόνη.
    }
@@ -647,7 +700,7 @@ async function applyDepartmentFilter(){
     getLedger(true);
     render();
     const l=getLedger(false);
-    if((l?.excelPath||getContract()?.excelPath)) await syncFromExcel(false);
+    if(workspaceAdmin&&(l?.excelPath||getContract()?.excelPath)) await syncFromExcel(false);
   }else{
     render();
   }
@@ -655,7 +708,7 @@ async function applyDepartmentFilter(){
 async function selectContract(id){
  currentId=id;getLedger(true);const l=getLedger(false);render();
  history.replaceState(null,"","paralaves.html?contractId="+encodeURIComponent(id));
- if((l.excelPath||getContract()?.excelPath))await syncFromExcel(false)
+ if(workspaceAdmin&&(l.excelPath||getContract()?.excelPath))await syncFromExcel(false)
 }
 
 function groupedReceiptHistory(items, receipts, head, body, foot){
@@ -678,7 +731,7 @@ function groupedReceiptHistory(items, receipts, head, body, foot){
     rs.forEach((r,j)=>{
       const it=items.find(x=>x.id===r.itemId), val=Number(r.netValue||0), isUnits=r.mode==="units";
       daily+=val;
-      html+=`<tr class="day-entry${alt}"><td>${j+1}</td><td>${esc(it?.description||"ΜΗ ΑΝΑΓΝΩΡΙΣΜΕΝΟ ΕΙΔΟΣ")}</td><td>${esc(itemGroup(it))}</td><td>${esc(it?.unit||"")}</td><td>${isUnits?"ΠΟΣΟΤΗΤΑ":"ΧΡΗΜΑΤΙΚΗ ΑΞΙΑ"}</td><td class="num">${isUnits?fmtQty(r.units||0):"—"}</td><td class="num">${euro(val)}</td><td class="no-print">${getLedger(false)?.entryMode==="app"?`<button class="blue" style="padding:5px 8px;font-size:12px" onclick="openReceiptEditor(decodeURIComponent('${encodeURIComponent(r.id)}'))">✎ Διόρθωση</button> <button type="button" class="red" style="padding:5px 8px;font-size:12px;margin-top:3px" onclick="deleteStoredReceipt(decodeURIComponent('${encodeURIComponent(r.id)}'))">🗑 Διαγραφή</button>`:"—"}</td></tr>`;
+      html+=`<tr class="day-entry${alt}"><td>${j+1}</td><td>${esc(it?.description||"ΜΗ ΑΝΑΓΝΩΡΙΣΜΕΝΟ ΕΙΔΟΣ")}</td><td>${esc(itemGroup(it))}</td><td>${esc(it?.unit||"")}</td><td>${isUnits?"ΠΟΣΟΤΗΤΑ":"ΧΡΗΜΑΤΙΚΗ ΑΞΙΑ"}</td><td class="num">${isUnits?fmtQty(r.units||0):"—"}</td><td class="num">${euro(val)}</td><td class="no-print">${workspaceAdmin&&getLedger(false)?.entryMode==="app"?`<button class="blue" style="padding:5px 8px;font-size:12px" onclick="openReceiptEditor(decodeURIComponent('${encodeURIComponent(r.id)}'))">✎ Διόρθωση</button> <button type="button" class="red" style="padding:5px 8px;font-size:12px;margin-top:3px" onclick="deleteStoredReceipt(decodeURIComponent('${encodeURIComponent(r.id)}'))">🗑 Διαγραφή</button>`:"—"}</td></tr>`;
     });
     grand+=daily;
     html+=`<tr class="day-total${alt}"><td colspan="6">ΣΥΝΟΛΟ ΗΜΕΡΑΣ ${esc(fmtDate(d))}</td><td class="num">${euro(daily)}</td><td class="no-print"></td></tr>`;
@@ -749,6 +802,9 @@ function render(){
  renderDateHistoryMatrix();
  renderEntryMode();
  updateReceiptAreas();
+ if(!workspaceAdmin)el("modeNote").textContent="ΜΟΝΟ ΠΡΟΒΟΛΗ — Οι παραλαβές ενημερώνονται αποκλειστικά από τον διαχειριστή.";
+ if(!workspaceAdmin&&!l.items.length)el("modeNote").textContent+=" Δεν έχει αποθηκευτεί ακόμη πίνακας ειδών για αυτή τη σύμβαση.";
+ if(!el("receiptDocsPanel").classList.contains("hidden"))loadReceiptDocuments();
 }
 async function saveSourceSettings(){
  const l=getLedger(true);l.excelPath=excelPath.value.trim();l.excelSheet=excelSheet.value.trim()||"ΣΥΜΒΑΣΗ";
@@ -909,6 +965,7 @@ function auditExcelBalance(rows,ledger,receiptCols){
 }
 
 async function syncFromExcel(showMessage=true){
+ if(!workspaceAdmin)return false;
  const c=getContract(),l=getLedger(true);if(!c||!l)return false;
  if(l.entryMode==="app"){setStatus("Η σύμβαση διαχειρίζεται από την εφαρμογή. Η επανεισαγωγή Excel είναι κλειδωμένη.","ok");return false;}
  l.migrationVerified=false;
