@@ -772,6 +772,12 @@ function workspaceURL(w){return driveItemURL(w.driveId,w.id)}
 function routeWorkspace(url){
  const w=workspace();if(!w)return url;
  const prefix=GROOT+'/me/drive/root:/'+encodeURIComponent(APP_FOLDER);
+ for(const [name,ref] of Object.entries(w.files||{})){
+ const p=prefix+'/'+encodeURIComponent(name);
+ if(url===p||url.startsWith(p+'?'))return driveItemURL(ref.driveId,ref.id)+url.slice(p.length);
+ if(url.startsWith(p+':/'))return driveItemURL(ref.driveId,ref.id)+url.slice(p.length+1);
+ }
+
  if(url===prefix||url.startsWith(prefix+'?'))return workspaceURL(w)+url.slice(prefix.length);
  if(url.startsWith(prefix+':/'))return workspaceURL(w)+url.slice(prefix.length+1);
  if(url.startsWith(prefix+'/'))return workspaceURL(w)+':/'+url.slice(prefix.length+1);
@@ -781,13 +787,24 @@ function routeWorkspace(url){
 }
 async function configureWorkspace(){
  try{
- const link=prompt('Επικόλλησε τον σύνδεσμο OneDrive του υπάρχοντος φακέλου εφαρμογής (με τα δύο JSON).');if(!link)return;
- const u=new URL(link.trim());if(u.protocol!=='https:')throw Error('Απαιτείται σύνδεσμος HTTPS.');
- const token='u!'+btoa(String.fromCharCode(...new TextEncoder().encode(link.trim()))).replace(/=+$/,'').replace(/\//g,'_').replace(/\+/g,'-');
- const res=await graph(GROOT+'/shares/'+token+'/driveItem',{headers:{Prefer:'redeemSharingLinkIfNecessary'}});if(!res.ok)throw Error('Δεν ανοίγει ο κοινόχρηστος φάκελος: HTTP '+res.status);
- const m=await res.json(),item=m.remoteItem||m,w={id:item.id,driveId:item.parentReference?.driveId};
+ const raw=prompt('Επικόλλησε τον αρχικό σύνδεσμο κοινής χρήσης SymvaseisApp (όχι τη σελίδα Shared).');if(!raw)return;
+ const link=raw.trim(),u=new URL(link);if(u.protocol!=='https:'||!(/^(1drv\.ms|onedrive\.live\.com)$/i.test(u.hostname)||/\.sharepoint\.com$/i.test(u.hostname)))throw Error('Απαιτείται σύνδεσμος HTTPS OneDrive.');
+ const token='u!'+btoa(String.fromCharCode(...new TextEncoder().encode(link))).replace(/=+$/,'').replace(/\//g,'_').replace(/\+/g,'-');
+ const share=GROOT+'/shares/'+token+'/driveItem';
+ const res=await graph(share,{headers:{Prefer:'redeemSharingLinkIfNecessary'}});if(!res.ok)throw Error('Σύνδεσμος φακέλου: HTTP '+res.status);
+ const m=await res.json(),item=m.remoteItem||m,w={id:item.id,driveId:item.parentReference?.driveId||m.parentReference?.driveId,files:{}};
  if(!item.folder||!w.id||!w.driveId)throw Error('Ο σύνδεσμος πρέπει να αφορά φάκελο.');
- for(const name of [DATA_FILE,PAR_FILE]){const r=await graph(workspaceURL(w)+':/'+encodeURIComponent(name)+':/content');if(!r.ok)throw Error('Λείπει ή δεν είναι προσβάσιμο το '+name);const j=await r.json();if(!Array.isArray(name===DATA_FILE?j.records:j.contracts))throw Error('Μη έγκυρο '+name);}
+ let children=[],errors=[];
+ for(const base of [workspaceURL(w),share]){
+  try{let next=base+'/children';let found=[];while(next){const r=await graph(next,{headers:{Prefer:'redeemSharingLinkIfNecessary'}});if(!r.ok)throw Error('HTTP '+r.status);const j=await r.json();found.push(...(j.value||[]));next=j['@odata.nextLink']||'';}children=found;if([DATA_FILE,PAR_FILE].every(n=>children.some(x=>x.name===n)))break;}catch(e){errors.push(e.message);}
+ }
+ for(const name of [DATA_FILE,PAR_FILE]){
+ const f=children.find(x=>x.name===name),v=f?.remoteItem||f;
+ if(!v?.id)throw Error('Δεν βρέθηκε '+name+' στον φάκελο '+(item.name||'')+'. Ορατά αρχεία: '+children.map(x=>x.name).join(', ').slice(0,700)+' '+errors.join(' / '));
+ const drive=v.parentReference?.driveId||w.driveId;
+ const r=await graph(driveItemURL(drive,v.id)+'/content');if(!r.ok)throw Error('Ανάγνωση '+name+': HTTP '+r.status);const j=await r.json();if(!Array.isArray(name===DATA_FILE?j.records:j.contracts))throw Error('Μη έγκυρο '+name);
+ w.files[name]={id:v.id,driveId:drive};
+ }
  localStorage.setItem(workspaceKey,JSON.stringify(w));location.reload();
  }catch(e){alert(e.message)}
 }
@@ -967,7 +984,7 @@ async function readJsonFile(name){
   await ensureRootFolder();
   const p=encPath(APP_FOLDER+"/"+name);
   const r=await graph("https://graph.microsoft.com/v1.0/me/drive/root:/"+p+":/content");
-  if(r.status===404)return null;
+  if(r.status===404){if(workspace())throw Error("Το κοινόχρηστο αρχείο δεν βρέθηκε: "+name);return null;}
   if(!r.ok)throw new Error(await r.text());
   return JSON.parse(await r.text());
 }
@@ -982,7 +999,7 @@ async function readIndexSnapshot(){
   await ensureRootFolder();
   const url="https://graph.microsoft.com/v1.0/me/drive/root:/"+encPath(APP_FOLDER+"/"+DATA_FILE);
   for(let i=0;i<4;i++){
-    const m=await graph(url); if(m.status===404)return {data:null,etag:null,url};
+    const m=await graph(url); if(m.status===404){if(workspace())throw Error("Δεν βρέθηκε το κοινόχρηστο αρχείο συμβάσεων.");return {data:null,etag:null,url};}
     if(!m.ok)throw Error(await m.text()); const meta=await m.json();
     const data=await readJsonFile(DATA_FILE);
     const check=await graph(url); if(!check.ok)continue;
