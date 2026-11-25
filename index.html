@@ -207,6 +207,7 @@ async function publicFilesForRecord(r){
 }
 
 async function publishPublicData(){
+ if(workspace()){alert("Η δημόσια δημοσίευση είναι απενεργοποιημένη στον κοινόχρηστο χώρο.");return;}
   if(publicSyncBusy)return;publicSyncBusy=true;
   try{return await publishPublicDataImpl();}finally{publicSyncBusy=false;}
 }
@@ -642,6 +643,8 @@ tbody tr{
   <button class="btn-blue" onclick="openNewRecord()">+ Νέα εγγραφή</button>
   <button class="btn-gray" onclick="window.print()">🖨 Εκτύπωση</button>
   <button class="btn-purple" onclick="openPublicView()">👁 ΔΗΜΟΣΙΑ ΠΡΟΒΟΛΗ</button>
+  <button class="btn-blue" onclick="configureWorkspace()">Κοινόχρηστος φάκελος</button>
+  <button class="btn-blue" onclick="migrateExcelReferences()">Σύνδεση Excel με ID</button>
   <button class="btn-green" onclick="publishPublicData()">🌐 ΔΗΜΟΣΙΕΥΣΗ</button>
 </div>
 
@@ -759,6 +762,47 @@ const CLIENT_ID="d15aa5e9-860e-4e0a-af14-283c401a08cc";
 const REDIRECT_URI="https://spirosdalianismech-art.github.io/symvaseis-onedrive/auth.html";
 const APP_FOLDER="SymvaseisApp", DATA_FILE="symvaseis-data.json", PAR_FILE="paralaves-data.json";
 
+const GROOT='https://graph.microsoft.com/v1.0';
+const workspaceKey='symvaseis-workspace-v1';
+function workspace(){try{return JSON.parse(localStorage.getItem(workspaceKey)||'null')}catch{return null}}
+function driveItemURL(d,id){return GROOT+'/drives/'+encodeURIComponent(d)+'/items/'+encodeURIComponent(id)}
+function workspaceURL(w){return driveItemURL(w.driveId,w.id)}
+function routeWorkspace(url){
+ const w=workspace();if(!w)return url;
+ const prefix=GROOT+'/me/drive/root:/'+encodeURIComponent(APP_FOLDER);
+ if(url===prefix||url.startsWith(prefix+'?'))return workspaceURL(w)+url.slice(prefix.length);
+ if(url.startsWith(prefix+':/'))return workspaceURL(w)+url.slice(prefix.length+1);
+ if(url.startsWith(prefix+'/'))return workspaceURL(w)+':/'+url.slice(prefix.length+1);
+ const ip=GROOT+'/me/drive/items/';if(url.startsWith(ip))return GROOT+'/drives/'+encodeURIComponent(w.driveId)+'/items/'+url.slice(ip.length);
+ if(url.startsWith(GROOT+'/me/drive/root'))throw Error('Στον κοινόχρηστο χώρο δεν επιτρέπεται αναζήτηση εκτός φακέλου.');
+ return url;
+}
+async function configureWorkspace(){
+ try{
+ const link=prompt('Επικόλλησε τον σύνδεσμο OneDrive του υπάρχοντος φακέλου εφαρμογής (με τα δύο JSON).');if(!link)return;
+ const u=new URL(link);if(u.protocol!=='https:')throw Error('Απαιτείται σύνδεσμος HTTPS.');
+ const token='u!'+btoa(String.fromCharCode(...new TextEncoder().encode(link.trim()))).replace(/=+$/,'').replace(/\//g,'_').replace(/\+/g,'-');
+ const res=await graph(GROOT+'/shares/'+token+'/driveItem',{headers:{Prefer:'redeemSharingLinkIfNecessary'}});if(!res.ok)throw Error('Δεν ανοίγει ο κοινόχρηστος φάκελος: HTTP '+res.status);
+ const m=await res.json(),item=m.remoteItem||m,w={id:item.id,driveId:item.parentReference?.driveId};
+ if(!item.folder||!w.id||!w.driveId)throw Error('Ο σύνδεσμος πρέπει να αφορά φάκελο.');
+ for(const name of [DATA_FILE,PAR_FILE]){const r=await graph(workspaceURL(w)+':/'+encodeURIComponent(name)+':/content');if(!r.ok)throw Error('Λείπει ή δεν είναι προσβάσιμο το '+name);const j=await r.json();if(!Array.isArray(name===DATA_FILE?j.records:j.contracts))throw Error('Μη έγκυρο '+name);}
+ localStorage.setItem(workspaceKey,JSON.stringify(w));location.reload();
+ }catch(e){alert(e.message)}
+}
+async function verifyWorkspace(){const w=workspace();if(!w)return false;const r=await graph(workspaceURL(w));if(!r.ok)throw Error('Ο κοινόχρηστος φάκελος δεν είναι προσβάσιμος. Δεν δημιουργείται νέα βάση.');return true;}
+async function excelRefFromPath(path){
+ const w=workspace();let url=GROOT+'/me/drive/root:/'+encPath(path);
+ if(w){const p=String(path).replace(/^\/+/, '');if(!p.startsWith(APP_FOLDER+'/'))throw Error('Χρειάζεται επιλογή Excel μέσα στον κοινόχρηστο φάκελο.');}
+ const r=await graph(url);if(!r.ok)throw Error('Δεν βρέθηκε Excel: '+path);const m=await r.json();if(!m.file||!m.id||!m.parentReference?.driveId)throw Error('Μη έγκυρο Excel: '+path);return {id:m.id,driveId:m.parentReference.driveId};
+}
+async function assertWorkspaceItem(ref){
+ const w=workspace();if(!w)return;
+ if(ref.driveId!==w.driveId)throw Error('Το αρχείο βρίσκεται εκτός κοινόχρηστου OneDrive.');
+ let id=ref.id;for(let n=0;n<100&&id;n++){if(id===w.id)return;const r=await graph(driveItemURL(ref.driveId,id)+'?$select=id,parentReference');if(!r.ok)break;id=(await r.json()).parentReference?.id;}
+ throw Error('Το αρχείο βρίσκεται εκτός του κοινόχρηστου φακέλου ή δεν είναι προσβάσιμο.');
+}
+
+
 const msalInstance=new msal.PublicClientApplication({
   auth:{clientId:CLIENT_ID,authority:"https://login.microsoftonline.com/common",redirectUri:REDIRECT_URI},
   cache:{cacheLocation:"localStorage",storeAuthStateInCookie:false}
@@ -813,7 +857,7 @@ function statusFor(r){
 
 async function getAccount(){let a=msalInstance.getActiveAccount();if(!a){const xs=msalInstance.getAllAccounts();if(xs.length){a=xs[0];msalInstance.setActiveAccount(a)}}return a}
 async function getToken(){const a=await getAccount();if(!a)throw new Error("Πρέπει πρώτα να συνδεθείτε με Microsoft.");try{return (await msalInstance.acquireTokenSilent({scopes:["User.Read","Files.ReadWrite"],account:a})).accessToken}catch{return (await msalInstance.acquireTokenPopup({scopes:["User.Read","Files.ReadWrite"],account:a})).accessToken}}
-async function graph(url,opt={}){const tok=await getToken();opt.headers=opt.headers||{};opt.headers.Authorization="Bearer "+tok;return fetch(url,{cache:"no-store",...opt})}
+async function graph(url,opt={}){url=routeWorkspace(url);const tok=await getToken();opt.headers=opt.headers||{};opt.headers.Authorization="Bearer "+tok;return fetch(url,{cache:"no-store",...opt})}
 async function signIn(){try{const r=await msalInstance.loginPopup(loginRequest);msalInstance.setActiveAccount(r.account);setStatus("Συνδεθήκατε ως "+r.account.username,"ok");await loadData();await refreshFromParalaves(false);await loadOneDriveQuota()}catch(e){setStatus("Σφάλμα σύνδεσης:\n"+e.message,"error")}}
 // Διαβάζουμε την πραγματική χωρητικότητα του συνδεδεμένου OneDrive μέσω Microsoft Graph.
 // Τα bytes δεν αποθηκεύονται ούτε δημοσιεύονται στο public-data.json.
@@ -858,6 +902,7 @@ async function loadOneDriveQuota(){
 async function signOut(){const a=await getAccount();if(a)await msalInstance.logoutPopup({account:a,postLogoutRedirectUri:REDIRECT_URI})}
 
 async function ensureRootFolder(){
+ if(await verifyWorkspace())return;
   const check=await graph("https://graph.microsoft.com/v1.0/me/drive/root:/"+encodeURIComponent(APP_FOLDER));
   if(check.ok)return;
   if(check.status!==404)throw new Error(await check.text());
@@ -932,6 +977,21 @@ function mergeIndexChanges(base,local,remote){
   }
   return [...cloud.values()];
 }
+
+async function migrateExcelReferences(){
+ if(syncBusy||syncBase===null){alert('Συνδέσου και περίμενε να ολοκληρωθεί η φόρτωση.');return;}
+ if(!confirm('Να αποθηκευτούν τα ID των υπαρχόντων Excel; Εκτέλεσε πριν από τη μετακίνηση αρχείων.'))return;
+ try{
+ const p=await readJsonFile(PAR_FILE);const changes=[],errors=[];
+ for(const r of records){const l=p?.contracts?.find(x=>x.contractId===r.id);const refs={...(r.excelRefs||{})};
+ for(const path of new Set([r.excelPath,l?.excelPath].filter(Boolean))){try{if(!Object.hasOwn(refs,path))refs[path]=await excelRefFromPath(path);await assertWorkspaceItem(refs[path]);}catch(e){errors.push(r.studyNo+': '+e.message);}}
+ changes.push({id:r.id,refs,ref:refs[r.excelPath]});}
+ if(!sameSync(records,syncBase))throw Error('Υπάρχουν άλλες μη αποθηκευμένες αλλαγές.');
+ for(const x of changes){const r=records.find(y=>y.id===x.id);if(r){r.excelRefs=x.refs;if(x.ref)r.excelRef=x.ref;}}
+ await saveData();render();alert(errors.length?'Αποθηκεύτηκαν οι διαθέσιμες συνδέσεις. ΜΗ μετακινήσεις τα παρακάτω Excel πριν διορθωθούν:\n'+errors.join('\n'):'Ολοκληρώθηκε η σύνδεση Excel με ID.');
+ }catch(e){alert(e.message)}
+}
+
 async function loadData(){
   setStatus("Φόρτωση δεδομένων από το OneDrive...");
   const snap=await readIndexSnapshot();applyIndexRecords(snap.data?.records||[]);
@@ -1470,7 +1530,7 @@ document.getElementById("recordForm").addEventListener("submit",async e=>{
     if(optionRaw && (!Number.isFinite(optionValue) || optionValue<0 || !/[0-9]/.test(optionRaw)))throw Error("Μη έγκυρο ποσό προαίρεσης.");
     r.optionAmount=Math.round(optionValue*100)/100;
     r.expiry=fExpiry.value;r.extensionExpiry=fExtensionExpiry.value;
-    r.vat=Number(fVat.value||24);r.excelPath=fExcelPath.value.trim();r.excelSheet=toUpperText(fExcelSheet.value.trim())||"ΣΥΜΒΑΣΗ";
+    r.vat=Number(fVat.value||24);if(r.excelPath!==fExcelPath.value.trim()){delete r.excelRef; r.excelPath=fExcelPath.value.trim();if(r.excelPath)r.excelRef=await excelRefFromPath(r.excelPath);}r.excelSheet=toUpperText(fExcelSheet.value.trim())||"ΣΥΜΒΑΣΗ";
     const file=fContractFile.files[0];if(file){
       const uploadedContract=await uploadContractFile(r,file);
       r.contractFileUrl=uploadedContract.webUrl;
