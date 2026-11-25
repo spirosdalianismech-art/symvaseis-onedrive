@@ -436,7 +436,7 @@ async function listSharedContractDocs(record){
  const folders=await listWorkspaceChildren(driveItemURL(workspace().driveId,roots[0].id)+'/children');
  for(const folder of folders.filter(f=>f.folder)){
   const files=await listWorkspaceChildren(driveItemURL(workspace().driveId,folder.id)+'/children');
-  for(const f of files.filter(x=>x.file))out.push({categoryLabel:folder.name,name:f.name.replace(/^\d{13}-[a-z0-9]+-/i,''),id:f.id,webUrl:f.webUrl});
+  for(const f of files.filter(x=>x.file))out.push({categoryLabel:folder.name,name:f.name.replace(/^LEGACY-[A-Za-z0-9_-]+?--/,'').replace(/^\d{13}-[a-z0-9]+-/i,''),legacyToken:(f.name.match(/^LEGACY-([A-Za-z0-9_-]+?)--/)||[])[1],id:f.id,webUrl:f.webUrl});
  }
  return out;
 }
@@ -490,7 +490,7 @@ async function loadReceiptDocuments(){
  const cid=c.id;host.textContent='Φόρτωση αρχείων…';
  const docs=[...(c.documentFiles||[]),...(c.assignmentFiles||[]),...(c.invoiceFiles||[])];
  if(c.contractFileUrl)docs.push({id:c.contractFileId,name:c.contractFileName||'ΣΥΜΒΑΣΗ',webUrl:c.contractFileUrl});
- let warning='';try{docs.push(...await listSharedContractDocs(c));}catch(e){warning=e.message;}
+ let warning='';try{const shared=await listSharedContractDocs(c);const tokens=new Set(shared.map(f=>f.legacyToken).filter(Boolean));for(let i=docs.length-1;i>=0;i--){const id=docs[i].id;if(id&&tokens.has(btoa(String.fromCharCode(...new TextEncoder().encode(String(id)))).replace(/=+$/,'').replace(/\//g,'_').replace(/\+/g,'-')))docs.splice(i,1);}docs.push(...shared);}catch(e){warning=e.message;}
  if(currentId!==cid)return;host.innerHTML='';const seen=new Set();
  for(const d of docs){const k=d.id||d.webUrl;if(!k||seen.has(k))continue;seen.add(k);const line=document.createElement('div');line.style.margin='8px 0';
  const name=document.createElement('span');name.textContent=(d.categoryLabel?d.categoryLabel+' — ':'')+(d.name||'ΑΡΧΕΙΟ')+' ';line.appendChild(name);
