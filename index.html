@@ -618,7 +618,7 @@ tbody tr{
 .docs-toolbar input,.docs-toolbar select{width:100%;font-size:13px}
 @media print{#docsDialog{display:none!important}}
 </style>
-<style>body.collaborator button[onclick^="editRecord("],body.collaborator button[onclick="openNewRecord()"],body.collaborator button[onclick="migrateExcelReferences()"],body.collaborator button[onclick="publishPublicData()"],body.collaborator button[onclick="openPublicView()"]{display:none!important}</style>
+<style>body.collaborator #bulkDocsBtn,body.collaborator button[onclick^="editRecord("],body.collaborator button[onclick="openNewRecord()"],body.collaborator button[onclick="migrateExcelReferences()"],body.collaborator button[onclick="publishPublicData()"],body.collaborator button[onclick="openPublicView()"]{display:none!important}</style>
 </head>
 <body class="collaborator">
 <header>
@@ -645,6 +645,7 @@ tbody tr{
   <button class="btn-gray" onclick="window.print()">🖨 Εκτύπωση</button>
   <button class="btn-purple" onclick="openPublicView()">👁 ΔΗΜΟΣΙΑ ΠΡΟΒΟΛΗ</button>
   <button class="btn-blue" onclick="configureWorkspace()">Κοινόχρηστος φάκελος</button>
+  <button id="bulkDocsBtn" class="btn-green" onclick="migrateAllDocuments()">ΣΥΓΧΡΟΝΙΣΜΟΣ ΟΛΩΝ ΤΩΝ ΑΡΧΕΙΩΝ</button>
   <button class="btn-blue" onclick="migrateExcelReferences()">Σύνδεση Excel με ID</button>
   <button class="btn-green" onclick="publishPublicData()">🌐 ΔΗΜΟΣΙΕΥΣΗ</button>
 </div>
@@ -699,7 +700,7 @@ tbody tr{
 <dialog id="docsDialog" style="width:min(1100px,96vw);max-height:91vh">
   <div class="dialog-head"><h2 id="docsTitle">ΑΡΧΕΙΑ ΣΥΜΒΑΣΗΣ</h2><button type="button" class="btn-gray" onclick="document.getElementById('docsDialog').close()">✕</button></div>
   <div class="dialog-body">
-    <p style="margin:0 0 12px;color:#475569">Έκδοση v28 — Οργανωμένα αρχεία της σύμβασης. Τα παλαιά έγγραφα παραμένουν στη θέση τους στο OneDrive.</p>
+    <p style="margin:0 0 12px;color:#475569">Έκδοση v29 — Οργανωμένα αρχεία της σύμβασης. Τα παλαιά έγγραφα παραμένουν στη θέση τους στο OneDrive.</p>
     <div class="docs-toolbar">
       <label>Κατηγορία
         <select id="docsCategory"><option value="study">ΜΕΛΕΤΗ</option><option value="contract">ΣΥΜΒΑΣΗ</option><option value="assignment">ΔΙΑΔΙΚΑΣΙΕΣ ΑΝΑΘΕΣΗΣ</option><option value="invoice">ΤΙΜΟΛΟΓΙΑ</option><option value="minutes">ΠΡΑΚΤΙΚΑ ΠΑΡΑΛΑΒΗΣ</option><option value="receipt">ΠΑΡΑΛΑΒΕΣ / ΔΕΛΤΙΑ</option><option value="correspondence">ΑΛΛΗΛΟΓΡΑΦΙΑ</option><option value="other">ΛΟΙΠΑ</option></select>
@@ -1073,7 +1074,7 @@ async function saveData(){
   }finally{syncBusy=false;}
 }
 async function syncVisibleContracts(){
-  if(syncBase===null||syncBusy||refreshBusy||publicSyncBusy||document.hidden||document.querySelector('dialog[open]')||!sameSync(records,syncBase))return;
+  if(bulkDocsBusy||syncBase===null||syncBusy||refreshBusy||publicSyncBusy||document.hidden||document.querySelector('dialog[open]')||!sameSync(records,syncBase))return;
   refreshBusy=true;const generation=syncGeneration;
   try{
     const snap=await readIndexSnapshot();
@@ -1377,7 +1378,7 @@ function contractDocuments(record){
 function drawContractDocuments(){
  const r=records.find(x=>x.id===documentsRecordId);
  if(!r)return;
- const sharedIds=new Set(sharedDisplayed.map(f=>f.id));const documents=[...contractDocuments(r).filter(f=>!sharedIds.has(f.id)),...sharedDisplayed];displayedDocs=documents;const host=document.getElementById('docsFolders');
+ const sharedIds=new Set(sharedDisplayed.map(f=>f.id));const copiedTokens=new Set(sharedDisplayed.map(f=>f.legacyToken).filter(Boolean));const documents=[...contractDocuments(r).filter(f=>!sharedIds.has(f.id)&&!(f.id&&copiedTokens.has(legacyDocToken(f.id)))),...sharedDisplayed];displayedDocs=documents;const host=document.getElementById('docsFolders');
  host.innerHTML=Object.entries(DOC_CATEGORIES).map(([key,label])=>{
   const files=documents.filter(f=>f.category===key);
   const lis=files.length?files.map(f=>{
@@ -1454,13 +1455,64 @@ async function docRecordRoot(record,create=false){
  }
  return url;
 }
+/* v29 — one-click non-destructive legacy document migration */
+let bulkDocsBusy=false;
+function legacyDocToken(id){return btoa(String.fromCharCode(...new TextEncoder().encode(String(id||'')))).replace(/=+$/,'').replace(/\//g,'_').replace(/\+/g,'-');}
+function legacyDocMarker(id){return 'LEGACY-'+legacyDocToken(id)+'--';}
+function legacyDisplayName(name){return String(name||'').replace(/^LEGACY-[A-Za-z0-9_-]+?--/,'').replace(/^\d{13}-[a-z0-9]+-/i,'');}
+function legacySourceToken(name){const m=String(name||'').match(/^LEGACY-([A-Za-z0-9_-]+?)--/);return m?m[1]:'';}
+function legacyCopyName(m){const prefix=legacyDocMarker(m.id), ext=(m.name.match(/\.[^.]+$/)||[''])[0];const stem=m.name.slice(0,m.name.length-ext.length).replace(/[\\/:*?"<>|#%\x00-\x1f]/g,'_');return prefix+stem.slice(0,Math.max(8,150-prefix.length-ext.length)).replace(/[ .]+$/,'')+ext;}
+async function resolveLegacyDocument(f,w){
+ let m;
+ if(f.id){if(f.driveId&&f.driveId!==w.driveId)throw Error('Αρχείο σε διαφορετικό OneDrive.');m=await (await docRequest(driveItemURL(w.driveId,f.id))).json();}
+ else if(f.webUrl){const u=new URL(f.webUrl);if(u.protocol!=='https:'||!(/^(1drv\.ms|onedrive\.live\.com)$/i.test(u.hostname)||/\.sharepoint\.com$/i.test(u.hostname)))throw Error('Μη αναγνωρισμένος σύνδεσμος OneDrive.');const res=await (await docRequest(GROOT+'/shares/u!'+legacyDocToken(f.webUrl)+'/driveItem')).json();m=res.remoteItem||res;}
+ else throw Error('Δεν υπάρχει αναγνωριστικό ή σύνδεσμος.');
+ if(!m.file||!m.id||m.parentReference?.driveId!==w.driveId)throw Error('Δεν είναι αρχείο του συνδεδεμένου OneDrive.');return m;
+}
+async function bulkCopyDocument(m,folder,w){
+ const prefix=legacyDocMarker(m.id);const name=legacyCopyName(m);let children=await docChildren(folder);
+ if(children.some(x=>x.file&&(x.id===m.id||x.name.startsWith(prefix))))return 'existing';
+ const target=await (await docRequest(folder)).json();
+ if(!target.folder||target.parentReference?.driveId!==w.driveId)throw Error('Μη έγκυρος φάκελος προορισμού.');
+ await docRequest(driveItemURL(w.driveId,m.id)+'/copy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,parentReference:{driveId:w.driveId,id:target.id}})});
+ // Verify the destination rather than treating HTTP 202 as completion.
+ for(let i=0;i<20;i++){await new Promise(r=>setTimeout(r,i<4?1000:2500));children=await docChildren(folder);const copy=children.find(x=>x.file&&x.name===name);if(copy&&Number(copy.size)===Number(m.size))return 'copied';}
+ throw Error('Η αντιγραφή ζητήθηκε αλλά δεν επιβεβαιώθηκε ακόμη. Έλεγξε τον φάκελο πριν την επανάληψη.');
+}
+async function migrateAllDocuments(){
+ if(bulkDocsBusy||documentsBusy||syncBusy)return;
+ const w=workspace();if(!w||!workspaceAdmin){alert('Σύνδεσε τον κοινόχρηστο φάκελο ως διαχειριστής.');return;}
+ if(!confirm('Να αντιγραφούν τα ήδη συνδεδεμένα έγγραφα ΟΛΩΝ των συμβάσεων (όλα τα έτη και τμήματα) στον SharedDocuments; Τα αντίγραφα θα είναι προσβάσιμα στους χρήστες που έχουν δικαιώματα εκεί. Δεν μεταφέρονται Excel, JSON ή αντίγραφα ασφαλείας. Τα πρωτότυπα παραμένουν.'))return;
+ bulkDocsBusy=true;const btn=document.getElementById('bulkDocsBtn');btn.disabled=true;const report=[];let copied=0,existing=0,skipped=0,failed=0;
+ try{
+ const snap=await readIndexSnapshot();if(!Array.isArray(snap.data?.records))throw Error('Δεν φορτώθηκε η βάση συμβάσεων.');const all=snap.data.records;
+ for(let i=0;i<all.length;i++){
+ const r=all[i], label=(r.studyNo||'')+' '+(r.title||'');const docs=contractDocuments(r);if(r.studyFileId&&!docs.some(f=>f.id===r.studyFileId))docs.push({category:'study',id:r.studyFileId,name:r.studyFileName||'ΜΕΛΕΤΗ'});
+ const seen=new Set();let base=null;const folders=new Map();
+ for(const f of docs){const key=(f.category||'other')+'|'+(f.id||f.webUrl);if(seen.has(key))continue;seen.add(key);setStatus('Συγχρονισμός '+(i+1)+'/'+all.length+' — '+label+' — '+(f.name||'έγγραφο')+' | Αντιγραφές: '+copied);
+ try{
+ const m=await resolveLegacyDocument(f,w);
+ // Only ordinary documents; exclude any workbook, data file, archive or executable.
+ if(!/\.(pdf|docx?|odt|rtf|txt|png|jpe?g|tiff?|bmp|webp|pptx?|odp|eml|msg)$/i.test(m.name)||/backup|paralaves-data|symvaseis-data/i.test(m.name)){skipped++;report.push('ΠΑΡΑΛΕΙΨΗ | '+label+' | '+m.name+' | μη επιτρεπόμενος τύπος δεδομένων');continue;}
+ if(!base)base=await docRecordRoot(r,true);
+ const category=DOC_CATEGORIES[f.category]?f.category:'other';if(!folders.has(category))folders.set(category,await docChild(base,sharedCategoryFolder(DOC_CATEGORIES[category]),true));
+ const result=await bulkCopyDocument(m,folders.get(category),w);if(result==='copied')copied++;else existing++;report.push((result==='copied'?'ΑΝΤΙΓΡΑΦΗ':'ΥΠΑΡΧΕΙ')+' | '+label+' | '+m.name);
+ }catch(e){failed++;report.push('ΣΦΑΛΜΑ | '+label+' | '+(f.name||f.id||'')+' | '+e.message);}
+ }
+ }
+ const summary='Συμβάσεις: '+all.length+' | Αντιγράφηκαν: '+copied+' | Υπήρχαν: '+existing+' | Παραλείφθηκαν: '+skipped+' | Ανεπιβεβαίωτα/σφάλματα: '+failed;
+ setStatus(summary,failed?'error':'ok');downloadTextFile('anaphora-sygchronismou-'+new Date().toISOString().slice(0,10)+'.txt','\ufeff'+summary+'\n\n'+report.join('\n'),'text/plain;charset=utf-8');alert(summary+'\nΚατέβηκε αναφορά. Έλεγξε τα σφάλματα πριν δώσεις δικαιώματα.');
+ }catch(e){setStatus('Σφάλμα μαζικού συγχρονισμού: '+e.message,'error');alert(e.message);}
+ finally{bulkDocsBusy=false;btn.disabled=false;}
+}
+
 function actualDocFolderName(record){return actualDocFolderNames.get(record.id)||sharedRecordFolder(record);}
 async function refreshSharedDocuments(){
  const r=records.find(x=>x.id===documentsRecordId);if(!r)return;
  const msg=document.getElementById('docsMessage');msg.textContent='Ανάγνωση κοινόχρηστων αρχείων…';
  try{const base=await docRecordRoot(r);const out=[];if(base)for(const folder of (await docChildren(base)).filter(f=>f.folder)){
  const cat=Object.keys(DOC_CATEGORIES).find(k=>sharedCategoryFolder(DOC_CATEGORIES[k])===folder.name)||'other';
- for(const f of (await docChildren(driveItemURL(folder.parentReference.driveId,folder.id))).filter(f=>f.file))out.push({category:cat,id:f.id,driveId:f.parentReference.driveId,name:f.name.replace(/^\d{13}-[a-z0-9]+-/i,''),webUrl:f.webUrl,shared:true});
+ for(const f of (await docChildren(driveItemURL(folder.parentReference.driveId,folder.id))).filter(f=>f.file))out.push({category:cat,id:f.id,driveId:f.parentReference.driveId,name:legacyDisplayName(f.name),legacyToken:legacySourceToken(f.name),webUrl:f.webUrl,shared:true});
  }if(documentsRecordId!==r.id)return false;sharedDisplayed=out;drawContractDocuments();msg.textContent='Κοινόχρηστα αρχεία: '+out.length+' — SharedDocuments / '+actualDocFolderName(r);return true;
  }catch(e){msg.textContent='ΣΦΑΛΜΑ ΑΝΑΓΝΩΣΗΣ: '+e.message;return false;}
 }
