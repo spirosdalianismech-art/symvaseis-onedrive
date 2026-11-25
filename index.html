@@ -781,7 +781,7 @@ function routeWorkspace(url){
 async function configureWorkspace(){
  try{
  const link=prompt('Επικόλλησε τον σύνδεσμο OneDrive του υπάρχοντος φακέλου εφαρμογής (με τα δύο JSON).');if(!link)return;
- const u=new URL(link);if(u.protocol!=='https:')throw Error('Απαιτείται σύνδεσμος HTTPS.');
+ const u=new URL(link.trim());if(u.protocol!=='https:')throw Error('Απαιτείται σύνδεσμος HTTPS.');
  const token='u!'+btoa(String.fromCharCode(...new TextEncoder().encode(link.trim()))).replace(/=+$/,'').replace(/\//g,'_').replace(/\+/g,'-');
  const res=await graph(GROOT+'/shares/'+token+'/driveItem',{headers:{Prefer:'redeemSharingLinkIfNecessary'}});if(!res.ok)throw Error('Δεν ανοίγει ο κοινόχρηστος φάκελος: HTTP '+res.status);
  const m=await res.json(),item=m.remoteItem||m,w={id:item.id,driveId:item.parentReference?.driveId};
@@ -1381,7 +1381,7 @@ async function openContractDocuments(recordId){
  const r=records.find(x=>x.id===recordId);if(!r)return;
  documentsRecordId=recordId;
  document.getElementById('docsTitle').textContent='ΑΡΧΕΙΑ — '+(r.studyNo||'')+' — '+(r.contractor||r.title||'');
- document.getElementById('docsMessage').textContent='Τα αρχεία διατηρούνται στο OneDrive. Για εισαγωγή μελέτης στις Παραλαβές, επιβεβαίωσε πρώτα τον πίνακα ειδών.';
+ document.getElementById('docsMessage').textContent=workspace()?'Κοινόχρηστος χώρος ενεργός — νέα αρχεία στο SharedDocuments.':'Δεν έχει συνδεθεί κοινόχρηστος χώρος. Πάτησε «Κοινόχρηστος φάκελος» στην κεντρική σελίδα πριν ανεβάσεις αρχεία.';
  document.getElementById('docsInput').value='';
  drawContractDocuments();document.getElementById('docsDialog').showModal();
  if(workspace()&&workspaceAdmin){try{await ensureSubFolder(SHARED_DOCS);}catch(e){document.getElementById('docsMessage').textContent=e.message;}}
@@ -1409,13 +1409,15 @@ async function contractDocFolder(record,category){
 async function refreshSharedDocuments(){
  const r=records.find(x=>x.id===documentsRecordId);if(!r||!workspace())return;
  const id=r.id,host=document.getElementById('docsFolders');
- try{const files=await listSharedContractDocs(r);if(documentsRecordId!==id)return;
+ try{const existing=new Set(contractDocuments(r).map(f=>f.id).filter(Boolean));const files=(await listSharedContractDocs(r)).filter(f=>!existing.has(f.id));if(documentsRecordId!==id)return;
   document.getElementById('sharedDocsList')?.remove();const section=document.createElement('section');section.id='sharedDocsList';section.className='docs-folder';
   section.innerHTML='<h3>ΚΟΙΝΟΧΡΗΣΤΑ ΑΡΧΕΙΑ ('+files.length+')</h3>'+ (files.length?'<ul>'+files.map(f=>'<li>'+esc(f.categoryLabel)+' — <a href="'+esc(safeDocUrl(f.webUrl))+'" target="_blank" rel="noopener noreferrer">'+esc(f.name)+'</a></li>').join('')+'</ul>':'Δεν υπάρχουν ακόμη κοινόχρηστα αρχεία.');host.appendChild(section);
  }catch(e){document.getElementById('docsMessage').textContent=e.message;}
 }
 async function uploadSharedDocuments(record,category,files){
+ if(!workspace())throw Error('Σύνδεσε πρώτα τον κοινόχρηστο φάκελο.');
  if(workspaceAdmin)await ensureSubFolder(SHARED_DOCS);
+ const uploaded=[];
  const base=await ensureDocumentFolder(APP_FOLDER+'/'+SHARED_DOCS,sharedRecordFolder(record));
  const folder=await ensureDocumentFolder(base,sharedCategoryFolder(DOC_CATEGORIES[category]||'ΛΟΙΠΑ'));
  for(const file of files){
@@ -1423,7 +1425,9 @@ async function uploadSharedDocuments(record,category,files){
   const unique=Date.now()+'-'+Math.random().toString(36).slice(2,8)+'-'+file.name.replace(/[\\/:*?"<>|]/g,'_');
   const response=await graph(GROOT+'/me/drive/root:/'+encPath(folder+'/'+unique)+':/content',{method:'PUT',headers:{'Content-Type':file.type||'application/octet-stream'},body:file});
   if(!response.ok)throw Error('Αποτυχία ανεβάσματος: '+file.name+' (HTTP '+response.status+'). Έλεγξε τα δικαιώματα OneDrive.');
+  const meta=await response.json();uploaded.push({category,name:file.name,id:meta.id,webUrl:meta.webUrl,uploadedAt:new Date().toISOString()});
  }
+ return uploaded;
 }
 
 async function uploadContractDocuments(){
@@ -1434,30 +1438,16 @@ async function uploadContractDocuments(){
  if(!r||!files.length){message.textContent='Επίλεξε τουλάχιστον ένα αρχείο.';return;}
  documentsBusy=true;document.getElementById('docsUploadButton').disabled=true;
  try{
-  if(workspace()&&!workspaceAdmin){
-   await uploadSharedDocuments(r,category,files);
-   message.textContent="Τα αρχεία ανέβηκαν στον κοινόχρηστο φάκελο.";input.value="";await refreshSharedDocuments();return;
+  if(!workspace())throw Error('Δεν έχει συνδεθεί κοινόχρηστος φάκελος. Κλείσε το παράθυρο και πάτησε «Κοινόχρηστος φάκελος».');
+  for(const f of files)if(f.size>4*1024*1024)throw Error('Το αρχείο '+f.name+' υπερβαίνει το όριο 4 MB.');
+  const uploaded=await uploadSharedDocuments(r,category,files);
+  // Preserve the administrator's explicit Word study import workflow. Collaborators never write JSON.
+  if(workspaceAdmin&&category==='study'){
+   const studies=uploaded.filter(f=>/\.docx$/i.test(f.name));
+   if(studies.length){r.documentFiles=Array.isArray(r.documentFiles)?r.documentFiles:[];r.documentFiles.push(...studies);r.studyFileId=studies.at(-1).id;r.studyFileName=studies.at(-1).name;await saveData();drawContractDocuments();}
   }
-  const folder=await contractDocFolder(r,category);
-  r.documentFiles=Array.isArray(r.documentFiles)?r.documentFiles:[];
-  for(const file of files){
-   if(file.size>4*1024*1024)throw Error('Το αρχείο '+file.name+' υπερβαίνει το όριο απλής μεταφόρτωσης 4 MB. Δεν ανέβηκε.');
-   message.textContent='Ανέβασμα: '+file.name;
-   const unique=Date.now()+'-'+Math.random().toString(36).slice(2,8)+'-'+file.name.replace(/[\\/:*?"<>|]/g,'_');
-   const url='https://graph.microsoft.com/v1.0/me/drive/root:/'+encPath(folder+'/'+unique)+':/content';
-   const response=await graph(url,{method:'PUT',headers:{'Content-Type':file.type||'application/octet-stream'},body:file});
-   if(!response.ok)throw Error('Αποτυχία ανεβάσματος '+file.name+': '+await response.text());
-   const meta=await response.json();
-   const added={category,name:file.name,id:meta.id,webUrl:meta.webUrl,uploadedAt:new Date().toISOString()};
-   r.documentFiles.push(added);
-   if(category==='study' && /\.docx$/i.test(file.name)){
-    r.studyFileId=meta.id;r.studyFileName=file.name;
-   }
-   // Αποθήκευση μετά από κάθε αρχείο για αποφυγή απώλειας μεταδεδομένων σε μερική αποτυχία.
-   await saveData();drawContractDocuments();
-  }
-  message.textContent='Αποθηκεύτηκαν '+files.length+' αρχεία στο OneDrive.';
-  input.value='';render();
+  input.value='';await refreshSharedDocuments();
+  message.textContent='Αποθηκεύτηκαν '+uploaded.length+' αρχεία στο SharedDocuments / '+sharedRecordFolder(r)+' / '+sharedCategoryFolder(DOC_CATEGORIES[category]||'ΛΟΙΠΑ')+'.';
  }catch(e){message.textContent='ΣΦΑΛΜΑ: '+e.message;setStatus('Σφάλμα αρχείων: '+e.message,'error');}
  finally{documentsBusy=false;document.getElementById('docsUploadButton').disabled=false;}
 }
