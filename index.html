@@ -207,6 +207,11 @@ async function publicFilesForRecord(r){
 }
 
 async function publishPublicData(){
+  if(publicSyncBusy)return;publicSyncBusy=true;
+  try{return await publishPublicDataImpl();}finally{publicSyncBusy=false;}
+}
+let publicSyncBusy=false;
+async function publishPublicDataImpl(){
   try{
     setStatus("ΔΗΜΙΟΥΡΓΙΑ ΔΗΜΟΣΙΑΣ ΠΡΟΒΟΛΗΣ...");
 
@@ -241,9 +246,11 @@ async function publishPublicData(){
       }
 
       const ledger=ledgers.find(x=>x.contractId===primary.id);
-      const balanceWithVat=(ledger?.summary?.remainingWithVat!==undefined
-          ? Number(ledger.summary.remainingWithVat||0)
-          : Number(primary.balanceWithVat ?? primary.contractBudget ?? 0)) + optionAmount(primary);
+      const balanceWithVat=ledger?.summary?.includesOption
+          ? Number(ledger.summary.remainingWithVat||0)+optionAmount(primary)-Number(ledger.summary.optionAmountGross||0)
+          : (ledger?.summary?.remainingWithVat!==undefined
+              ? Number(ledger.summary.remainingWithVat||0)
+              : Number(primary.balanceWithVat ?? primary.contractBudget ?? 0)) + optionAmount(primary);
 
       publicContracts.push({
         id:primary.id,
@@ -282,6 +289,7 @@ async function publishPublicData(){
         initialQty:Number(it.initialQty||0),
         unitPrice:Number(it.unitPrice||0),
         initialNet:Number(it.initialNet||0),
+        optionQty:Number(it.optionQty||0),
         baseRemainingUnits:Number(it.baseRemainingUnits ?? it.initialQty ?? 0),
         baseRemainingNet:Number(it.baseRemainingNet ?? it.initialNet ?? 0)
       })),
@@ -289,6 +297,7 @@ async function publishPublicData(){
         id:x.id,
         itemId:x.itemId,
         mode:x.mode,
+        bucket:x.bucket||"base",
         units:Number(x.units||0),
         netValue:Number(x.netValue||0),
         date:x.date||"",
@@ -299,6 +308,10 @@ async function publishPublicData(){
         remainingNet:Number(l.summary?.remainingNet||0),
         remainingVat:Number(l.summary?.remainingVat||0),
         remainingWithVat:Number(l.summary?.remainingWithVat||0),
+        includesOption:Boolean(l.summary?.includesOption),
+        optionAmountGross:Number(l.summary?.optionAmountGross||0),
+        originalRemainingWithVat:Number(l.summary?.originalRemainingWithVat||0),
+        optionRemainingWithVat:Number(l.summary?.optionRemainingWithVat||0),
         updatedAt:l.summary?.updatedAt||""
       }
     }));
@@ -752,6 +765,9 @@ const msalInstance=new msal.PublicClientApplication({
 });
 const loginRequest={scopes:["User.Read","Files.ReadWrite"],prompt:"select_account"};
 let records=[],currentEditingId=null;
+let syncBase=null, syncBusy=false, refreshBusy=false, syncGeneration=0;
+const copyRecords=v=>JSON.parse(JSON.stringify(v));
+const sameSync=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 
 function setStatus(m,t=""){const e=document.getElementById("status");e.className="";if(t==="ok")e.classList.add("status-ok");if(t==="error")e.classList.add("status-error");e.innerText=m}
 function euro(v){return new Intl.NumberFormat("el-GR",{style:"currency",currency:"EUR"}).format(Number(v||0))}
@@ -797,7 +813,7 @@ function statusFor(r){
 
 async function getAccount(){let a=msalInstance.getActiveAccount();if(!a){const xs=msalInstance.getAllAccounts();if(xs.length){a=xs[0];msalInstance.setActiveAccount(a)}}return a}
 async function getToken(){const a=await getAccount();if(!a)throw new Error("Πρέπει πρώτα να συνδεθείτε με Microsoft.");try{return (await msalInstance.acquireTokenSilent({scopes:["User.Read","Files.ReadWrite"],account:a})).accessToken}catch{return (await msalInstance.acquireTokenPopup({scopes:["User.Read","Files.ReadWrite"],account:a})).accessToken}}
-async function graph(url,opt={}){const tok=await getToken();opt.headers=opt.headers||{};opt.headers.Authorization="Bearer "+tok;return fetch(url,opt)}
+async function graph(url,opt={}){const tok=await getToken();opt.headers=opt.headers||{};opt.headers.Authorization="Bearer "+tok;return fetch(url,{cache:"no-store",...opt})}
 async function signIn(){try{const r=await msalInstance.loginPopup(loginRequest);msalInstance.setActiveAccount(r.account);setStatus("Συνδεθήκατε ως "+r.account.username,"ok");await loadData();await refreshFromParalaves(false);await loadOneDriveQuota()}catch(e){setStatus("Σφάλμα σύνδεσης:\n"+e.message,"error")}}
 // Διαβάζουμε την πραγματική χωρητικότητα του συνδεδεμένου OneDrive μέσω Microsoft Graph.
 // Τα bytes δεν αποθηκεύονται ούτε δημοσιεύονται στο public-data.json.
@@ -871,20 +887,99 @@ async function writeJsonFile(name,obj){
   const r=await graph("https://graph.microsoft.com/v1.0/me/drive/root:/"+p+":/content",{method:"PUT",headers:{"Content-Type":"application/json;charset=utf-8"},body:JSON.stringify(obj,null,2)});
   if(!r.ok)throw new Error(await r.text());
 }
+// Συγχρονισμός με βάση τις πραγματικές αλλαγές κάθε εγγραφής, όχι ολόκληρη την παλιά λίστα.
+async function readIndexSnapshot(){
+  await ensureRootFolder();
+  const url="https://graph.microsoft.com/v1.0/me/drive/root:/"+encPath(APP_FOLDER+"/"+DATA_FILE);
+  for(let i=0;i<4;i++){
+    const m=await graph(url); if(m.status===404)return {data:null,etag:null,url};
+    if(!m.ok)throw Error(await m.text()); const meta=await m.json();
+    const data=await readJsonFile(DATA_FILE);
+    const check=await graph(url); if(!check.ok)continue;
+    const again=await check.json();
+    if(meta.eTag && meta.eTag===again.eTag && Array.isArray(data?.records))return {data,etag:meta.eTag,url};
+  }
+  throw Error("Δεν ήταν δυνατή η ασφαλής ανάγνωση του αρχείου συμβάσεων. Δοκιμάστε ξανά.");
+}
+function applyIndexRecords(next){
+  const existing=new Map(records.map(r=>[r.id,r]));
+  records=next.map(v=>{
+    const r=existing.get(v.id); if(!r)return copyRecords(v);
+    for(const k of Object.keys(r))if(!Object.hasOwn(v,k))delete r[k];
+    Object.assign(r,copyRecords(v));return r;
+  });
+  syncBase=copyRecords(next); syncGeneration++;
+}
+function mergeIndexChanges(base,local,remote){
+  const before=new Map(base.map(r=>[r.id,r])), after=new Map(local.map(r=>[r.id,r])), cloud=new Map(remote.map(r=>[r.id,copyRecords(r)]));
+  for(const [id,old] of before){
+    const edited=after.get(id), fresh=cloud.get(id);
+    if(!edited){
+      if(fresh && !sameSync(old,fresh))throw Error("Η εγγραφή που θέλετε να διαγράψετε άλλαξε σε άλλον υπολογιστή. Ανανεώστε και ελέγξτε τη.");
+      cloud.delete(id);continue;
+    }
+    if(sameSync(old,edited))continue;
+    if(!fresh)throw Error("Η εγγραφή διαγράφηκε σε άλλον υπολογιστή. Δεν θα επανεμφανιστεί.");
+    for(const k of new Set([...Object.keys(old),...Object.keys(edited)])){
+      if(sameSync(old[k],edited[k]))continue;
+      if(!sameSync(old[k],fresh[k])&&!sameSync(edited[k],fresh[k]))throw Error("Ταυτόχρονη αλλαγή στο ίδιο πεδίο ("+k+"). Ανανεώστε πριν την επεξεργασία.");
+      if(Object.hasOwn(edited,k))fresh[k]=copyRecords(edited[k]);else delete fresh[k];
+    }
+  }
+  for(const [id,v] of after)if(!before.has(id)){
+    if(cloud.has(id)&&!sameSync(cloud.get(id),v))throw Error("Σύγκρουση αναγνωριστικού νέας εγγραφής.");
+    cloud.set(id,copyRecords(v));
+  }
+  return [...cloud.values()];
+}
 async function loadData(){
   setStatus("Φόρτωση δεδομένων από το OneDrive...");
-  const data=await readJsonFile(DATA_FILE);
-  records=Array.isArray(data?.records)?data.records:[];
-  const textWasNormalized=normalizeAllStoredText();
-  if(!data || textWasNormalized)await saveData();
-  populateYears();render();setStatus(
-    textWasNormalized
-      ? "Τα δεδομένα φορτώθηκαν και τα κείμενα μετατράπηκαν σε ΚΕΦΑΛΑΙΑ."
-      : "Τα δεδομένα φορτώθηκαν από το OneDrive.",
-    "ok"
-  )
+  const snap=await readIndexSnapshot();applyIndexRecords(snap.data?.records||[]);
+  const normalized=normalizeAllStoredText();
+  if(normalized)await saveData();
+  populateYears();render();setStatus("Τα δεδομένα φορτώθηκαν από το OneDrive.","ok");
 }
-async function saveData(){await writeJsonFile(DATA_FILE,{version:2,updatedAt:new Date().toISOString(),records})}
+async function saveData(){
+  if(syncBusy)throw Error("Υπάρχει ήδη αποθήκευση σε εξέλιξη.");
+  if(syncBase===null)throw Error("Συνδεθείτε και φορτώστε πρώτα τις συμβάσεις.");
+  syncBusy=true;syncGeneration++;
+  const base=copyRecords(syncBase), local=copyRecords(records);
+  let snap;
+  try{
+    for(let attempt=0;attempt<4;attempt++){
+      snap=await readIndexSnapshot();
+      if(!snap.data && base.length)throw Error("Το αρχείο συμβάσεων δεν βρέθηκε. Δεν έγινε αντικατάσταση.");
+      const remote=snap.data?.records||[], next=mergeIndexChanges(base,local,remote);
+      if(sameSync(next,remote)){applyIndexRecords(remote);return;}
+      const headers={"Content-Type":"application/json;charset=utf-8"};
+      if(snap.etag)headers["If-Match"]=snap.etag;else headers["If-None-Match"]="*";
+      const url=snap.url+":/content"+(snap.etag?"":"?%40microsoft.graph.conflictBehavior=fail");
+      const resp=await graph(url,{method:"PUT",headers,body:JSON.stringify({...snap.data,version:2,updatedAt:new Date().toISOString(),records:next},null,2)});
+      if([409,412].includes(resp.status))continue;
+      if(!resp.ok)throw Error(await resp.text());
+      applyIndexRecords(next);return;
+    }
+    throw Error("Το αρχείο αλλάζει από άλλον υπολογιστή. Δοκιμάστε ξανά.");
+  }catch(e){
+    // Μην αφήνουμε αποτυχημένες τοπικές αλλαγές να αποθηκευτούν αργότερα κατά λάθος.
+    applyIndexRecords(snap?.data?.records||base);populateYears();render();throw e;
+  }finally{syncBusy=false;}
+}
+async function syncVisibleContracts(){
+  if(syncBase===null||syncBusy||refreshBusy||publicSyncBusy||document.hidden||document.querySelector('dialog[open]')||!sameSync(records,syncBase))return;
+  refreshBusy=true;const generation=syncGeneration;
+  try{
+    const snap=await readIndexSnapshot();
+    if(!snap.data&&syncBase.length)return;
+    if(generation!==syncGeneration||syncBusy||publicSyncBusy||document.querySelector('dialog[open]')||!sameSync(records,syncBase))return;
+    const next=snap.data?.records||[];
+    if(!sameSync(next,syncBase)){applyIndexRecords(next);populateYears();render();}
+  }catch(e){console.warn('Συγχρονισμός συμβάσεων:',e.message);}
+  finally{refreshBusy=false;}
+}
+window.addEventListener('focus',syncVisibleContracts);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncVisibleContracts();});
+setInterval(syncVisibleContracts,10000);
 
 async function refreshFromParalaves(showMessage=true){
   try{
@@ -896,6 +991,8 @@ async function refreshFromParalaves(showMessage=true){
       if(l?.summary){
         r.balanceNet=Number(l.summary.remainingNet||0);
         r.balanceWithVat=Number(l.summary.remainingWithVat||0);
+        r.paralavesIncludesOption=Boolean(l.summary.includesOption);
+        r.paralavesOptionGross=Number(l.summary.optionAmountGross||0);
         r.balanceUpdatedAt=l.summary.updatedAt||p.updatedAt||new Date().toISOString();
         n++;
       }
@@ -1190,25 +1287,13 @@ function openContractDocuments(recordId){
  document.getElementById('docsInput').value='';
  drawContractDocuments();document.getElementById('docsDialog').showModal();
 }
-// Το OneDrive απαγορεύει / \ : * ? " < > | μέσα στα ονόματα φακέλων.
-// Οι ονομασίες που εμφανίζονται στην εφαρμογή δεν αλλάζουν.
-function safeOneDriveFolderName(value){
- const safe=String(value??'')
-  .replace(/[\\/:*?"<>|]/g,' - ')
-  .replace(/\s+/g,' ')
-  .replace(/[. ]+$/g,'')
-  .trim();
- if(!safe)throw Error('Δεν υπάρχει έγκυρο όνομα φακέλου OneDrive.');
- return safe;
-}
 async function ensureDocumentFolder(parentPath,folderName){
- const safeName=safeOneDriveFolderName(folderName);
- const folderPath=parentPath+'/'+safeName;
+ const folderPath=parentPath+'/'+folderName;
  const check=await graph('https://graph.microsoft.com/v1.0/me/drive/root:/'+encPath(folderPath));
  if(check.ok)return folderPath;
  if(check.status!==404)throw Error('Σφάλμα ελέγχου φακέλου: '+await check.text());
  const create=await graph('https://graph.microsoft.com/v1.0/me/drive/root:/'+encPath(parentPath)+':/children',{
-  method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:safeName,folder:{},'@microsoft.graph.conflictBehavior':'fail'})
+  method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:folderName,folder:{},'@microsoft.graph.conflictBehavior':'fail'})
  });
  if(!create.ok&&create.status!==409)throw Error('Σφάλμα δημιουργίας φακέλου: '+await create.text());
  return folderPath;
@@ -1292,7 +1377,12 @@ function toggleActiveContracts(){
 // ώστε οι επανειλημμένες ανανεώσεις από το OneDrive να μην τη διπλομετρήσουν.
 function optionAmount(r){return Math.max(0,Number(r.optionAmount||0));}
 function effectiveContractBalance(r){
-  return Number(r.balanceWithVat ?? r.contractBudget ?? 0)+optionAmount(r);
+  const current=Number(r.balanceWithVat ?? r.contractBudget ?? 0);
+  // Στα παλιά ledgers το υπόλοιπο είναι μόνο της αρχικής σύμβασης.
+  // Στα νέα ήδη περιέχει την προαίρεση που ίσχυε κατά τον τελευταίο υπολογισμό.
+  return r.paralavesIncludesOption
+    ? current+optionAmount(r)-Number(r.paralavesOptionGross||0)
+    : current+optionAmount(r);
 }
 function isActiveContract(r){
   const st=statusFor(r);
@@ -1369,6 +1459,7 @@ function editRecord(x){
 function closeDialog(){document.getElementById("recordDialog").close()}
 document.getElementById("recordForm").addEventListener("submit",async e=>{
   e.preventDefault();
+  if(syncBusy)return;
   try{
     let r=currentEditingId?records.find(x=>x.id===currentEditingId):{id:id()};
     if(!currentEditingId)records.push(r);
@@ -1395,8 +1486,8 @@ async function uploadContractFile(r,file){
   if(!resp.ok)throw new Error(await resp.text());return resp.json()
 }
 async function deleteCurrentRecord(){
-  if(!currentEditingId)return;const r=records.find(x=>x.id===currentEditingId);if(!confirm(`Να διαγραφεί η εγγραφή "${r?.title||""}";`))return;
-  records=records.filter(x=>x.id!==currentEditingId);await saveData();closeDialog();populateYears();render();setStatus("Η εγγραφή διαγράφηκε.","ok")
+  if(syncBusy||!currentEditingId)return;const r=records.find(x=>x.id===currentEditingId);if(!confirm(`Να διαγραφεί η εγγραφή "${r?.title||""}";`))return;
+  try{records=records.filter(x=>x.id!==currentEditingId);await saveData();closeDialog();populateYears();render();setStatus("Η εγγραφή διαγράφηκε από το OneDrive.","ok")}catch(e){closeDialog();setStatus("Δεν έγινε διαγραφή: "+e.message,"error")}
 }
 
 function toUpperText(v){
