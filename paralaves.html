@@ -416,14 +416,24 @@ async function identifyWorkspaceRole(){
  document.body.classList.toggle('collaborator',!workspaceAdmin);
 }
 const SHARED_DOCS='SharedDocuments';
-function sharedRecordFolder(record){return String(record.id).replace(/[^a-zA-Z0-9_-]/g,'_');}
+function sharedRecordKey(record){return String(record.id).replace(/[^a-zA-Z0-9_-]/g,'_');}
+function sharedRecordSuffix(record){return ' -- ID-'+sharedRecordKey(record);}
+function sharedRecordFolder(record){
+ const clean=s=>String(s||'').normalize('NFC').replace(/[\\/:*?"<>|#%\x00-\x1f]/g,' ').replace(/\s+/g,' ').trim().replace(/\.+$/,'').trim();
+ const head=clean(record.studyNo||'ΣΥΜΒΑΣΗ')+(record.year?' - '+clean(record.year):'');
+ const suffix=sharedRecordSuffix(record);
+ return (head+' - '+(clean(record.title)||clean(record.contractor)||'ΣΥΜΒΑΣΗ')).slice(0,Math.max(30,180-suffix.length)).replace(/[ .]+$/,'')+suffix;
+}
+function matchesSharedRecord(folder,record){return !!folder.folder&&(folder.name===sharedRecordKey(record)||folder.name.endsWith(sharedRecordSuffix(record)));}
 function sharedCategoryFolder(label){return label.replace(/[\\/:*?"<>|]/g,'_');}
 function sharedPathURL(path){return GROOT+'/me/drive/root:/'+encPath(APP_FOLDER+'/'+path);}
 async function listSharedContractDocs(record){
  if(!workspace()||!record)return [];
  const out=[];
- const base=sharedPathURL(SHARED_DOCS+'/'+sharedRecordFolder(record));
- const folders=await listWorkspaceChildren(base+':/children');
+ const roots=(await listWorkspaceChildren(sharedPathURL(SHARED_DOCS)+':/children')).filter(f=>matchesSharedRecord(f,record));
+ if(roots.length>1)throw Error('Βρέθηκαν πολλοί φάκελοι για τη σύμβαση. Απαιτείται έλεγχος διαχειριστή.');
+ if(!roots.length)return out;
+ const folders=await listWorkspaceChildren(driveItemURL(workspace().driveId,roots[0].id)+'/children');
  for(const folder of folders.filter(f=>f.folder)){
   const files=await listWorkspaceChildren(driveItemURL(workspace().driveId,folder.id)+'/children');
   for(const f of files.filter(x=>x.file))out.push({categoryLabel:folder.name,name:f.name.replace(/^\d{13}-[a-z0-9]+-/i,''),id:f.id,webUrl:f.webUrl});
