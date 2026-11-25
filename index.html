@@ -618,8 +618,9 @@ tbody tr{
 .docs-toolbar input,.docs-toolbar select{width:100%;font-size:13px}
 @media print{#docsDialog{display:none!important}}
 </style>
+<style>body.collaborator button[onclick^="editRecord("],body.collaborator button[onclick="openNewRecord()"],body.collaborator button[onclick="migrateExcelReferences()"],body.collaborator button[onclick="publishPublicData()"],body.collaborator button[onclick="openPublicView()"]{display:none!important}</style>
 </head>
-<body>
+<body class="collaborator">
 <header>
   <h1>ΔΗΜΟΣ ΠΑΤΡΕΩΝ – Μελέτες και Συμβάσεις</h1>
   <p>Κοινή διαχείριση συμβάσεων και παραλαβών μέσω OneDrive</p>
@@ -704,7 +705,7 @@ tbody tr{
         <select id="docsCategory"><option value="study">ΜΕΛΕΤΗ</option><option value="contract">ΣΥΜΒΑΣΗ</option><option value="assignment">ΔΙΑΔΙΚΑΣΙΕΣ ΑΝΑΘΕΣΗΣ</option><option value="invoice">ΤΙΜΟΛΟΓΙΑ</option><option value="minutes">ΠΡΑΚΤΙΚΑ ΠΑΡΑΛΑΒΗΣ</option><option value="receipt">ΠΑΡΑΛΑΒΕΣ / ΔΕΛΤΙΑ</option><option value="correspondence">ΑΛΛΗΛΟΓΡΑΦΙΑ</option><option value="other">ΛΟΙΠΑ</option></select>
       </label>
       <label>Επιλογή αρχείων από τον υπολογιστή <input id="docsInput" type="file" multiple></label>
-      <button type="button" class="btn-green" id="docsUploadButton" onclick="uploadContractDocuments()">ΑΝΕΒΑΣΜΑ ΑΡΧΕΙΩΝ</button>
+      <button type="button" class="btn-green" id="docsUploadButton" onclick="uploadContractDocuments()">ΑΝΕΒΑΣΜΑ ΑΡΧΕΙΩΝ</button> <button type="button" class="btn-gray" onclick="refreshSharedDocuments()">ΑΝΑΝΕΩΣΗ ΑΡΧΕΙΩΝ</button>
     </div>
     <div id="docsMessage" style="padding:10px;font-size:12px;color:#475569" role="status"></div>
     <div id="docsFolders" class="docs-folders"></div>
@@ -803,6 +804,39 @@ async function assertWorkspaceItem(ref){
 }
 
 
+
+// Shared workspace: only the owner of the connected personal drive manages data.
+// Actual security must be provided by OneDrive ACLs; this is an additional UI/API guard.
+let workspaceAdmin=false;
+async function identifyWorkspaceRole(){
+ workspaceAdmin=false;
+ document.body.classList.add('collaborator');
+ if(!workspace()){workspaceAdmin=true;}else{
+  try{const r=await graph(GROOT+'/me/drive?$select=id');if(r.ok)workspaceAdmin=(await r.json()).id===workspace().driveId;}catch(e){console.warn('Workspace role:',e.message);}
+ }
+ document.body.classList.toggle('collaborator',!workspaceAdmin);
+}
+const SHARED_DOCS='SharedDocuments';
+function sharedRecordFolder(record){return String(record.id).replace(/[^a-zA-Z0-9_-]/g,'_');}
+function sharedCategoryFolder(label){return label.replace(/[\\/:*?"<>|]/g,'_');}
+function sharedPathURL(path){return GROOT+'/me/drive/root:/'+encPath(APP_FOLDER+'/'+path);}
+async function listSharedContractDocs(record){
+ if(!workspace()||!record)return [];
+ const out=[];
+ const base=sharedPathURL(SHARED_DOCS+'/'+sharedRecordFolder(record));
+ const folders=await listWorkspaceChildren(base+':/children');
+ for(const folder of folders.filter(f=>f.folder)){
+  const files=await listWorkspaceChildren(driveItemURL(workspace().driveId,folder.id)+'/children');
+  for(const f of files.filter(x=>x.file))out.push({categoryLabel:folder.name,name:f.name.replace(/^\d{13}-[a-z0-9]+-/i,''),id:f.id,webUrl:f.webUrl});
+ }
+ return out;
+}
+async function listWorkspaceChildren(url){
+ const all=[];while(url){const r=await graph(url);if(r.status===404)return all;if(!r.ok)throw Error('Δεν ήταν δυνατή η ανάγνωση αρχείων (HTTP '+r.status+').');const j=await r.json();all.push(...(j.value||[]));url=j['@odata.nextLink']||'';}
+ return all;
+}
+function safeDocUrl(v){try{const u=new URL(v);return u.protocol==='https:'?u.href:'';}catch{return '';}}
+
 const msalInstance=new msal.PublicClientApplication({
   auth:{clientId:CLIENT_ID,authority:"https://login.microsoftonline.com/common",redirectUri:REDIRECT_URI},
   cache:{cacheLocation:"localStorage",storeAuthStateInCookie:false}
@@ -857,7 +891,7 @@ function statusFor(r){
 
 async function getAccount(){let a=msalInstance.getActiveAccount();if(!a){const xs=msalInstance.getAllAccounts();if(xs.length){a=xs[0];msalInstance.setActiveAccount(a)}}return a}
 async function getToken(){const a=await getAccount();if(!a)throw new Error("Πρέπει πρώτα να συνδεθείτε με Microsoft.");try{return (await msalInstance.acquireTokenSilent({scopes:["User.Read","Files.ReadWrite"],account:a})).accessToken}catch{return (await msalInstance.acquireTokenPopup({scopes:["User.Read","Files.ReadWrite"],account:a})).accessToken}}
-async function graph(url,opt={}){url=routeWorkspace(url);const tok=await getToken();opt.headers=opt.headers||{};opt.headers.Authorization="Bearer "+tok;return fetch(url,{cache:"no-store",...opt})}
+async function graph(url,opt={}){if(workspace()&&!workspaceAdmin&&!/^(GET|HEAD)$/i.test(opt.method||"GET")&&!url.startsWith(sharedPathURL(SHARED_DOCS)+"/" )&&!url.startsWith(sharedPathURL(SHARED_DOCS)+":/"))throw Error("Επιτρέπεται μόνο μεταφόρτωση στον φάκελο SharedDocuments.");url=routeWorkspace(url);const tok=await getToken();opt.headers=opt.headers||{};opt.headers.Authorization="Bearer "+tok;return fetch(url,{cache:"no-store",...opt})}
 async function signIn(){try{const r=await msalInstance.loginPopup(loginRequest);msalInstance.setActiveAccount(r.account);setStatus("Συνδεθήκατε ως "+r.account.username,"ok");await loadData();await refreshFromParalaves(false);await loadOneDriveQuota()}catch(e){setStatus("Σφάλμα σύνδεσης:\n"+e.message,"error")}}
 // Διαβάζουμε την πραγματική χωρητικότητα του συνδεδεμένου OneDrive μέσω Microsoft Graph.
 // Τα bytes δεν αποθηκεύονται ούτε δημοσιεύονται στο public-data.json.
@@ -993,13 +1027,16 @@ async function migrateExcelReferences(){
 }
 
 async function loadData(){
+  await identifyWorkspaceRole();
   setStatus("Φόρτωση δεδομένων από το OneDrive...");
   const snap=await readIndexSnapshot();applyIndexRecords(snap.data?.records||[]);
   const normalized=normalizeAllStoredText();
-  if(normalized)await saveData();
+  if(normalized&&workspaceAdmin)await saveData();
+  else if(normalized)syncBase=copyRecords(records);
   populateYears();render();setStatus("Τα δεδομένα φορτώθηκαν από το OneDrive.","ok");
 }
 async function saveData(){
+  if(!workspaceAdmin)throw Error("Μόνο ο διαχειριστής τροποποιεί τη βάση συμβάσεων.");
   if(syncBusy)throw Error("Υπάρχει ήδη αποθήκευση σε εξέλιξη.");
   if(syncBase===null)throw Error("Συνδεθείτε και φορτώστε πρώτα τις συμβάσεις.");
   syncBusy=true;syncGeneration++;
@@ -1057,7 +1094,8 @@ async function refreshFromParalaves(showMessage=true){
         n++;
       }
     }
-    if(n)await saveData();
+    if(n&&workspaceAdmin)await saveData();
+    else if(n)syncBase=copyRecords(records);
     render();
     if(showMessage)setStatus(n?`Ενημερώθηκαν ${n} υπόλοιπα από το πρόγραμμα Παραλαβών.`:"Δεν βρέθηκαν ακόμη υπολογισμένα υπόλοιπα στο πρόγραμμα Παραλαβών.","ok");
   }catch(e){if(showMessage)setStatus("Σφάλμα ενημέρωσης υπολοίπων:\n"+e.message,"error")}
@@ -1339,13 +1377,15 @@ function drawContractDocuments(){
   return `<section class="docs-folder"><h3>📂 ${label} (${files.length})</h3><ul>${lis}</ul></section>`;
  }).join('');
 }
-function openContractDocuments(recordId){
+async function openContractDocuments(recordId){
  const r=records.find(x=>x.id===recordId);if(!r)return;
  documentsRecordId=recordId;
  document.getElementById('docsTitle').textContent='ΑΡΧΕΙΑ — '+(r.studyNo||'')+' — '+(r.contractor||r.title||'');
  document.getElementById('docsMessage').textContent='Τα αρχεία διατηρούνται στο OneDrive. Για εισαγωγή μελέτης στις Παραλαβές, επιβεβαίωσε πρώτα τον πίνακα ειδών.';
  document.getElementById('docsInput').value='';
  drawContractDocuments();document.getElementById('docsDialog').showModal();
+ if(workspace()&&workspaceAdmin){try{await ensureSubFolder(SHARED_DOCS);}catch(e){document.getElementById('docsMessage').textContent=e.message;}}
+ await refreshSharedDocuments();
 }
 async function ensureDocumentFolder(parentPath,folderName){
  const folderPath=parentPath+'/'+folderName;
@@ -1365,6 +1405,27 @@ async function contractDocFolder(record,category){
  const root=await ensureDocumentFolder(APP_FOLDER+'/Files',base);
  return ensureDocumentFolder(root,DOC_CATEGORIES[category]);
 }
+
+async function refreshSharedDocuments(){
+ const r=records.find(x=>x.id===documentsRecordId);if(!r||!workspace())return;
+ const id=r.id,host=document.getElementById('docsFolders');
+ try{const files=await listSharedContractDocs(r);if(documentsRecordId!==id)return;
+  document.getElementById('sharedDocsList')?.remove();const section=document.createElement('section');section.id='sharedDocsList';section.className='docs-folder';
+  section.innerHTML='<h3>ΚΟΙΝΟΧΡΗΣΤΑ ΑΡΧΕΙΑ ('+files.length+')</h3>'+ (files.length?'<ul>'+files.map(f=>'<li>'+esc(f.categoryLabel)+' — <a href="'+esc(safeDocUrl(f.webUrl))+'" target="_blank" rel="noopener noreferrer">'+esc(f.name)+'</a></li>').join('')+'</ul>':'Δεν υπάρχουν ακόμη κοινόχρηστα αρχεία.');host.appendChild(section);
+ }catch(e){document.getElementById('docsMessage').textContent=e.message;}
+}
+async function uploadSharedDocuments(record,category,files){
+ if(workspaceAdmin)await ensureSubFolder(SHARED_DOCS);
+ const base=await ensureDocumentFolder(APP_FOLDER+'/'+SHARED_DOCS,sharedRecordFolder(record));
+ const folder=await ensureDocumentFolder(base,sharedCategoryFolder(DOC_CATEGORIES[category]||'ΛΟΙΠΑ'));
+ for(const file of files){
+  if(file.size>4*1024*1024)throw Error('Το αρχείο '+file.name+' υπερβαίνει το όριο 4 MB.');
+  const unique=Date.now()+'-'+Math.random().toString(36).slice(2,8)+'-'+file.name.replace(/[\\/:*?"<>|]/g,'_');
+  const response=await graph(GROOT+'/me/drive/root:/'+encPath(folder+'/'+unique)+':/content',{method:'PUT',headers:{'Content-Type':file.type||'application/octet-stream'},body:file});
+  if(!response.ok)throw Error('Αποτυχία ανεβάσματος: '+file.name+' (HTTP '+response.status+'). Έλεγξε τα δικαιώματα OneDrive.');
+ }
+}
+
 async function uploadContractDocuments(){
  if(documentsBusy)return;
  const r=records.find(x=>x.id===documentsRecordId),category=document.getElementById('docsCategory').value;
@@ -1373,6 +1434,10 @@ async function uploadContractDocuments(){
  if(!r||!files.length){message.textContent='Επίλεξε τουλάχιστον ένα αρχείο.';return;}
  documentsBusy=true;document.getElementById('docsUploadButton').disabled=true;
  try{
+  if(workspace()&&!workspaceAdmin){
+   await uploadSharedDocuments(r,category,files);
+   message.textContent="Τα αρχεία ανέβηκαν στον κοινόχρηστο φάκελο.";input.value="";await refreshSharedDocuments();return;
+  }
   const folder=await contractDocFolder(r,category);
   r.documentFiles=Array.isArray(r.documentFiles)?r.documentFiles:[];
   for(const file of files){
