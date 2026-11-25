@@ -132,6 +132,7 @@ body.initial-loading #initialScreen{display:block;position:fixed;inset:0;backgro
 </header>
 
 <div class="toolbar">
+<button class="blue" onclick="configureWorkspace()">Κοινόχρηστος φάκελος</button>
   <button class="gray" onclick="goBack()">← Συμβάσεις</button>
   <button class="blue" onclick="signIn()">Σύνδεση Microsoft</button>
   <select id="contractSelect" onchange="selectContract(this.value)"></select>
@@ -358,6 +359,47 @@ const CLIENT_ID="d15aa5e9-860e-4e0a-af14-283c401a08cc";
 const REDIRECT_URI="https://spirosdalianismech-art.github.io/symvaseis-onedrive/auth.html";
 const APP_FOLDER="SymvaseisApp", DATA_FILE="symvaseis-data.json", PAR_FILE="paralaves-data.json";
 
+const GROOT='https://graph.microsoft.com/v1.0';
+const workspaceKey='symvaseis-workspace-v1';
+function workspace(){try{return JSON.parse(localStorage.getItem(workspaceKey)||'null')}catch{return null}}
+function driveItemURL(d,id){return GROOT+'/drives/'+encodeURIComponent(d)+'/items/'+encodeURIComponent(id)}
+function workspaceURL(w){return driveItemURL(w.driveId,w.id)}
+function routeWorkspace(url){
+ const w=workspace();if(!w)return url;
+ const prefix=GROOT+'/me/drive/root:/'+encodeURIComponent(APP_FOLDER);
+ if(url===prefix||url.startsWith(prefix+'?'))return workspaceURL(w)+url.slice(prefix.length);
+ if(url.startsWith(prefix+':/'))return workspaceURL(w)+url.slice(prefix.length+1);
+ if(url.startsWith(prefix+'/'))return workspaceURL(w)+':/'+url.slice(prefix.length+1);
+ const ip=GROOT+'/me/drive/items/';if(url.startsWith(ip))return GROOT+'/drives/'+encodeURIComponent(w.driveId)+'/items/'+url.slice(ip.length);
+ if(url.startsWith(GROOT+'/me/drive/root'))throw Error('Στον κοινόχρηστο χώρο δεν επιτρέπεται αναζήτηση εκτός φακέλου.');
+ return url;
+}
+async function configureWorkspace(){
+ try{
+ const link=prompt('Επικόλλησε τον σύνδεσμο OneDrive του υπάρχοντος φακέλου εφαρμογής (με τα δύο JSON).');if(!link)return;
+ const u=new URL(link);if(u.protocol!=='https:')throw Error('Απαιτείται σύνδεσμος HTTPS.');
+ const token='u!'+btoa(String.fromCharCode(...new TextEncoder().encode(link.trim()))).replace(/=+$/,'').replace(/\//g,'_').replace(/\+/g,'-');
+ const res=await graph(GROOT+'/shares/'+token+'/driveItem',{headers:{Prefer:'redeemSharingLinkIfNecessary'}});if(!res.ok)throw Error('Δεν ανοίγει ο κοινόχρηστος φάκελος: HTTP '+res.status);
+ const m=await res.json(),item=m.remoteItem||m,w={id:item.id,driveId:item.parentReference?.driveId};
+ if(!item.folder||!w.id||!w.driveId)throw Error('Ο σύνδεσμος πρέπει να αφορά φάκελο.');
+ for(const name of [DATA_FILE,PAR_FILE]){const r=await graph(workspaceURL(w)+':/'+encodeURIComponent(name)+':/content');if(!r.ok)throw Error('Λείπει ή δεν είναι προσβάσιμο το '+name);const j=await r.json();if(!Array.isArray(name===DATA_FILE?j.records:j.contracts))throw Error('Μη έγκυρο '+name);}
+ localStorage.setItem(workspaceKey,JSON.stringify(w));location.reload();
+ }catch(e){alert(e.message)}
+}
+async function verifyWorkspace(){const w=workspace();if(!w)return false;const r=await graph(workspaceURL(w));if(!r.ok)throw Error('Ο κοινόχρηστος φάκελος δεν είναι προσβάσιμος. Δεν δημιουργείται νέα βάση.');return true;}
+async function excelRefFromPath(path){
+ const w=workspace();let url=GROOT+'/me/drive/root:/'+encPath(path);
+ if(w){const p=String(path).replace(/^\/+/, '');if(!p.startsWith(APP_FOLDER+'/'))throw Error('Χρειάζεται επιλογή Excel μέσα στον κοινόχρηστο φάκελο.');}
+ const r=await graph(url);if(!r.ok)throw Error('Δεν βρέθηκε Excel: '+path);const m=await r.json();if(!m.file||!m.id||!m.parentReference?.driveId)throw Error('Μη έγκυρο Excel: '+path);return {id:m.id,driveId:m.parentReference.driveId};
+}
+async function assertWorkspaceItem(ref){
+ const w=workspace();if(!w)return;
+ if(ref.driveId!==w.driveId)throw Error('Το αρχείο βρίσκεται εκτός κοινόχρηστου OneDrive.');
+ let id=ref.id;for(let n=0;n<100&&id;n++){if(id===w.id)return;const r=await graph(driveItemURL(ref.driveId,id)+'?$select=id,parentReference');if(!r.ok)break;id=(await r.json()).parentReference?.id;}
+ throw Error('Το αρχείο βρίσκεται εκτός του κοινόχρηστου φακέλου ή δεν είναι προσβάσιμο.');
+}
+
+
 const msalInstance=new msal.PublicClientApplication({
   auth:{clientId:CLIENT_ID,authority:"https://login.microsoftonline.com/common",redirectUri:REDIRECT_URI},
   cache:{cacheLocation:"localStorage",storeAuthStateInCookie:false}
@@ -378,9 +420,10 @@ function goBack(){location.href="./"}
 
 async function getAccount(){let a=msalInstance.getActiveAccount();if(!a){const xs=msalInstance.getAllAccounts();if(xs.length){a=xs[0];msalInstance.setActiveAccount(a)}}return a}
 async function getToken(){const a=await getAccount();if(!a)throw new Error("Πρέπει πρώτα να συνδεθείτε με Microsoft.");try{return (await msalInstance.acquireTokenSilent({scopes:["User.Read","Files.ReadWrite"],account:a})).accessToken}catch{return (await msalInstance.acquireTokenPopup({scopes:["User.Read","Files.ReadWrite"],account:a})).accessToken}}
-async function graph(url,opt={}){const tok=await getToken();opt.headers=opt.headers||{};opt.headers.Authorization="Bearer "+tok;return fetch(url,opt)}
+async function graph(url,opt={}){url=routeWorkspace(url);const tok=await getToken();opt.headers=opt.headers||{};opt.headers.Authorization="Bearer "+tok;return fetch(url,opt)}
 async function signIn(){try{const r=await msalInstance.loginPopup(loginRequest);msalInstance.setActiveAccount(r.account);setStatus("Συνδεθήκατε ως "+r.account.username,"ok");await loadAll()}catch(e){setStatus("Σφάλμα σύνδεσης:\n"+e.message,"err")}}
 async function ensureRootFolder(){
+ if(await verifyWorkspace())return;
  const c=await graph("https://graph.microsoft.com/v1.0/me/drive/root:/"+encodeURIComponent(APP_FOLDER));if(c.ok)return;if(c.status!==404)throw new Error(await c.text());
  const r=await graph("https://graph.microsoft.com/v1.0/me/drive/root/children",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:APP_FOLDER,folder:{},["@microsoft.graph.conflictBehavior"]:"fail"})});if(!r.ok&&r.status!==409)throw new Error(await r.text())
 }
@@ -881,7 +924,10 @@ async function syncFromExcel(showMessage=true){
   if(expected?.entryMode==="app")throw Error("Η σύμβαση έχει ήδη μεταφερθεί στην εφαρμογή. Ανανέωσε τη σελίδα.");
   if(expected?.receipts?.some(r=>r.source!=="excel"))throw Error("Υπάρχουν παλαιές καταχωρίσεις εκτός Excel. Δεν θα αντικατασταθούν αυτόματα.");
   if(showMessage)setStatus("Διαβάζω τον υπάρχοντα πίνακα Excel...");
-  const r=await graph("https://graph.microsoft.com/v1.0/me/drive/root:/"+encPath(l.excelPath)+":/content");
+  const ref=l.excelRef||c.excelRefs?.[l.excelPath]||(c.excelPath===l.excelPath?c.excelRef:null)||await excelRefFromPath(l.excelPath);
+  await assertWorkspaceItem(ref);
+  const r=await graph(driveItemURL(ref.driveId,ref.id)+"/content");
+  if(r.ok)l.excelRef=ref;
   if(!r.ok)throw new Error("Δεν βρέθηκε το Excel στο OneDrive. Έλεγξε τη διαδρομή.");
   // Διαβάζουμε τις ημερομηνίες Excel ως αριθμούς σειράς, όχι ως JS Date.
    // Έτσι αποφεύγουμε μετατόπιση κατά μία ημέρα λόγω ζώνης ώρας.
@@ -1110,7 +1156,8 @@ async function openOneDrivePicker(){
 function closePicker(){pickerDialog.close()}
 async function loadPickerFolder(itemId,label){
   pickerList.innerHTML="<div style='padding:20px'>Φόρτωση...</div>";
-  const url=itemId
+  const w=workspace();
+  const url=w ? workspaceURL({...w,id:itemId||w.id})+"/children?$select=id,name,folder,file,parentReference,webUrl&$orderby=name" : itemId
     ? "https://graph.microsoft.com/v1.0/me/drive/items/"+encodeURIComponent(itemId)+"/children?$select=id,name,folder,file,parentReference,webUrl&$orderby=name"
     : "https://graph.microsoft.com/v1.0/me/drive/root/children?$select=id,name,folder,file,parentReference,webUrl&$orderby=name";
   const r=await graph(url);
@@ -1161,8 +1208,9 @@ async function chooseExcelItem(item){
   excelPath.value=full;
   const l=getLedger(true);
   l.excelPath=full;
+  l.excelRef={id:item.id,driveId:item.parentReference?.driveId||workspace()?.driveId};
   const c=getContract();
-  if(c)c.excelPath=full;
+  if(c){c.excelPath=full;c.excelRef=l.excelRef;}
   pickerDialog.close();
   setStatus("Επιλέχθηκε το Excel: "+item.name+". Γίνεται ανάγνωση του πίνακα...","ok");
   await syncFromExcel(true);
