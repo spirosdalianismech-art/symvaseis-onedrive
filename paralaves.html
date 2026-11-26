@@ -150,6 +150,7 @@ body.initial-loading #initialScreen{display:block;position:fixed;inset:0;backgro
 
 <div class="container">
   <div id="status">Σύνδεση με Microsoft για φόρτωση δεδομένων.</div>
+  <div class="no-print" style="margin:10px 0"><button id="manualCatalogButton" class="blue hidden" onclick="manualCatalogOpen()">+ ΚΑΤΑΧΩΡΙΣΗ / ΕΠΕΞΕΡΓΑΣΙΑ ΥΛΙΚΩΝ ΣΥΜΒΑΣΗΣ</button></div>
   <div class="readonly-note" id="modeNote">Εισαγωγή από Excel — ενεργοποίησε τις καταχωρίσεις μετά τον έλεγχο.</div>
   <div id="excelAudit" class="hidden" role="status" aria-live="polite"></div>
 
@@ -781,6 +782,7 @@ function formatDateGR(s){
 
 function render(){
  const c=getContract(),l=getLedger(false);
+ el("manualCatalogButton").classList.toggle("hidden",!workspaceAdmin||!c||!l);
  if(!c||!l){contractTitle.textContent="ΔΕΝ ΥΠΑΡΧΟΥΝ ΣΥΜΒΑΣΕΙΣ ΓΙΑ ΤΑ ΕΠΙΛΕΓΜΕΝΑ ΤΜΗΜΑΤΑ";contractMeta.textContent="ΕΠΙΛΕΞΕ ΕΝΑ Ή ΠΕΡΙΣΣΟΤΕΡΑ ΤΜΗΜΑΤΑ Ή ΔΗΜΙΟΥΡΓΗΣΕ ΕΓΓΡΑΦΗ ΣΤΟ ΠΡΟΓΡΑΜΜΑ ΣΥΜΒΑΣΕΩΝ.";itemsBody.innerHTML="";renderGroupBalances(null);renderDateHistoryMatrix();return}
  l.vat=Number(l.vat??c.vat??24);excelPath.value=l.excelPath||c.excelPath||"";excelSheet.value=l.excelSheet||c.excelSheet||"ΣΥΜΒΑΣΗ";
  contractTitle.textContent=toUpperText((c.studyNo?c.studyNo+" — ":"")+c.title);
@@ -2211,6 +2213,51 @@ document.addEventListener('keydown', function(event){
  const next=fields[fields.indexOf(field)+(event.shiftKey?-1:1)];
  if(next){next.focus();next.select();}
 });
+</script>
+<dialog id="manualDialog" style="width:95vw;max-width:1500px;border:1px solid #ccc;border-radius:10px;padding:20px"><h2 id="manualTitle"></h2><p>Καταχώρισε τα είδη της υπογεγραμμένης σύμβασης. Η προαίρεση προστίθεται μόνο εντός του εγκεκριμένου ποσού στο INDEX. Για είδη με παραλαβές η αρχική ποσότητα και τιμή δεν αλλάζουν.</p><div class="table-wrap"><table style="min-width:1050px"><thead><tr><th>ΟΜΑΔΑ</th><th style="width:28%">ΠΕΡΙΓΡΑΦΗ</th><th>Μ.Μ.</th><th>ΠΟΣΟΤΗΤΑ</th><th>ΤΙΜΗ ΜΟΝΑΔΑΣ</th><th>ΠΟΣΟΤΗΤΑ ΠΡΟΑΙΡΕΣΗΣ</th><th>ΑΞΙΑ ΧΩΡΙΣ ΦΠΑ</th><th>ΑΞΙΑ ΠΡΟΑΙΡΕΣΗΣ ΧΩΡΙΣ ΦΠΑ</th><th></th></tr></thead><tbody id="manualRows" oninput="manualCatalogPreview()"></tbody></table></div><p id="manualTotals"></p><p id="manualError" style="color:#b91c1c" role="alert"></p><button class="blue" onclick="manualCatalogRow()">+ ΥΛΙΚΟ</button> <button class="gray" onclick="if(!busy)el('manualDialog').close()">ΑΚΥΡΩΣΗ</button> <button class="green" id="manualSave" onclick="manualCatalogSave()">ΑΠΟΘΗΚΕΥΣΗ ΥΛΙΚΩΝ</button></dialog>
+<script>
+let manualCatalogState=null;
+function manualCatalogOpen(){
+ const c=getContract(),l=getLedger(false);if(!workspaceAdmin||!c||!l||busy)return;
+ if(l.entryMode!=='app'&&(l.items.length||l.receipts.length)){alert('Υπάρχουν στοιχεία Excel. Ενεργοποίησε πρώτα τις καταχωρίσεις για να διατηρηθούν τα υπόλοιπα και το ιστορικό.');return;}
+ manualCatalogState={cid:currentId,signature:persistentLedgerSignature(l)};
+ el('manualError').textContent='';el('manualRows').replaceChildren();for(const it of l.items)manualCatalogRow(it);if(!l.items.length)manualCatalogRow();
+ el('manualTitle').textContent='ΥΛΙΚΑ — '+(c.studyNo||c.title);el('manualDialog').showModal();manualCatalogPreview();
+}
+function manualCatalogRow(it={}){
+ const tr=document.createElement('tr');tr.dataset.id=it.id||'manual-'+uid();
+ const locked=(getLedger(false)?.receipts||[]).some(r=>r.itemId===it.id);
+ for(const [key,value] of Object.entries({group:it.group||'',description:it.description||'',unit:it.unit||'',initialQty:it.initialQty??'',unitPrice:it.unitPrice??'',optionQty:it.optionQty??0})){
+ const td=document.createElement('td'),input=document.createElement('input');input.dataset.field=key;input.value=value;input.style.width='100%';input.setAttribute('aria-label',key);if(['initialQty','unitPrice','optionQty'].includes(key))input.inputMode='decimal';if(locked&&['unitPrice','initialQty'].includes(key))input.readOnly=true;td.append(input);tr.append(td);}
+ const value=document.createElement('td');value.className='manual-value num';tr.append(value);const opt=document.createElement('td');opt.className='manual-option num';tr.append(opt);
+ const td=document.createElement('td'),btn=document.createElement('button');btn.type='button';btn.className='red';btn.textContent='×';btn.disabled=locked;btn.onclick=()=>{tr.remove();manualCatalogPreview();};td.append(btn);tr.append(td);el('manualRows').append(tr);manualCatalogPreview();
+}
+function manualCatalogDraft(){
+ const l=getLedger(false);return Array.from(el('manualRows').rows).map((tr,i)=>{
+ const field=k=>tr.querySelector('[data-field='+k+']').value.trim();const q=strictAmount(field('initialQty')),p=strictAmount(field('unitPrice')),o=strictAmount(field('optionQty')||'0');
+ if(!field('description')||!field('unit')||!Number.isFinite(q)||q<=0||!Number.isFinite(p)||p<=0||!Number.isFinite(o)||o<0)throw Error('Συμπλήρωσε σωστά τη γραμμή '+(i+1)+'.');
+ const old=l.items.find(x=>x.id===tr.dataset.id);const locked=(l.receipts||[]).some(r=>r.itemId===tr.dataset.id);
+ if(locked&&(q!==Number(old.initialQty)||p!==Number(old.unitPrice)))throw Error('Δεν επιτρέπεται αλλαγή ποσότητας ή τιμής σε υλικό με ιστορικό.');
+ return {...old,id:tr.dataset.id,description:toUpperText(field('description')),group:toUpperText(field('group')),unit:toUpperText(field('unit')),initialQty:q,unitPrice:p,optionQty:o,initialNet:old&&q===Number(old.initialQty)&&p===Number(old.unitPrice)?old.initialNet:Math.round(q*p*100)/100};});
+}
+function manualCatalogPreview(){
+ const rows=Array.from(el('manualRows').rows);let base=0,opt=0;for(const tr of rows){const n=k=>strictAmount(tr.querySelector('[data-field='+k+']').value.trim()||'0');const a=n('initialQty')*n('unitPrice'),b=n('optionQty')*n('unitPrice');tr.querySelector('.manual-value').textContent=Number.isFinite(a)?euro(a):'—';tr.querySelector('.manual-option').textContent=Number.isFinite(b)?euro(b):'—';base+=Number.isFinite(a)?Math.round(a*100)/100:0;opt+=Number.isFinite(b)?b:0;}
+ const factor=1+Number(getContract()?.vat??24)/100;el('manualTotals').textContent='ΣΥΜΒΑΣΗ: '+euro(base)+' χωρίς ΦΠΑ / '+euro(base*factor)+' με ΦΠΑ · ΠΡΟΑΙΡΕΣΗ: '+euro(opt*factor)+' με ΦΠΑ · ΕΓΚΕΚΡΙΜΕΝΟ ΟΡΙΟ: '+euro(optionBudgetGross());
+}
+async function manualCatalogSave(){
+ if(busy||!workspaceAdmin||!manualCatalogState)return;busy=true;el('manualSave').disabled=true;
+ try{const c=getContract(),l=getLedger(false),cid=currentId;if(cid!==manualCatalogState.cid||persistentLedgerSignature(l)!==manualCatalogState.signature)throw Error('Τα στοιχεία άλλαξαν. Άνοιξε ξανά τον πίνακα.');
+ const items=manualCatalogDraft();if(!items.length)throw Error('Πρόσθεσε τουλάχιστον ένα υλικό.');const latest=await readJson(PAR_FILE)||{version:1,contracts:[]};const old=latest.contracts.find(x=>x.contractId===cid)||null;
+ if(currentId!==cid||(old&&persistentLedgerSignature(old)!==manualCatalogState.signature))throw Error('Τα στοιχεία άλλαξαν στο OneDrive. Ανανέωσε τη σελίδα.');
+ if(!old&&(l.items.length||l.receipts.length))throw Error('Δεν βρέθηκε το αποθηκευμένο ιστορικό.');
+ const candidate=JSON.parse(JSON.stringify(old||l));candidate.items=items;candidate.receipts=candidate.receipts||[];candidate.entryMode='app';candidate.vat=Number(c.vat??24);candidate.importMethod=candidate.importMethod||'manual';
+ if(candidate.receipts.some(r=>!items.some(it=>it.id===r.itemId)))throw Error('Δεν διαγράφεται υλικό με παραλαβές.');
+ const gross=items.reduce((s,it)=>s+Number(it.initialNet),0)*(1+candidate.vat/100);if(Number(c.contractBudget)>0&&Math.abs(Math.round(gross*100)-Math.round(Number(c.contractBudget)*100))>2)throw Error('Η συμβατική αξία με ΦΠΑ ('+euro(gross)+') δεν συμφωνεί με το ποσό σύμβασης ('+euro(c.contractBudget)+').');
+ summarizeApp(candidate,c);if(!confirm('Αποθήκευση '+items.length+' υλικών στο OneDrive; Το ιστορικό παραλαβών διατηρείται.'))return;
+ await writeJson('paralaves-backup-'+cid+'-'+Date.now()+'.json',old||l);await persistAppLedger(candidate,old);el('manualDialog').close();manualCatalogState=null;render();setStatus('Ο πίνακας υλικών αποθηκεύτηκε στο OneDrive.','ok');
+ }catch(e){el('manualError').textContent=e.message;}finally{busy=false;el('manualSave').disabled=false;}
+}
+
 </script>
 </body>
 </html>
