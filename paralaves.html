@@ -128,7 +128,7 @@ body.initial-loading #initialScreen{display:block;position:fixed;inset:0;backgro
 <div id="initialScreen" role="status" aria-label="Άνοιγμα παραλαβών"></div>
 <script>window.addEventListener('error',function(e){if(e.target===window && document.body.classList.contains('initial-loading')){document.body.classList.remove('initial-loading');} });</script>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v49 — ΠΑΡΑΛΑΒΕΣ</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v50 — ΠΑΡΑΛΑΒΕΣ</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -264,7 +264,7 @@ body.initial-loading #initialScreen{display:block;position:fixed;inset:0;backgro
   </div>
   <section class="panel no-print hidden" id="bulkReceiptPanel">
     <div class="panel-title">ΚΑΤΑΧΩΡΙΣΗ ΠΑΡΑΛΑΒΗΣ — ΟΛΑ ΤΑ ΥΛΙΚΑ ΚΑΙ ΠΡΟΑΙΡΕΣΗ</div>
-    <p id="directReceiptNotice" class="hidden" style="margin:12px;padding:10px;background:#fff7df;color:#754400">ΧΕΙΡΟΚΙΝΗΤΗ ΚΑΤΑΧΩΡΙΣΗ ΧΩΡΙΣ EXCEL. Τα υπόλοιπα του πίνακα βασίζονται στο αποθηκευμένο ιστορικό, όχι σε μη επιβεβαιωμένα υπόλοιπα Excel. Η πρώτη αποθήκευση ενεργοποιεί τη χειροκίνητη λειτουργία. Για αλλαγή προαίρεσης χρησιμοποίησε τον πίνακα υλικών ή αποθήκευσέ την μετά την ενεργοποίηση.</p>
+    <p id="directReceiptNotice" class="hidden" style="margin:12px;padding:10px;background:#fff7df;color:#754400">ΧΕΙΡΟΚΙΝΗΤΗ ΚΑΤΑΧΩΡΙΣΗ ΧΩΡΙΣ EXCEL. Τα υπόλοιπα βασίζονται στις τελευταίες αποθηκευμένες αξίες. Ασύμφωνες παλιές εγγραφές Excel αρχειοθετούνται χωριστά κατά την πρώτη αποθήκευση. Ελέγξτε τις αξίες πριν συνεχίσετε. Η πρώτη αποθήκευση ενεργοποιεί τη χειροκίνητη λειτουργία. Για αλλαγή προαίρεσης χρησιμοποίησε τον πίνακα υλικών ή αποθήκευσέ την μετά την ενεργοποίηση.</p>
     <div style="padding:14px">
       <p class="muted">Συμπλήρωσε μόνο ποσότητα ή χρηματική αξία χωρίς ΦΠΑ δίπλα σε όσα είδη παρέλαβες. Η αρχική σύμβαση και η εγκεκριμένη προαίρεση υπολογίζονται μαζί. Τα κενά είδη παραλείπονται. Για προαίρεση συμπλήρωσε την πρόσθετη ποσότητα στην αντίστοιχη στήλη και αποθήκευσέ την ξεχωριστά πριν καταχωρίσεις παραλαβή. Η προαίρεση πρέπει να έχει ήδη εγκριθεί και να έχει καταχωριστεί στο ποσό της σύμβασης.</p>
       <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-bottom:12px">
@@ -1445,6 +1445,23 @@ function directReceiptLedger(l=getLedger(false)){
  if(!l||l.entryMode==='app')return l;
  const candidate=JSON.parse(JSON.stringify(l));
  candidate.entryMode='app';candidate.importMethod='manual-direct';candidate.receipts=candidate.receipts||[];
+ // Preserve cached per-item balances on conversion; unreliable Excel detail is archived, not charged twice.
+ for(const it of candidate.items||[]){
+  const source=l.items.find(x=>x.id===it.id), legacy=computeLine(source,l);
+  const total=Number(it.initialNet||0)+Number(it.optionQty||0)*Number(it.unitPrice||0);
+  const target=Number(legacy.remainingNet), expected=Math.round((total-target)*100)/100;
+  if(!Number.isFinite(target)||target<-.01||expected<-.01)throw Error('Μη έγκυρο αποθηκευμένο υπόλοιπο: '+it.description);
+  const all=candidate.receipts.filter(r=>r.itemId===it.id), excel=all.filter(r=>r.source==='excel'), other=all.filter(r=>r.source!=='excel');
+  const otherNet=other.reduce((n,r)=>n+Number(r.netValue||0),0), excelNet=excel.reduce((n,r)=>n+Number(r.netValue||0),0);
+  const excelQty=excel.filter(r=>r.mode==='units').reduce((n,r)=>n+Number(r.units||0),0);
+  if(Math.abs(excelNet-expected)>.011||excelQty>Number(it.initialQty||0)+Number(it.optionQty||0)+1e-8){
+   candidate.archivedExcelReceipts=[...(candidate.archivedExcelReceipts||[]),...excel];
+   candidate.receipts=candidate.receipts.filter(r=>r.itemId!==it.id||r.source!=='excel');
+   if(expected>0)candidate.receipts.push({id:'opening-v50-'+it.id,itemId:it.id,mode:'value',units:0,netValue:expected,date:'',note:'ΑΠΟΘΗΚΕΥΜΕΝΟ ΠΑΛΑΙΟ ΥΠΟΛΟΙΠΟ — χωρίς επιβεβαιωμένη ημερομηνία',source:'opening-balance',bucket:'base'});
+  }
+  const calc=computeLine(it,candidate);
+  if(calc.remainingNet<-.011||calc.usedKnownQty>calc.totalQty+1e-8)throw Error('Ασυμφωνία αποθηκευμένων παραλαβών: '+it.description);
+ }
  return candidate;
 }
 function toggleReceiptEntry(){
@@ -1499,7 +1516,7 @@ function updateReceiptAreas(){
  if(direct && entryOpen)renderBulkReceiptItems();
 }
 function renderBulkReceiptItems(){
- const raw=getLedger(false),l=directReceiptLedger(raw);if(!l||!workspaceAdmin)return;
+ const raw=getLedger(false);let l;try{l=directReceiptLedger(raw);}catch(e){el('bulkReceiptItems').innerHTML='';setStatus(e.message,'err');previewBulkReceipt();return;}if(!l||!workspaceAdmin)return;
  el('bulkDate').value=el('bulkDate').value||localDateISO(new Date());
  const tbody=el('bulkReceiptItems');
  // Keep an unfinished draft if the page renders the same contract.
@@ -1604,7 +1621,7 @@ async function saveBulkReceipts(){
    const before=old.items.reduce((n,it)=>n+computeLine(it,old).remainingNet,0);
    const after=candidate.items.reduce((n,it)=>n+computeLine(it,candidate).remainingNet,0);
    const factor=1+Number(candidate.vat??24)/100;
-   if(!confirm('Χειροκίνητη λειτουργία χωρίς Excel. Διατηρούνται όλες οι αποθηκευμένες παραλαβές. Παλιό εμφανιζόμενο υπόλοιπο: '+euro(before*factor)+' με ΦΠΑ. Υπόλοιπο βάσει αποθηκευμένου ιστορικού πριν τη νέα παραλαβή: '+euro(after*factor)+' με ΦΠΑ. Τυχόν μη καταγεγραμμένες παλιές παραλαβές Excel δεν υπολογίζονται. Συνέχεια χωρίς Excel;'))return;
+   if(!confirm('Χειροκίνητη λειτουργία χωρίς Excel. Οι ασύμφωνες εγγραφές Excel αρχειοθετούνται χωριστά, χωρίς διπλή αφαίρεση. Παλιό εμφανιζόμενο υπόλοιπο: '+euro(before*factor)+' με ΦΠΑ. Υπόλοιπο βάσει αποθηκευμένου ιστορικού πριν τη νέα παραλαβή: '+euro(after*factor)+' με ΦΠΑ. Τα παλαιά υπόλοιπα δεν έχουν επαληθευτεί εκ νέου από Excel. Συνέχεια χωρίς Excel;'))return;
   }
   for(const r of rs){
    const it=candidate.items.find(i=>i.id===r.itemId);
@@ -2262,7 +2279,7 @@ function manualCatalogRow(it={}){
  for(const [key,value] of Object.entries({group:it.group||'',description:it.description||'',unit:it.unit||'',initialQty:it.initialQty??'',unitPrice:it.unitPrice??'',optionQty:it.optionQty??0})){
  const td=document.createElement('td'),input=document.createElement('input');input.dataset.field=key;input.value=value;input.style.width='100%';input.setAttribute('aria-label',key);if(['initialQty','unitPrice','optionQty'].includes(key))input.inputMode='decimal';if(locked&&['unitPrice','initialQty'].includes(key))input.readOnly=true;td.append(input);tr.append(td);}
  const value=document.createElement('td');value.className='manual-value num';tr.append(value);const opt=document.createElement('td');opt.className='manual-option num';tr.append(opt);
- const adj=document.createElement('td'),ai=document.createElement('input');ai.dataset.field='openingNet';ai.inputMode='decimal';ai.style.width='110px';const ledger=getLedger(false);const historical=(ledger.receipts||[]).filter(r=>r.itemId===it.id).reduce((n,r)=>n+Number(r.netValue||0),0);const cached=it.id&&ledger.entryMode!=='app'?computeLine(it,ledger).remainingNet:null;ai.value=cached===null?'0':String(Math.max(0,Math.round((Number(it.initialNet||0)+Number(it.optionQty||0)*Number(it.unitPrice||0)-historical-cached)*100)/100));ai.disabled=ledger.entryMode==='app';adj.append(ai);tr.append(adj);const td=document.createElement('td'),btn=document.createElement('button');btn.type='button';btn.className='red';btn.textContent='×';btn.disabled=locked||Number(ai.value)>0;btn.onclick=()=>{tr.remove();manualCatalogPreview();};td.append(btn);tr.append(td);el('manualRows').append(tr);manualCatalogPreview();
+ const adj=document.createElement('td'),ai=document.createElement('input');ai.dataset.field='openingNet';ai.inputMode='decimal';ai.style.width='110px';const ledger=getLedger(false);const historical=(ledger.receipts||[]).filter(r=>r.itemId===it.id).reduce((n,r)=>n+Number(r.netValue||0),0);const cached=it.id&&ledger.entryMode!=='app'?computeLine(it,ledger).remainingNet:null;ai.value='0';ai.disabled=ledger.entryMode==='app';adj.append(ai);tr.append(adj);const td=document.createElement('td'),btn=document.createElement('button');btn.type='button';btn.className='red';btn.textContent='×';btn.disabled=locked||Number(ai.value)>0;btn.onclick=()=>{tr.remove();manualCatalogPreview();};td.append(btn);tr.append(td);el('manualRows').append(tr);manualCatalogPreview();
 }
 function manualCatalogDraft(){
  const l=getLedger(false);return Array.from(el('manualRows').rows).map((tr,i)=>{
@@ -2284,7 +2301,7 @@ async function manualCatalogSave(){
  if(!old&&hasExistingCatalog(l))throw Error('Δεν βρέθηκε το αποθηκευμένο ιστορικό.');
  
  if(!hasExistingCatalog(l)&&(l.excelPath||c.excelPath)&&!confirm('Υπάρχει δηλωμένη διαδρομή Excel. Επιβεβαίωσε ότι η σύμβαση δεν έχει προηγούμενες παραλαβές ή υλικά που πρέπει να μεταφερθούν. Η χειροκίνητη βάση δεν εισάγει ιστορικό Excel.'))return;
- const candidate=JSON.parse(JSON.stringify(old||l));candidate.items=items;candidate.receipts=candidate.receipts||[];candidate.entryMode='app';candidate.vat=Number(c.vat??24);candidate.importMethod=candidate.importMethod||'manual';
+ const candidate=JSON.parse(JSON.stringify(directReceiptLedger(old||l)));candidate.items=items;candidate.receipts=candidate.receipts||[];candidate.entryMode='app';candidate.vat=Number(c.vat??24);candidate.importMethod=candidate.importMethod||'manual';
  if(candidate.receipts.some(r=>!items.some(it=>it.id===r.itemId)))throw Error('Δεν διαγράφεται υλικό με παραλαβές.');
  if(l.entryMode!=='app'){
   let extra=0;for(const tr of el('manualRows').rows){const a=strictAmount(tr.querySelector('[data-field=openingNet]').value.trim()||'0');if(!Number.isFinite(a)||a<0||Math.abs(a*100-Math.round(a*100))>1e-6)throw Error('Μη έγκυρη παλαιά αξία.');if(a>0){extra+=a;candidate.receipts.push({id:uid(),itemId:tr.dataset.id,bucket:'base',mode:'value',units:0,netValue:a,date:localDateISO(new Date()),note:'ΜΕΤΑΦΟΡΑ ΠΑΛΑΙΟΥ ΥΠΟΛΟΙΠΟΥ — ημερομηνία καταχώρισης, όχι παραλαβής',source:'opening-balance',createdAt:new Date().toISOString()});}}
