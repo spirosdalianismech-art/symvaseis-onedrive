@@ -128,7 +128,7 @@ body.initial-loading #initialScreen{display:block;position:fixed;inset:0;backgro
 <div id="initialScreen" role="status" aria-label="Άνοιγμα παραλαβών"></div>
 <script>window.addEventListener('error',function(e){if(e.target===window && document.body.classList.contains('initial-loading')){document.body.classList.remove('initial-loading');} });</script>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v48 — ΠΑΡΑΛΑΒΕΣ</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v49 — ΠΑΡΑΛΑΒΕΣ</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -264,6 +264,7 @@ body.initial-loading #initialScreen{display:block;position:fixed;inset:0;backgro
   </div>
   <section class="panel no-print hidden" id="bulkReceiptPanel">
     <div class="panel-title">ΚΑΤΑΧΩΡΙΣΗ ΠΑΡΑΛΑΒΗΣ — ΟΛΑ ΤΑ ΥΛΙΚΑ ΚΑΙ ΠΡΟΑΙΡΕΣΗ</div>
+    <p id="directReceiptNotice" class="hidden" style="margin:12px;padding:10px;background:#fff7df;color:#754400">ΧΕΙΡΟΚΙΝΗΤΗ ΚΑΤΑΧΩΡΙΣΗ ΧΩΡΙΣ EXCEL. Τα υπόλοιπα του πίνακα βασίζονται στο αποθηκευμένο ιστορικό, όχι σε μη επιβεβαιωμένα υπόλοιπα Excel. Η πρώτη αποθήκευση ενεργοποιεί τη χειροκίνητη λειτουργία. Για αλλαγή προαίρεσης χρησιμοποίησε τον πίνακα υλικών ή αποθήκευσέ την μετά την ενεργοποίηση.</p>
     <div style="padding:14px">
       <p class="muted">Συμπλήρωσε μόνο ποσότητα ή χρηματική αξία χωρίς ΦΠΑ δίπλα σε όσα είδη παρέλαβες. Η αρχική σύμβαση και η εγκεκριμένη προαίρεση υπολογίζονται μαζί. Τα κενά είδη παραλείπονται. Για προαίρεση συμπλήρωσε την πρόσθετη ποσότητα στην αντίστοιχη στήλη και αποθήκευσέ την ξεχωριστά πριν καταχωρίσεις παραλαβή. Η προαίρεση πρέπει να έχει ήδη εγκριθεί και να έχει καταχωριστεί στο ποσό της σύμβασης.</p>
       <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-bottom:12px">
@@ -1439,10 +1440,23 @@ let reportsOpen=false;
 let historyOpen=false;
 let bulkOpen=false;
 let entryOpen=false;
+// v49: άμεση καταχώριση με τα αποθηκευμένα είδη, χωρίς προϋπόθεση Excel.
+function directReceiptLedger(l=getLedger(false)){
+ if(!l||l.entryMode==='app')return l;
+ const candidate=JSON.parse(JSON.stringify(l));
+ candidate.entryMode='app';candidate.importMethod='manual-direct';candidate.receipts=candidate.receipts||[];
+ return candidate;
+}
 function toggleReceiptEntry(){
+ if(!workspaceAdmin)return;
+ const l=getLedger(false);if(!l)return;
  entryOpen=!entryOpen;
  updateReceiptAreas();
  renderEntryMode();
+ if(entryOpen){
+  if(!l.items.length){manualCatalogOpen();return;}
+  el('bulkReceiptPanel').scrollIntoView({behavior:'smooth',block:'start'});
+ }
 }
 function toggleReceiptsArea(which){
  const l=getLedger(false);
@@ -1468,7 +1482,10 @@ function updateReceiptAreas(){
  el('historyPanel').classList.toggle('hidden',!historyOpen);
  el('toggleHistoryButton').setAttribute('aria-expanded',String(historyOpen));
  el('toggleHistoryButton').textContent=historyOpen?'✕ ΚΛΕΙΣΙΜΟ ΙΣΤΟΡΙΚΟΥ':'▤ ΙΣΤΟΡΙΚΟ ΠΑΡΑΛΑΒΩΝ';
- bulkOpen=entryOpen;el('bulkReceiptPanel').classList.toggle('hidden',!active||!entryOpen);
+ const direct=workspaceAdmin&&!!l?.items?.length;
+ bulkOpen=entryOpen;el('bulkReceiptPanel').classList.toggle('hidden',!direct||!entryOpen);
+ el('directReceiptNotice').classList.toggle('hidden',active||!direct);
+ el('inlineOptionSave').disabled=!active;
  const tb=el('toggleEntryButton');
  tb.setAttribute('aria-expanded',String(entryOpen));
  tb.textContent=entryOpen?'✕ ΚΛΕΙΣΙΜΟ ΚΑΤΑΧΩΡΙΣΗΣ':'+ ΑΝΟΙΓΜΑ ΚΑΤΑΧΩΡΙΣΗΣ';
@@ -1479,10 +1496,10 @@ function updateReceiptAreas(){
 
 
  el('bulkExportButton').disabled=!active;
- if(active && entryOpen)renderBulkReceiptItems();
+ if(direct && entryOpen)renderBulkReceiptItems();
 }
 function renderBulkReceiptItems(){
- const l=getLedger(false);if(!l||l.entryMode!=='app')return;
+ const raw=getLedger(false),l=directReceiptLedger(raw);if(!l||!workspaceAdmin)return;
  el('bulkDate').value=el('bulkDate').value||localDateISO(new Date());
  const tbody=el('bulkReceiptItems');
  // Keep an unfinished draft if the page renders the same contract.
@@ -1492,7 +1509,7 @@ function renderBulkReceiptItems(){
    const group=itemGroup(it),header=hasGroups(l.items)&&group!==currentGroup?`<tr class="bulk-group-heading"><td colspan="10" style="background:#e9e1f6;color:#39216d;font-weight:700;padding:12px 14px">${esc(group)}</td></tr>`:'';
    currentGroup=group;
    const x=computeLine(it,l),saved=old.get(it.id)||{qty:'',money:''};
-   return header+`<tr data-item-id="${esc(it.id)}"><td>${i+1}</td><td>${esc(it.description)}</td><td>${esc(it.unit||'')}</td><td class="num">${euro(it.unitPrice)}</td><td class="num">${Number(it.initialQty||0).toLocaleString('el-GR',{maximumFractionDigits:6})}</td><td><input class="inline-option-qty" inputmode="decimal" value="${esc(saved.option===undefined?String(Number(it.optionQty||0)).replace('.',','):saved.option)}" style="width:110px" aria-label="Πρόσθετη ποσότητα προαίρεσης" oninput="previewInlineOption()"></td><td class="num">${Number(x.totalQty||0).toLocaleString('el-GR',{maximumFractionDigits:6})}</td><td class="num"><strong>${euro(x.remainingNet)}</strong></td><td><input class="bulk-qty" inputmode="decimal" value="${esc(saved.qty)}" placeholder="Ποσότητα" style="width:155px" oninput="this.closest('tr').querySelector('.bulk-money').value='';previewBulkReceipt()"></td><td><input class="bulk-money" inputmode="decimal" value="${esc(saved.money)}" placeholder="Αξία €" style="width:155px" oninput="this.closest('tr').querySelector('.bulk-qty').value='';previewBulkReceipt()"></td></tr>`;
+   return header+`<tr data-item-id="${esc(it.id)}"><td>${i+1}</td><td>${esc(it.description)}</td><td>${esc(it.unit||'')}</td><td class="num">${euro(it.unitPrice)}</td><td class="num">${Number(it.initialQty||0).toLocaleString('el-GR',{maximumFractionDigits:6})}</td><td><input class="inline-option-qty" ${raw.entryMode!=='app'?'disabled':''} inputmode="decimal" value="${esc(saved.option===undefined?String(Number(it.optionQty||0)).replace('.',','):saved.option)}" style="width:110px" aria-label="Πρόσθετη ποσότητα προαίρεσης" oninput="previewInlineOption()"></td><td class="num">${Number(x.totalQty||0).toLocaleString('el-GR',{maximumFractionDigits:6})}</td><td class="num"><strong>${euro(x.remainingNet)}</strong></td><td><input class="bulk-qty" inputmode="decimal" value="${esc(saved.qty)}" placeholder="Ποσότητα" style="width:155px" oninput="this.closest('tr').querySelector('.bulk-money').value='';previewBulkReceipt()"></td><td><input class="bulk-money" inputmode="decimal" value="${esc(saved.money)}" placeholder="Αξία €" style="width:155px" oninput="this.closest('tr').querySelector('.bulk-qty').value='';previewBulkReceipt()"></td></tr>`;
  }).join('');
  filterBulkItems();previewInlineOption();previewBulkReceipt();
 }
@@ -1528,7 +1545,7 @@ function ledgerSignature(l){
  });
 }
 function draftBulkReceipts(){
- const l=getLedger(false);if(!l||l.entryMode!=='app')throw Error('Δεν έχει ενεργοποιηθεί η σύμβαση.');
+ const l=directReceiptLedger();if(!workspaceAdmin||!l?.items?.length)throw Error('Δεν υπάρχουν καταχωρισμένα υλικά.');
  const date=el('bulkDate').value;
  if(!/^\d{4}-\d{2}-\d{2}$/.test(date))throw Error('Συμπλήρωσε έγκυρη ημερομηνία.');
  const note=el('bulkNote').value.trim(),rs=[];
@@ -1567,7 +1584,8 @@ async function saveBulkReceipts(){
  if(busy)return;busy=true;const cid=currentId;
  try{
   const rs=draftBulkReceipts();const latest=await readJson(PAR_FILE),old=latest?.contracts?.find(x=>x.contractId===cid),local=getLedger(false);
-  if(!old||old.entryMode!=='app'||currentId!==cid)throw Error('Δεν υπάρχει ενεργή καταχώριση.');
+  if(!workspaceAdmin||!old||!old.items?.length||currentId!==cid)throw Error('Δεν βρέθηκαν αποθηκευμένα υλικά για καταχώριση.');
+  if(old.entryMode!==local.entryMode)throw Error('Άλλαξε η λειτουργία της σύμβασης. Ανανέωσε τη σελίδα.');
   // Ασφαλής προσθήκη στο νεότερο ιστορικό: δεν γράφουμε ποτέ το παλιό τοπικό αντίγραφο.
   // Αν προστέθηκαν παραλαβές από άλλη συνεδρία, τις διατηρούμε και ελέγχουμε ξανά τα διαθέσιμα υπόλοιπα.
   const itemSig=x=>ledgerSignature({items:x.items||[],receipts:[]});
@@ -1581,7 +1599,13 @@ async function saveBulkReceipts(){
     throw Error('Μία παλιά παραλαβή έχει τροποποιηθεί ή διαγραφεί στο OneDrive. Ανανέωσε τη σελίδα και έλεγξε το ιστορικό πριν αποθηκεύσεις.');
    seen.add(id);
   }
-  const candidate=JSON.parse(JSON.stringify(old));
+  const candidate=JSON.parse(JSON.stringify(directReceiptLedger(old)));
+  if(old.entryMode!=='app'){
+   const before=old.items.reduce((n,it)=>n+computeLine(it,old).remainingNet,0);
+   const after=candidate.items.reduce((n,it)=>n+computeLine(it,candidate).remainingNet,0);
+   const factor=1+Number(candidate.vat??24)/100;
+   if(!confirm('Χειροκίνητη λειτουργία χωρίς Excel. Διατηρούνται όλες οι αποθηκευμένες παραλαβές. Παλιό εμφανιζόμενο υπόλοιπο: '+euro(before*factor)+' με ΦΠΑ. Υπόλοιπο βάσει αποθηκευμένου ιστορικού πριν τη νέα παραλαβή: '+euro(after*factor)+' με ΦΠΑ. Τυχόν μη καταγεγραμμένες παλιές παραλαβές Excel δεν υπολογίζονται. Συνέχεια χωρίς Excel;'))return;
+  }
   for(const r of rs){
    const it=candidate.items.find(i=>i.id===r.itemId);
    if(!it)throw Error('Το είδος δεν υπάρχει πλέον στο OneDrive. Ανανέωσε τη σελίδα.');
@@ -2269,7 +2293,7 @@ async function manualCatalogSave(){
 
  const gross=items.reduce((s,it)=>s+Number(it.initialNet),0)*(1+candidate.vat/100);if(Number(c.contractBudget)>0&&Math.abs(Math.round(gross*100)-Math.round(Number(c.contractBudget)*100))>2)throw Error('Η συμβατική αξία με ΦΠΑ ('+euro(gross)+') δεν συμφωνεί με το ποσό σύμβασης ('+euro(c.contractBudget)+').');
  summarizeApp(candidate,c);if(!confirm('Αποθήκευση '+items.length+' υλικών στο OneDrive; Το ιστορικό παραλαβών διατηρείται.'))return;
- await writeJson('paralaves-backup-'+cid+'-'+Date.now()+'.json',old||l);await persistAppLedger(candidate,old);el('manualDialog').close();manualCatalogState=null;render();setExcelAudit('','');setStatus('Ο πίνακας υλικών αποθηκεύτηκε στο OneDrive.','ok');
+ await writeJson('paralaves-backup-'+cid+'-'+Date.now()+'.json',old||l);await persistAppLedger(candidate,old);el('manualDialog').close();manualCatalogState=null;entryOpen=true;render();setExcelAudit('','');setStatus('Ο πίνακας υλικών αποθηκεύτηκε στο OneDrive.','ok');el('bulkReceiptPanel').scrollIntoView({behavior:'smooth',block:'start'});
  }catch(e){el('manualError').textContent=e.message;}finally{busy=false;el('manualSave').disabled=false;}
 }
 
