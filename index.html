@@ -623,7 +623,7 @@ tbody tr{
 </head>
 <body class="collaborator">
 <header>
-  <h1>ΔΗΜΟΣ ΠΑΤΡΕΩΝ – Μελέτες και Συμβάσεις</h1>
+  <h1>ΔΗΜΟΣ ΠΑΤΡΕΩΝ – Μελέτες και Συμβάσεις <small style="font-size:12px;opacity:.8">TURBO</small></h1>
   <p>Κοινή διαχείριση συμβάσεων και παραλαβών μέσω OneDrive</p>
 </header>
 
@@ -803,13 +803,13 @@ async function validateWorkspace(ref){
  const m=await (await workspaceRequest(workspaceURL(ref))).json();
  if(!m.folder||m.name!==APP_FOLDER)throw Error('Ο φάκελος δεν είναι '+APP_FOLDER+'.');
  const w={...ref,files:{}};const children=await workspaceChildren(workspaceURL(w)+'/children');
- for(const name of [DATA_FILE,PAR_FILE]){
+ await Promise.all([DATA_FILE,PAR_FILE].map(async name=>{
   const f=children.find(x=>x.name===name);if(!f)throw Error('Δεν βρέθηκε '+name+' — δεν δημιουργείται νέα βάση.');
   const v=workspaceRef(f);if(!v.id)throw Error('Λείπει ID: '+name);v.driveId=v.driveId||w.driveId;
   const j=await (await workspaceRequest(driveItemURL(v.driveId,v.id)+'/content')).json();
   if(!Array.isArray(name===DATA_FILE?j.records:j.contracts))throw Error('Μη έγκυρο '+name);
   w.files[name]=v;
- }return w;
+ }));return w;
 }
 async function persistWorkspace(w){const a=await getAccount();if(!a)throw Error('Συνδέσου με Microsoft.');localStorage.setItem(workspaceKey,JSON.stringify(w));localStorage.setItem(workspaceKey+'-account',a.homeAccountId);}
 async function configureWorkspace(){
@@ -952,7 +952,7 @@ function statusFor(r){
 async function getAccount(){let a=msalInstance.getActiveAccount();if(!a){const xs=msalInstance.getAllAccounts();if(xs.length){a=xs[0];msalInstance.setActiveAccount(a)}}return a}
 async function getToken(){const a=await getAccount();if(!a)throw new Error("Πρέπει πρώτα να συνδεθείτε με Microsoft.");try{return (await msalInstance.acquireTokenSilent({scopes:["User.Read","Files.ReadWrite","Files.Read.All"],account:a})).accessToken}catch{throw Error("Η σύνδεση Microsoft χρειάζεται ανανέωση. Πάτησε Σύνδεση Microsoft.")}}
 async function graph(url,opt={}){if(workspace()&&!workspaceAdmin&&!/^(GET|HEAD)$/i.test(opt.method||"GET")&&!url.startsWith(sharedPathURL(SHARED_DOCS)+"/" )&&!url.startsWith(sharedPathURL(SHARED_DOCS)+":/"))throw Error("Επιτρέπεται μόνο μεταφόρτωση στον φάκελο SharedDocuments.");url=routeWorkspace(url);const tok=await getToken();opt.headers=opt.headers||{};opt.headers.Authorization="Bearer "+tok;return fetch(url,{cache:"no-store",...opt})}
-async function signIn(){try{const r=await msalInstance.loginPopup(loginRequest);msalInstance.setActiveAccount(r.account);setStatus("Συνδεθήκατε ως "+r.account.username,"ok");await loadData();await refreshFromParalaves(false);await loadOneDriveQuota()}catch(e){setStatus("Σφάλμα σύνδεσης:\n"+e.message,"error")}}
+async function signIn(){try{const r=await msalInstance.loginPopup(loginRequest);msalInstance.setActiveAccount(r.account);setStatus("Συνδεθήκατε ως "+r.account.username,"ok");await loadData();await Promise.all([refreshFromParalaves(false),loadOneDriveQuota()])}catch(e){setStatus("Σφάλμα σύνδεσης:\n"+e.message,"error")}}
 // Διαβάζουμε την πραγματική χωρητικότητα του συνδεδεμένου OneDrive μέσω Microsoft Graph.
 // Τα bytes δεν αποθηκεύονται ούτε δημοσιεύονται στο public-data.json.
 function formatStorageBytes(bytes){
@@ -1027,16 +1027,20 @@ async function writeJsonFile(name,obj){
   if(!r.ok)throw new Error(await r.text());
 }
 // Συγχρονισμός με βάση τις πραγματικές αλλαγές κάθε εγγραφής, όχι ολόκληρη την παλιά λίστα.
-async function readIndexSnapshot(){
+let turboIndexSnapshot=null;
+async function readIndexSnapshot(allowReuse=false){
   await ensureRootFolder();
   const url="https://graph.microsoft.com/v1.0/me/drive/root:/"+encPath(APP_FOLDER+"/"+DATA_FILE);
+  const account=await getAccount();
+  const cacheKey=JSON.stringify([account?.homeAccountId,routeWorkspace(url)]);
   for(let i=0;i<4;i++){
     const m=await graph(url); if(m.status===404){if(workspace())throw Error("Δεν βρέθηκε το κοινόχρηστο αρχείο συμβάσεων.");return {data:null,etag:null,url};}
     if(!m.ok)throw Error(await m.text()); const meta=await m.json();
+    if(allowReuse && meta.eTag && turboIndexSnapshot?.key===cacheKey && turboIndexSnapshot.etag===meta.eTag)return {data:JSON.parse(turboIndexSnapshot.payload),etag:meta.eTag,url};
     const data=await readJsonFile(DATA_FILE);
     const check=await graph(url); if(!check.ok)continue;
     const again=await check.json();
-    if(meta.eTag && meta.eTag===again.eTag && Array.isArray(data?.records))return {data,etag:meta.eTag,url};
+    if(meta.eTag && meta.eTag===again.eTag && Array.isArray(data?.records)){turboIndexSnapshot={key:cacheKey,etag:meta.eTag,payload:JSON.stringify(data)};return {data,etag:meta.eTag,url};}
   }
   throw Error("Δεν ήταν δυνατή η ασφαλής ανάγνωση του αρχείου συμβάσεων. Δοκιμάστε ξανά.");
 }
@@ -1127,7 +1131,7 @@ async function syncVisibleContracts(){
   if(bulkDocsBusy||syncBase===null||syncBusy||refreshBusy||publicSyncBusy||document.hidden||document.querySelector('dialog[open]')||!sameSync(records,syncBase))return;
   refreshBusy=true;const generation=syncGeneration;
   try{
-    const snap=await readIndexSnapshot();
+    const snap=await readIndexSnapshot(true);
     if(!snap.data&&syncBase.length)return;
     if(generation!==syncGeneration||syncBusy||publicSyncBusy||document.querySelector('dialog[open]')||!sameSync(records,syncBase))return;
     const next=snap.data?.records||[];
@@ -1138,27 +1142,30 @@ async function syncVisibleContracts(){
 }
 window.addEventListener('focus',syncVisibleContracts);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncVisibleContracts();});
-setInterval(syncVisibleContracts,10000);
+setInterval(syncVisibleContracts,20000);
 
 async function refreshFromParalaves(showMessage=true){
   try{
     const p=await readJsonFile(PAR_FILE);
     const ledgers=Array.isArray(p?.contracts)?p.contracts:[];
-    let n=0;
+    let n=0,changed=false;
+    const ledgerById=new Map();for(const l of ledgers)if(!ledgerById.has(l.contractId))ledgerById.set(l.contractId,l);
     for(const r of records){
-      const l=ledgers.find(x=>x.contractId===r.id);
+      const l=ledgerById.get(r.id);
       if(l?.summary){
+        const before=JSON.stringify([r.balanceNet,r.balanceWithVat,r.paralavesIncludesOption,r.paralavesOptionGross,r.balanceUpdatedAt]);
         r.balanceNet=Number(l.summary.remainingNet||0);
         r.balanceWithVat=Number(l.summary.remainingWithVat||0);
         r.paralavesIncludesOption=Boolean(l.summary.includesOption);
         r.paralavesOptionGross=Number(l.summary.optionAmountGross||0);
         r.balanceUpdatedAt=l.summary.updatedAt||p.updatedAt||r.balanceUpdatedAt||"";
+        changed ||= before!==JSON.stringify([r.balanceNet,r.balanceWithVat,r.paralavesIncludesOption,r.paralavesOptionGross,r.balanceUpdatedAt]);
         n++;
       }
     }
     if(n&&workspaceAdmin&&!sameSync(records,syncBase))await saveData();
     else if(n)syncBase=copyRecords(records);
-    render();
+    if(changed||showMessage)render();
     if(showMessage)setStatus(n?`Ενημερώθηκαν ${n} υπόλοιπα από το πρόγραμμα Παραλαβών.`:"Δεν βρέθηκαν ακόμη υπολογισμένα υπόλοιπα στο πρόγραμμα Παραλαβών.","ok");
   }catch(e){if(showMessage)setStatus("Σφάλμα ενημέρωσης υπολοίπων:\n"+e.message,"error")}
 }
@@ -1790,7 +1797,7 @@ window.addEventListener("load",async()=>{
   setupCurrencyInput(document.getElementById("fStudyBudget"));
   setupCurrencyInput(document.getElementById("fContractBudget"));
   setupCurrencyInput(document.getElementById("fOptionAmount"));
-  try{const a=await getAccount();if(a){setStatus("Συνδεδεμένος ως "+a.username,"ok");await loadData();await refreshFromParalaves(false);await loadOneDriveQuota()}else{populateYears();render()}}catch(e){setStatus(e.message,"error")}
+  try{const a=await getAccount();if(a){setStatus("Συνδεδεμένος ως "+a.username,"ok");await loadData();await Promise.all([refreshFromParalaves(false),loadOneDriveQuota()])}else{populateYears();render()}}catch(e){setStatus(e.message,"error")}
 });
 </script>
 </body>
