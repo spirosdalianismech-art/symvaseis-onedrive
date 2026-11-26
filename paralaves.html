@@ -128,7 +128,7 @@ body.initial-loading #initialScreen{display:block;position:fixed;inset:0;backgro
 <div id="initialScreen" role="status" aria-label="Άνοιγμα παραλαβών"></div>
 <script>window.addEventListener('error',function(e){if(e.target===window && document.body.classList.contains('initial-loading')){document.body.classList.remove('initial-loading');} });</script>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v50 — ΠΑΡΑΛΑΒΕΣ</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v51 — ΠΑΡΑΛΑΒΕΣ</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -334,6 +334,7 @@ body.initial-loading #initialScreen{display:block;position:fixed;inset:0;backgro
   <section class="panel hidden" id="historyPanel">
     <div class="panel-title">
       <span>Ιστορικό παραλαβών ανά ημερομηνία</span>
+      <button id="resetAllReceiptsButton" type="button" class="red no-print hidden" onclick="resetAllContractReceipts()">ΔΙΑΓΡΑΦΗ ΟΛΩΝ ΤΩΝ ΠΑΡΑΛΑΒΩΝ</button>
       <span class="muted">Οι παραλαβές ομαδοποιούνται ανά ημερομηνία, μία ανά γραμμή</span>
     </div>
     <div class="table-wrap">
@@ -790,6 +791,7 @@ function render(){
  const c=getContract(),l=getLedger(false);
  if(l?.entryMode==="app"||!hasExistingCatalog(l))setExcelAudit("", "");
  el("manualCatalogButton").classList.toggle("hidden",!workspaceAdmin||!c||!l);
+ el("resetAllReceiptsButton").classList.toggle("hidden",!workspaceAdmin||!c||!l);
  if(!c||!l){contractTitle.textContent="ΔΕΝ ΥΠΑΡΧΟΥΝ ΣΥΜΒΑΣΕΙΣ ΓΙΑ ΤΑ ΕΠΙΛΕΓΜΕΝΑ ΤΜΗΜΑΤΑ";contractMeta.textContent="ΕΠΙΛΕΞΕ ΕΝΑ Ή ΠΕΡΙΣΣΟΤΕΡΑ ΤΜΗΜΑΤΑ Ή ΔΗΜΙΟΥΡΓΗΣΕ ΕΓΓΡΑΦΗ ΣΤΟ ΠΡΟΓΡΑΜΜΑ ΣΥΜΒΑΣΕΩΝ.";itemsBody.innerHTML="";renderGroupBalances(null);renderDateHistoryMatrix();return}
  l.vat=Number(l.vat??c.vat??24);excelPath.value=l.excelPath||c.excelPath||"";excelSheet.value=l.excelSheet||c.excelSheet||"ΣΥΜΒΑΣΗ";
  contractTitle.textContent=toUpperText((c.studyNo?c.studyNo+" — ":"")+c.title);
@@ -2314,6 +2316,32 @@ async function manualCatalogSave(){
  }catch(e){el('manualError').textContent=e.message;}finally{busy=false;el('manualSave').disabled=false;}
 }
 
+</script>
+<script>
+async function resetAllContractReceipts(){
+ if(busy||!workspaceAdmin)return;
+ const c=getContract(),local=getLedger(false),cid=currentId;
+ if(!c||!local||!local.items?.length){setStatus('Δεν υπάρχουν αποθηκευμένα υλικά για μηδενισμό.','err');return;}
+ const pin=prompt('ΔΙΑΓΡΑΦΗ ΟΛΩΝ ΤΩΝ ΠΑΡΑΛΑΒΩΝ — '+(c.studyNo||c.title)+'\nΠληκτρολόγησε τον κωδικό επιβεβαίωσης:');
+ if(pin===null)return;
+ if(pin!=='2894'){alert('Λανθασμένος κωδικός. Δεν έγινε διαγραφή.');return;}
+ if(!confirm('Μηδενισμός όλων των παραλαβών ΜΟΝΟ για τη σύμβαση '+(c.studyNo||c.title)+';\nΤα υλικά, οι τιμές και η προαίρεση διατηρούνται. Η σύμβαση θα λειτουργεί χειροκίνητα χωρίς αυτόματη επανεισαγωγή Excel. Θα δημιουργηθεί αντίγραφο ασφαλείας.'))return;
+ busy=true;el('resetAllReceiptsButton').disabled=true;
+ try{
+  const latest=await readJson(PAR_FILE),old=latest?.contracts?.find(x=>x.contractId===cid);
+  if(!old||currentId!==cid||persistentLedgerSignature(old)!==persistentLedgerSignature(local))throw Error('Τα δεδομένα άλλαξαν ή δεν έχουν αποθηκευτεί. Ανανέωσε πρώτα τη σελίδα.');
+  const candidate=JSON.parse(JSON.stringify(old));
+  candidate.receipts=[];delete candidate.archivedExcelReceipts;delete candidate.deletionHistory;delete candidate.correctionHistory;
+  candidate.entryMode='app';candidate.importMethod='manual-reset';candidate.lastReceiptResetAt=new Date().toISOString();
+  for(const it of candidate.items){it.baseRemainingUnits=Number(it.initialQty||0)+Number(it.optionQty||0);it.baseRemainingNet=Number(it.initialNet||0)+Number(it.optionQty||0)*Number(it.unitPrice||0);}
+  summarizeApp(candidate,c);
+  await writeJson('paralaves-reset-backup-'+cid+'-'+Date.now()+'.json',old);
+  if(currentId!==cid)throw Error('Άλλαξε η επιλεγμένη σύμβαση. Δεν έγινε διαγραφή.');
+  await persistAppLedger(candidate,old);
+  el('bulkReceiptItems').replaceChildren();el('bulkNote').value='';el('bulkItemSearch').value='';simpleReceiptReset();
+  render();setStatus('Διαγράφηκαν όλες οι παραλαβές μόνο της σύμβασης '+(c.studyNo||c.title)+'. Νέο υπόλοιπο με ΦΠΑ: '+euro(candidate.summary.remainingWithVat)+'. Δημιουργήθηκε αντίγραφο ασφαλείας.','ok');
+ }catch(e){setStatus('ΔΕΝ ΟΛΟΚΛΗΡΩΘΗΚΕ Ο ΜΗΔΕΝΙΣΜΟΣ: '+e.message,'err');alert(e.message);}finally{busy=false;el('resetAllReceiptsButton').disabled=false;}
+}
 </script>
 </body>
 </html>
