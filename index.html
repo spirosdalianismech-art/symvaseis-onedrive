@@ -618,7 +618,7 @@ tbody tr{
 .docs-toolbar input,.docs-toolbar select{width:100%;font-size:13px}
 @media print{#docsDialog{display:none!important}}
 </style>
-<style>body.collaborator #bulkDocsBtn,body.collaborator button[onclick^="editRecord("],body.collaborator button[onclick="openNewRecord()"],body.collaborator button[onclick="migrateExcelReferences()"],body.collaborator button[onclick="publishPublicData()"],body.collaborator button[onclick="openPublicView()"]{display:none!important}</style>
+<style>.settings-menu{position:relative}.settings-menu summary{cursor:pointer;background:#e5e7eb;padding:10px 14px;border-radius:7px;font-weight:600;list-style:none}.settings-items{position:absolute;right:0;top:100%;min-width:245px;background:white;box-shadow:0 5px 20px #0003;padding:10px;display:grid;gap:8px;z-index:30}.settings-items button{text-align:left}body.collaborator #bulkDocsBtn,body.collaborator button[onclick^="editRecord("],body.collaborator button[onclick="openNewRecord()"],body.collaborator button[onclick="migrateExcelReferences()"],body.collaborator button[onclick="publishPublicData()"],body.collaborator button[onclick="openPublicView()"]{display:none!important}</style>
 </head>
 <body class="collaborator">
 <header>
@@ -643,11 +643,11 @@ tbody tr{
   <button class="btn-purple" onclick="openParalaves()">Παραλαβές</button>
   <button class="btn-blue" onclick="openNewRecord()">+ Νέα εγγραφή</button>
   <button class="btn-gray" onclick="window.print()">🖨 Εκτύπωση</button>
-  <button class="btn-purple" onclick="openPublicView()">👁 ΔΗΜΟΣΙΑ ΠΡΟΒΟΛΗ</button>
+  <details class="settings-menu"><summary>⚙ Ρυθμίσεις</summary><div class="settings-items">
   <button class="btn-blue" onclick="configureWorkspace()">Κοινόχρηστος φάκελος</button>
-  <button id="bulkDocsBtn" class="btn-green" onclick="migrateAllDocuments()">ΣΥΓΧΡΟΝΙΣΜΟΣ ΟΛΩΝ ΤΩΝ ΑΡΧΕΙΩΝ</button>
+  <button id="bulkDocsBtn" class="btn-green" onclick="migrateAllDocuments()">Συγχρονισμός παλαιών αρχείων</button>
   <button class="btn-blue" onclick="migrateExcelReferences()">Σύνδεση Excel με ID</button>
-  <button class="btn-green" onclick="publishPublicData()">🌐 ΔΗΜΟΣΙΕΥΣΗ</button>
+  </div></details>
 </div>
 
 <div class="container">
@@ -805,8 +805,32 @@ async function configureWorkspace(){
  const r=await graph(driveItemURL(drive,v.id)+'/content');if(!r.ok)throw Error('Ανάγνωση '+name+': HTTP '+r.status);const j=await r.json();if(!Array.isArray(name===DATA_FILE?j.records:j.contracts))throw Error('Μη έγκυρο '+name);
  w.files[name]={id:v.id,driveId:drive};
  }
- localStorage.setItem(workspaceKey,JSON.stringify(w));location.reload();
+ localStorage.setItem(workspaceKey,JSON.stringify(w));localStorage.setItem(workspaceKey+'-account',(await getAccount()).homeAccountId);location.reload();
  }catch(e){alert(e.message)}
+}
+async function restoreWorkspace(){
+ const a=await getAccount();if(!a)return;
+ const accountKey=workspaceKey+'-account';
+ const stored=workspace();
+ if(stored){
+   const bound=localStorage.getItem(accountKey);
+   if(bound&&bound!==a.homeAccountId)throw Error('Ο αποθηκευμένος χώρος ανήκει σε άλλη σύνδεση. Επίλεξε Ρυθμίσεις → Κοινόχρηστος φάκελος.');
+   await verifyWorkspace();localStorage.setItem(accountKey,a.homeAccountId);return;
+ }
+ const root=await graph(GROOT+'/me/drive/root:/'+encodeURIComponent(APP_FOLDER));
+ if(root.status===404)throw Error('Δεν βρέθηκε ο υπάρχων φάκελος. Επίλεξε Ρυθμίσεις → Κοινόχρηστος φάκελος μία φορά.');
+ if(!root.ok)throw Error('Ανάγνωση φακέλου: HTTP '+root.status);
+ const m=await root.json();const w={id:m.id,driveId:m.parentReference?.driveId,files:{}};
+ if(!m.folder||!w.id||!w.driveId)throw Error('Μη έγκυρος φάκελος OneDrive.');
+ for(const name of [DATA_FILE,PAR_FILE]){
+   const r=await graph(workspaceURL(w)+':/'+encodeURIComponent(name));
+   if(!r.ok)throw Error('Δεν βρέθηκε το υπάρχον '+name+' — δεν δημιουργείται νέα βάση.');
+   const f=await r.json();const c=await graph(driveItemURL(w.driveId,f.id)+'/content');
+   if(!c.ok)throw Error('Δεν είναι δυνατή η ανάγνωση '+name);
+   const j=await c.json();if(!Array.isArray(name===DATA_FILE?j.records:j.contracts))throw Error('Μη έγκυρο '+name);
+   w.files[name]={id:f.id,driveId:w.driveId};
+ }
+ localStorage.setItem(workspaceKey,JSON.stringify(w));localStorage.setItem(accountKey,a.homeAccountId);
 }
 async function verifyWorkspace(){const w=workspace();if(!w)return false;const r=await graph(workspaceURL(w));if(!r.ok)throw Error('Ο κοινόχρηστος φάκελος δεν είναι προσβάσιμος. Δεν δημιουργείται νέα βάση.');return true;}
 async function excelRefFromPath(path){
@@ -918,7 +942,7 @@ function statusFor(r){
 }
 
 async function getAccount(){let a=msalInstance.getActiveAccount();if(!a){const xs=msalInstance.getAllAccounts();if(xs.length){a=xs[0];msalInstance.setActiveAccount(a)}}return a}
-async function getToken(){const a=await getAccount();if(!a)throw new Error("Πρέπει πρώτα να συνδεθείτε με Microsoft.");try{return (await msalInstance.acquireTokenSilent({scopes:["User.Read","Files.ReadWrite"],account:a})).accessToken}catch{return (await msalInstance.acquireTokenPopup({scopes:["User.Read","Files.ReadWrite"],account:a})).accessToken}}
+async function getToken(){const a=await getAccount();if(!a)throw new Error("Πρέπει πρώτα να συνδεθείτε με Microsoft.");try{return (await msalInstance.acquireTokenSilent({scopes:["User.Read","Files.ReadWrite"],account:a})).accessToken}catch{throw Error("Η σύνδεση Microsoft χρειάζεται ανανέωση. Πάτησε Σύνδεση Microsoft.")}}
 async function graph(url,opt={}){if(workspace()&&!workspaceAdmin&&!/^(GET|HEAD)$/i.test(opt.method||"GET")&&!url.startsWith(sharedPathURL(SHARED_DOCS)+"/" )&&!url.startsWith(sharedPathURL(SHARED_DOCS)+":/"))throw Error("Επιτρέπεται μόνο μεταφόρτωση στον φάκελο SharedDocuments.");url=routeWorkspace(url);const tok=await getToken();opt.headers=opt.headers||{};opt.headers.Authorization="Bearer "+tok;return fetch(url,{cache:"no-store",...opt})}
 async function signIn(){try{const r=await msalInstance.loginPopup(loginRequest);msalInstance.setActiveAccount(r.account);setStatus("Συνδεθήκατε ως "+r.account.username,"ok");await loadData();await refreshFromParalaves(false);await loadOneDriveQuota()}catch(e){setStatus("Σφάλμα σύνδεσης:\n"+e.message,"error")}}
 // Διαβάζουμε την πραγματική χωρητικότητα του συνδεδεμένου OneDrive μέσω Microsoft Graph.
@@ -1055,6 +1079,7 @@ async function migrateExcelReferences(){
 }
 
 async function loadData(){
+  await restoreWorkspace();
   await identifyWorkspaceRole();
   setStatus("Φόρτωση δεδομένων από το OneDrive...");
   const snap=await readIndexSnapshot();applyIndexRecords(snap.data?.records||[]);
@@ -1099,6 +1124,7 @@ async function syncVisibleContracts(){
     if(generation!==syncGeneration||syncBusy||publicSyncBusy||document.querySelector('dialog[open]')||!sameSync(records,syncBase))return;
     const next=snap.data?.records||[];
     if(!sameSync(next,syncBase)){applyIndexRecords(next);populateYears();render();}
+    if(workspaceAdmin)await refreshFromParalaves(false);
   }catch(e){console.warn('Συγχρονισμός συμβάσεων:',e.message);}
   finally{refreshBusy=false;}
 }
@@ -1118,11 +1144,11 @@ async function refreshFromParalaves(showMessage=true){
         r.balanceWithVat=Number(l.summary.remainingWithVat||0);
         r.paralavesIncludesOption=Boolean(l.summary.includesOption);
         r.paralavesOptionGross=Number(l.summary.optionAmountGross||0);
-        r.balanceUpdatedAt=l.summary.updatedAt||p.updatedAt||new Date().toISOString();
+        r.balanceUpdatedAt=l.summary.updatedAt||p.updatedAt||r.balanceUpdatedAt||"";
         n++;
       }
     }
-    if(n&&workspaceAdmin)await saveData();
+    if(n&&workspaceAdmin&&!sameSync(records,syncBase))await saveData();
     else if(n)syncBase=copyRecords(records);
     render();
     if(showMessage)setStatus(n?`Ενημερώθηκαν ${n} υπόλοιπα από το πρόγραμμα Παραλαβών.`:"Δεν βρέθηκαν ακόμη υπολογισμένα υπόλοιπα στο πρόγραμμα Παραλαβών.","ok");
