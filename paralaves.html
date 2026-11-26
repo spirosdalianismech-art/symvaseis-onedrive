@@ -128,7 +128,7 @@ body.initial-loading #initialScreen{display:block;position:fixed;inset:0;backgro
 <div id="initialScreen" role="status" aria-label="Άνοιγμα παραλαβών"></div>
 <script>window.addEventListener('error',function(e){if(e.target===window && document.body.classList.contains('initial-loading')){document.body.classList.remove('initial-loading');} });</script>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v51 — ΠΑΡΑΛΑΒΕΣ</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v52 — ΠΑΡΑΛΑΒΕΣ</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -494,7 +494,7 @@ async function ensureRootFolder(){
  const c=await graph("https://graph.microsoft.com/v1.0/me/drive/root:/"+encodeURIComponent(APP_FOLDER));if(c.ok)return;if(c.status!==404)throw new Error(await c.text());
  const r=await graph("https://graph.microsoft.com/v1.0/me/drive/root/children",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:APP_FOLDER,folder:{},["@microsoft.graph.conflictBehavior"]:"fail"})});if(!r.ok&&r.status!==409)throw new Error(await r.text())
 }
-async function readJson(name){await ensureRootFolder();const r=await graph("https://graph.microsoft.com/v1.0/me/drive/root:/"+encPath(APP_FOLDER+"/"+name)+":/content");if(r.status===404){if(workspace())throw Error("Το κοινόχρηστο αρχείο δεν βρέθηκε: "+name);return null;}if(!r.ok)throw new Error(await r.text());return JSON.parse(await r.text())}
+async function readJson(name){await ensureRootFolder();const r=await graph("https://graph.microsoft.com/v1.0/me/drive/root:/"+encPath(APP_FOLDER+"/"+name)+":/content",{cache:"no-store"});if(r.status===404){if(workspace())throw Error("Το κοινόχρηστο αρχείο δεν βρέθηκε: "+name);return null;}if(!r.ok)throw new Error(await r.text());return JSON.parse(await r.text())}
 async function writeJson(name,obj){
  await ensureRootFolder();
  const r=await graph("https://graph.microsoft.com/v1.0/me/drive/root:/"+encPath(APP_FOLDER+"/"+name)+":/content",{method:"PUT",headers:{"Content-Type":"application/json;charset=utf-8"},body:JSON.stringify(obj,null,2)});
@@ -521,7 +521,7 @@ async function loadReceiptDocuments(){
 }
 
 function hasExistingCatalog(l){return !!(l?.items?.length||l?.receipts?.length);}
-function shouldAutoSync(l){return workspaceAdmin&&l?.entryMode!=="app"&&hasExistingCatalog(l)&&!!(l.excelPath||getContract()?.excelPath);}
+function shouldAutoSync(l){return false;} // Excel μόνο με ρητή επιλογή ενημέρωσης.
 function getContract(){return contracts.find(c=>c.id===currentId)}
 function getLedger(create=true){
  let l=parData.contracts.find(x=>x.contractId===currentId);
@@ -1233,7 +1233,7 @@ async function syncFromExcel(showMessage=true){
     );
   }
  return true;
- }catch(e){l.migrationVerified=false;l.items=originalItems;l.receipts=originalReceipts;l.summary=originalSummary;render();const message="ΣΦΑΛΜΑ ΕΝΗΜΕΡΩΣΗΣ EXCEL — εμφανίζονται παλαιά στοιχεία, όχι επιβεβαιωμένο υπόλοιπο.\n"+e.message;setExcelAudit(message,"error");setStatus(message,"err")}
+ }catch(e){l.migrationVerified=false;l.items=originalItems;l.receipts=originalReceipts;l.summary=originalSummary;render();const message="Το Excel δεν ενημερώθηκε. Εμφανίζονται τα τελευταία αποθηκευμένα στοιχεία (μη επιβεβαιωμένα). Μπορείς να συνεχίσεις χειροκίνητα.\n"+e.message;setExcelAudit("", "");setStatus(message)}
 }
 
 let pickerStack=[];
@@ -1640,6 +1640,9 @@ async function saveBulkReceipts(){
   if(!confirm('Να προστεθούν '+rs.length+' παραλαβές στο υπάρχον ιστορικό, συνολικής αξίας '+euro(rs.reduce((n,r)=>n+r.netValue,0))+' χωρίς ΦΠΑ;'))return;
   await writeJson('paralaves-backup-'+cid+'-'+Date.now()+'.json',old);
   await persistAppLedger(candidate,old);
+  const saved=await readJson(PAR_FILE), check=saved?.contracts?.find(x=>x.contractId===cid);
+  if(!check||check.entryMode!=='app'||check.lastReceiptResetAt!==candidate.lastReceiptResetAt||check.receipts?.length!==0||Math.abs(Number(check.summary?.remainingWithVat)-candidate.summary.remainingWithVat)>.01||!Number.isFinite(Number(check.summary?.remainingWithVat)))throw Error('Δεν επιβεβαιώθηκε ο μηδενισμός από το OneDrive. Επαναφόρτωσε πριν από άλλη ενέργεια.');
+  parData=saved;setExcelAudit('', '');
   el('bulkReceiptItems').innerHTML='';el('bulkNote').value='';
   render();setStatus('Αποθηκεύτηκαν '+rs.length+' παραλαβές στο OneDrive.','ok');
  }catch(e){setStatus('ΔΕΝ ΑΠΟΘΗΚΕΥΤΗΚΑΝ: '+e.message,'err');const top=el('bulkTopPreview');if(top){top.textContent='ΔΕΝ ΑΠΟΘΗΚΕΥΤΗΚΑΝ: '+e.message;top.style.color='#991b1b';top.scrollIntoView({behavior:'smooth',block:'center'});}}
@@ -2329,15 +2332,20 @@ async function resetAllContractReceipts(){
  busy=true;el('resetAllReceiptsButton').disabled=true;
  try{
   const latest=await readJson(PAR_FILE),old=latest?.contracts?.find(x=>x.contractId===cid);
-  if(!old||currentId!==cid||persistentLedgerSignature(old)!==persistentLedgerSignature(local))throw Error('Τα δεδομένα άλλαξαν ή δεν έχουν αποθηκευτεί. Ανανέωσε πρώτα τη σελίδα.');
+  if(!old||currentId!==cid||!old.items?.length)throw Error('Δεν βρέθηκε αποθηκευμένη βάση της επιλεγμένης σύμβασης.');
+  // Το render και η αποτυχημένη ανάγνωση Excel αλλάζουν προσωρινά πεδία. Ο μηδενισμός βασίζεται στην τελευταία αποθηκευμένη έκδοση, όχι στην προσωρινή μνήμη.
+  if(!confirm('Βρέθηκε η αποθηκευμένη σύμβαση '+(c.studyNo||c.title)+' με '+old.items.length+' είδη και '+(old.receipts||[]).length+' εγγραφές. Επιβεβαιώνεις τον μηδενισμό αυτής της έκδοσης;'))return;
   const candidate=JSON.parse(JSON.stringify(old));
   candidate.receipts=[];delete candidate.archivedExcelReceipts;delete candidate.deletionHistory;delete candidate.correctionHistory;
-  candidate.entryMode='app';candidate.importMethod='manual-reset';candidate.lastReceiptResetAt=new Date().toISOString();
+  candidate.entryMode='app';candidate.importMethod='manual-reset';candidate.migrationVerified=true;candidate.lastReceiptResetAt=new Date().toISOString();
   for(const it of candidate.items){it.baseRemainingUnits=Number(it.initialQty||0)+Number(it.optionQty||0);it.baseRemainingNet=Number(it.initialNet||0)+Number(it.optionQty||0)*Number(it.unitPrice||0);}
   summarizeApp(candidate,c);
   await writeJson('paralaves-reset-backup-'+cid+'-'+Date.now()+'.json',old);
   if(currentId!==cid)throw Error('Άλλαξε η επιλεγμένη σύμβαση. Δεν έγινε διαγραφή.');
   await persistAppLedger(candidate,old);
+  const saved=await readJson(PAR_FILE), check=saved?.contracts?.find(x=>x.contractId===cid);
+  if(!check||check.entryMode!=='app'||check.lastReceiptResetAt!==candidate.lastReceiptResetAt||check.receipts?.length!==0||Math.abs(Number(check.summary?.remainingWithVat)-candidate.summary.remainingWithVat)>.01||!Number.isFinite(Number(check.summary?.remainingWithVat)))throw Error('Δεν επιβεβαιώθηκε ο μηδενισμός από το OneDrive. Επαναφόρτωσε πριν από άλλη ενέργεια.');
+  parData=saved;setExcelAudit('', '');
   el('bulkReceiptItems').replaceChildren();el('bulkNote').value='';el('bulkItemSearch').value='';simpleReceiptReset();
   render();setStatus('Διαγράφηκαν όλες οι παραλαβές μόνο της σύμβασης '+(c.studyNo||c.title)+'. Νέο υπόλοιπο με ΦΠΑ: '+euro(candidate.summary.remainingWithVat)+'. Δημιουργήθηκε αντίγραφο ασφαλείας.','ok');
  }catch(e){setStatus('ΔΕΝ ΟΛΟΚΛΗΡΩΘΗΚΕ Ο ΜΗΔΕΝΙΣΜΟΣ: '+e.message,'err');alert(e.message);}finally{busy=false;el('resetAllReceiptsButton').disabled=false;}
