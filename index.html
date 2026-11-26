@@ -619,6 +619,7 @@ tbody tr{
 @media print{#docsDialog{display:none!important}}
 </style>
 <style>.settings-menu{position:relative}.settings-menu summary{cursor:pointer;background:#e5e7eb;padding:10px 14px;border-radius:7px;font-weight:600;list-style:none}.settings-items{position:absolute;right:0;top:100%;min-width:245px;background:white;box-shadow:0 5px 20px #0003;padding:10px;display:grid;gap:8px;z-index:30}.settings-items button{text-align:left}body.collaborator #bulkDocsBtn,body.collaborator button[onclick^="editRecord("],body.collaborator button[onclick="openNewRecord()"],body.collaborator button[onclick="migrateExcelReferences()"],body.collaborator button[onclick="publishPublicData()"],body.collaborator button[onclick="openPublicView()"]{display:none!important}</style>
+<style>body.collaborator #exportWorkspaceCodeBtn{display:none!important}</style>
 </head>
 <body class="collaborator">
 <header>
@@ -645,6 +646,7 @@ tbody tr{
   <button class="btn-gray" onclick="window.print()">🖨 Εκτύπωση</button>
   <details class="settings-menu"><summary>⚙ Ρυθμίσεις</summary><div class="settings-items">
   <button class="btn-blue" onclick="configureWorkspace()">Κοινόχρηστος φάκελος</button>
+  <button class="btn-gray" id="exportWorkspaceCodeBtn" onclick="exportWorkspaceCode()">Κωδικός σύνδεσης συνεργάτη</button>
   <button id="bulkDocsBtn" class="btn-green" onclick="migrateAllDocuments()">Συγχρονισμός παλαιών αρχείων</button>
   <button class="btn-blue" onclick="migrateExcelReferences()">Σύνδεση Excel με ID</button>
   </div></details>
@@ -785,52 +787,58 @@ function routeWorkspace(url){
  if(url.startsWith(GROOT+'/me/drive/root'))throw Error('Στον κοινόχρηστο χώρο δεν επιτρέπεται αναζήτηση εκτός φακέλου.');
  return url;
 }
+async function workspaceRequest(url, options={}){
+ const tok=await getToken();
+ if(!url.startsWith(GROOT+'/'))throw Error('Μη έγκυρη διεύθυνση Graph.');
+ const r=await fetch(url,{...options,cache:'no-store',headers:{...options.headers,Authorization:'Bearer '+tok}});
+ if(!r.ok)throw Error('HTTP '+r.status+' — '+(await r.text()).slice(0,350));
+ return r;
+}
+async function workspaceChildren(url){
+ const out=[];while(url){const j=await (await workspaceRequest(url)).json();out.push(...(j.value||[]));url=j['@odata.nextLink']||'';}return out;
+}
+function workspaceRef(m){const v=m.remoteItem||m;return {id:v.id,driveId:v.parentReference?.driveId||m.parentReference?.driveId};}
+async function validateWorkspace(ref){
+ if(!ref?.id||!ref?.driveId)throw Error('Λείπει το ID του φακέλου.');
+ const m=await (await workspaceRequest(workspaceURL(ref))).json();
+ if(!m.folder||m.name!==APP_FOLDER)throw Error('Ο φάκελος δεν είναι '+APP_FOLDER+'.');
+ const w={...ref,files:{}};const children=await workspaceChildren(workspaceURL(w)+'/children');
+ for(const name of [DATA_FILE,PAR_FILE]){
+  const f=children.find(x=>x.name===name);if(!f)throw Error('Δεν βρέθηκε '+name+' — δεν δημιουργείται νέα βάση.');
+  const v=workspaceRef(f);if(!v.id)throw Error('Λείπει ID: '+name);v.driveId=v.driveId||w.driveId;
+  const j=await (await workspaceRequest(driveItemURL(v.driveId,v.id)+'/content')).json();
+  if(!Array.isArray(name===DATA_FILE?j.records:j.contracts))throw Error('Μη έγκυρο '+name);
+  w.files[name]=v;
+ }return w;
+}
+async function persistWorkspace(w){const a=await getAccount();if(!a)throw Error('Συνδέσου με Microsoft.');localStorage.setItem(workspaceKey,JSON.stringify(w));localStorage.setItem(workspaceKey+'-account',a.homeAccountId);}
 async function configureWorkspace(){
  try{
- const raw=prompt('Επικόλλησε τον αρχικό σύνδεσμο κοινής χρήσης SymvaseisApp (όχι τη σελίδα Shared).');if(!raw)return;
- const link=raw.trim(),u=new URL(link);if(u.protocol!=='https:'||!(/^(1drv\.ms|onedrive\.live\.com)$/i.test(u.hostname)||/\.sharepoint\.com$/i.test(u.hostname)))throw Error('Απαιτείται σύνδεσμος HTTPS OneDrive.');
- const token='u!'+btoa(String.fromCharCode(...new TextEncoder().encode(link))).replace(/=+$/,'').replace(/\//g,'_').replace(/\+/g,'-');
- const share=GROOT+'/shares/'+token+'/driveItem';
- const res=await graph(share,{headers:{Prefer:'redeemSharingLinkIfNecessary'}});if(!res.ok)throw Error('Σύνδεσμος φακέλου: HTTP '+res.status);
- const m=await res.json(),item=m.remoteItem||m,w={id:item.id,driveId:item.parentReference?.driveId||m.parentReference?.driveId,files:{}};
- if(!item.folder||!w.id||!w.driveId)throw Error('Ο σύνδεσμος πρέπει να αφορά φάκελο.');
- let children=[],errors=[];
- for(const base of [workspaceURL(w),share]){
-  try{let next=base+'/children';let found=[];while(next){const r=await graph(next,{headers:{Prefer:'redeemSharingLinkIfNecessary'}});if(!r.ok)throw Error('HTTP '+r.status);const j=await r.json();found.push(...(j.value||[]));next=j['@odata.nextLink']||'';}children=found;if([DATA_FILE,PAR_FILE].every(n=>children.some(x=>x.name===n)))break;}catch(e){errors.push(e.message);}
- }
- for(const name of [DATA_FILE,PAR_FILE]){
- const f=children.find(x=>x.name===name),v=f?.remoteItem||f;
- if(!v?.id)throw Error('Δεν βρέθηκε '+name+' στον φάκελο '+(item.name||'')+'. Ορατά αρχεία: '+children.map(x=>x.name).join(', ').slice(0,700)+' '+errors.join(' / '));
- const drive=v.parentReference?.driveId||w.driveId;
- const r=await graph(driveItemURL(drive,v.id)+'/content');if(!r.ok)throw Error('Ανάγνωση '+name+': HTTP '+r.status);const j=await r.json();if(!Array.isArray(name===DATA_FILE?j.records:j.contracts))throw Error('Μη έγκυρο '+name);
- w.files[name]={id:v.id,driveId:drive};
- }
- localStorage.setItem(workspaceKey,JSON.stringify(w));localStorage.setItem(workspaceKey+'-account',(await getAccount()).homeAccountId);location.reload();
- }catch(e){alert(e.message)}
+ const raw=prompt('Επικόλλησε τον ΚΩΔΙΚΟ ΣΥΝΔΕΣΗΣ που έδωσε ο διαχειριστής (ή τον αρχικό σύνδεσμο OneDrive).');if(!raw)return;
+ let ref;const s=raw.trim();
+ if(s.startsWith('SYM1:')){ref=JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(s.slice(5)),c=>c.charCodeAt(0))));}
+ else{const u=new URL(s);if(u.protocol!=='https:'||!(/^(1drv\.ms|onedrive\.live\.com)$/i.test(u.hostname)||/\.sharepoint\.com$/i.test(u.hostname)))throw Error('Μη έγκυρος σύνδεσμος OneDrive.');
+ const token='u!'+btoa(String.fromCharCode(...new TextEncoder().encode(s))).replace(/=+$/,'').replace(/\//g,'_').replace(/\+/g,'-');
+ const m=await (await workspaceRequest(GROOT+'/shares/'+token+'/driveItem',{headers:{Prefer:'redeemSharingLinkIfNecessary'}})).json();ref=workspaceRef(m);}
+ await persistWorkspace(await validateWorkspace({id:ref.id,driveId:ref.driveId}));location.reload();
+ }catch(e){alert('Σύνδεση φακέλου: '+e.message);}
+}
+async function exportWorkspaceCode(){
+ try{if(!workspaceAdmin||!workspace())throw Error('Απαιτείται σύνδεση διαχειριστή.');const w=workspace();const code='SYM1:'+btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify({id:w.id,driveId:w.driveId}))));prompt('Αντέγραψε τον κωδικό και στείλε τον μόνο στον συνεργάτη που έχει ήδη πρόσβαση στο OneDrive.',code);}catch(e){alert(e.message);}
 }
 async function restoreWorkspace(){
  const a=await getAccount();if(!a)return;
- const accountKey=workspaceKey+'-account';
- const stored=workspace();
- if(stored){
-   const bound=localStorage.getItem(accountKey);
-   if(bound&&bound!==a.homeAccountId)throw Error('Ο αποθηκευμένος χώρος ανήκει σε άλλη σύνδεση. Επίλεξε Ρυθμίσεις → Κοινόχρηστος φάκελος.');
-   await verifyWorkspace();localStorage.setItem(accountKey,a.homeAccountId);return;
+ const stored=workspace(),bound=localStorage.getItem(workspaceKey+'-account');
+ if(stored&&(!bound||bound===a.homeAccountId)){
+  await persistWorkspace(await validateWorkspace({id:stored.id,driveId:stored.driveId}));return;
  }
- const root=await graph(GROOT+'/me/drive/root:/'+encodeURIComponent(APP_FOLDER));
- if(root.status===404)throw Error('Δεν βρέθηκε ο υπάρχων φάκελος. Επίλεξε Ρυθμίσεις → Κοινόχρηστος φάκελος μία φορά.');
- if(!root.ok)throw Error('Ανάγνωση φακέλου: HTTP '+root.status);
- const m=await root.json();const w={id:m.id,driveId:m.parentReference?.driveId,files:{}};
- if(!m.folder||!w.id||!w.driveId)throw Error('Μη έγκυρος φάκελος OneDrive.');
- for(const name of [DATA_FILE,PAR_FILE]){
-   const r=await graph(workspaceURL(w)+':/'+encodeURIComponent(name));
-   if(!r.ok)throw Error('Δεν βρέθηκε το υπάρχον '+name+' — δεν δημιουργείται νέα βάση.');
-   const f=await r.json();const c=await graph(driveItemURL(w.driveId,f.id)+'/content');
-   if(!c.ok)throw Error('Δεν είναι δυνατή η ανάγνωση '+name);
-   const j=await c.json();if(!Array.isArray(name===DATA_FILE?j.records:j.contracts))throw Error('Μη έγκυρο '+name);
-   w.files[name]={id:f.id,driveId:w.driveId};
- }
- localStorage.setItem(workspaceKey,JSON.stringify(w));localStorage.setItem(accountKey,a.homeAccountId);
+ if(stored&&bound!==a.homeAccountId)throw Error('Άλλος λογαριασμός. Ρυθμίσεις → Κοινόχρηστος φάκελος: εισήγαγε τον κωδικό σύνδεσης.');
+ const candidates=[];const errors=[];
+ try{const m=await (await workspaceRequest(GROOT+'/me/drive/root:/'+encodeURIComponent(APP_FOLDER))).json();candidates.push(workspaceRef(m));}catch(e){errors.push(e.message);}
+ try{for(const m of await workspaceChildren(GROOT+'/me/drive/root/children')){if((m.remoteItem?.name||m.name)===APP_FOLDER&&(m.remoteItem?.folder||m.folder))candidates.push(workspaceRef(m));}}catch(e){errors.push(e.message);}
+ const valid=[];const seen=new Set();for(const ref of candidates){const k=ref.driveId+'|'+ref.id;if(seen.has(k))continue;seen.add(k);try{valid.push(await validateWorkspace(ref));}catch(e){errors.push(e.message);}}
+ if(valid.length===1){await persistWorkspace(valid[0]);return;}
+ throw Error((valid.length>1?'Βρέθηκαν πολλοί χώροι.':'Δεν βρέθηκε προσβάσιμη υπάρχουσα βάση.')+' Ρυθμίσεις → Κοινόχρηστος φάκελος: εισήγαγε τον ΚΩΔΙΚΟ ΣΥΝΔΕΣΗΣ του διαχειριστή. '+errors.join(' / ').slice(0,500));
 }
 async function verifyWorkspace(){const w=workspace();if(!w)return false;const r=await graph(workspaceURL(w));if(!r.ok)throw Error('Ο κοινόχρηστος φάκελος δεν είναι προσβάσιμος. Δεν δημιουργείται νέα βάση.');return true;}
 async function excelRefFromPath(path){
@@ -893,7 +901,7 @@ const msalInstance=new msal.PublicClientApplication({
   auth:{clientId:CLIENT_ID,authority:"https://login.microsoftonline.com/common",redirectUri:REDIRECT_URI},
   cache:{cacheLocation:"localStorage",storeAuthStateInCookie:false}
 });
-const loginRequest={scopes:["User.Read","Files.ReadWrite"],prompt:"select_account"};
+const loginRequest={scopes:["User.Read","Files.ReadWrite","Files.Read.All"],prompt:"select_account"};
 let records=[],currentEditingId=null;
 let syncBase=null, syncBusy=false, refreshBusy=false, syncGeneration=0;
 const copyRecords=v=>JSON.parse(JSON.stringify(v));
@@ -942,7 +950,7 @@ function statusFor(r){
 }
 
 async function getAccount(){let a=msalInstance.getActiveAccount();if(!a){const xs=msalInstance.getAllAccounts();if(xs.length){a=xs[0];msalInstance.setActiveAccount(a)}}return a}
-async function getToken(){const a=await getAccount();if(!a)throw new Error("Πρέπει πρώτα να συνδεθείτε με Microsoft.");try{return (await msalInstance.acquireTokenSilent({scopes:["User.Read","Files.ReadWrite"],account:a})).accessToken}catch{throw Error("Η σύνδεση Microsoft χρειάζεται ανανέωση. Πάτησε Σύνδεση Microsoft.")}}
+async function getToken(){const a=await getAccount();if(!a)throw new Error("Πρέπει πρώτα να συνδεθείτε με Microsoft.");try{return (await msalInstance.acquireTokenSilent({scopes:["User.Read","Files.ReadWrite","Files.Read.All"],account:a})).accessToken}catch{throw Error("Η σύνδεση Microsoft χρειάζεται ανανέωση. Πάτησε Σύνδεση Microsoft.")}}
 async function graph(url,opt={}){if(workspace()&&!workspaceAdmin&&!/^(GET|HEAD)$/i.test(opt.method||"GET")&&!url.startsWith(sharedPathURL(SHARED_DOCS)+"/" )&&!url.startsWith(sharedPathURL(SHARED_DOCS)+":/"))throw Error("Επιτρέπεται μόνο μεταφόρτωση στον φάκελο SharedDocuments.");url=routeWorkspace(url);const tok=await getToken();opt.headers=opt.headers||{};opt.headers.Authorization="Bearer "+tok;return fetch(url,{cache:"no-store",...opt})}
 async function signIn(){try{const r=await msalInstance.loginPopup(loginRequest);msalInstance.setActiveAccount(r.account);setStatus("Συνδεθήκατε ως "+r.account.username,"ok");await loadData();await refreshFromParalaves(false);await loadOneDriveQuota()}catch(e){setStatus("Σφάλμα σύνδεσης:\n"+e.message,"error")}}
 // Διαβάζουμε την πραγματική χωρητικότητα του συνδεδεμένου OneDrive μέσω Microsoft Graph.
