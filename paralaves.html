@@ -123,17 +123,18 @@ body.initial-loading > :not(#initialScreen):not(script):not(style){visibility:hi
 body.initial-loading #initialScreen{display:block;position:fixed;inset:0;background:#f1f5f9;z-index:99999}
 </style>
 <style>body.collaborator #sourceSettings,body.collaborator #simpleReceiptPanel,body.collaborator #migrationPanel,body.collaborator #optionToggleRow,body.collaborator #optionPanel,body.collaborator #entryPanel,body.collaborator #bulkReceiptPanel,body.collaborator #toggleEntryButton,body.collaborator #excelSyncButton,body.collaborator #saveButton,body.collaborator button[onclick^="openReceiptEditor("],body.collaborator button[onclick^="deleteStoredReceipt("],body.collaborator button[onclick*="paralaves-view.html"]{display:none!important}</style>
+<style>.receipt-settings{position:relative}.receipt-settings summary{cursor:pointer;background:#e5e7eb;padding:10px 14px;border-radius:7px;font-weight:600}.receipt-settings[open] button{position:absolute;top:100%;left:0;white-space:nowrap;z-index:40;box-shadow:0 3px 12px #0002}#excelSyncButton,#saveButton{display:none!important}</style>
 </head>
 <body class="initial-loading collaborator">
 <div id="initialScreen" role="status" aria-label="Άνοιγμα παραλαβών"></div>
 <script>window.addEventListener('error',function(e){if(e.target===window && document.body.classList.contains('initial-loading')){document.body.classList.remove('initial-loading');} });</script>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v52 — ΠΑΡΑΛΑΒΕΣ</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v53 — ΠΑΡΑΛΑΒΕΣ</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
 <div class="toolbar">
-<button class="blue" onclick="configureWorkspace()">Κοινόχρηστος φάκελος</button>
+<details class="receipt-settings"><summary>⚙ Ρυθμίσεις</summary><button class="blue" onclick="configureWorkspace()">Κοινόχρηστος φάκελος</button></details>
   <button class="gray" onclick="goBack()">← Συμβάσεις</button>
   <button class="blue" onclick="signIn()">Σύνδεση Microsoft</button>
   <select id="contractSelect" onchange="selectContract(this.value)"></select>
@@ -145,7 +146,7 @@ body.initial-loading #initialScreen{display:block;position:fixed;inset:0;backgro
   <button id="excelSyncButton" class="green" style="display:none" onclick="syncFromExcel(true)">↻ Ενημέρωση από Excel</button>
   <button id="saveButton" class="purple" style="display:none" onclick="saveAll()">💾 Αποθήκευση</button>
   <button class="gray" onclick="window.print()">🖨 Εκτύπωση</button>
-  <button class="purple" onclick="window.open('./paralaves-view.html','_blank')">👁 ΔΗΜΟΣΙΑ ΠΡΟΒΟΛΗ</button>
+  <button class="gray" onclick="refreshReceiptsManually()">↻ Ανανέωση OneDrive</button>
 </div>
 
 <div class="container">
@@ -407,8 +408,32 @@ async function configureWorkspace(){
  const r=await graph(driveItemURL(drive,v.id)+'/content');if(!r.ok)throw Error('Ανάγνωση '+name+': HTTP '+r.status);const j=await r.json();if(!Array.isArray(name===DATA_FILE?j.records:j.contracts))throw Error('Μη έγκυρο '+name);
  w.files[name]={id:v.id,driveId:drive};
  }
- localStorage.setItem(workspaceKey,JSON.stringify(w));location.reload();
+ localStorage.setItem(workspaceKey,JSON.stringify(w));const a=await getAccount();if(a)localStorage.setItem(workspaceKey+'-account',a.homeAccountId);location.reload();
  }catch(e){alert(e.message)}
+}
+async function restoreWorkspace(){
+ const a=await getAccount();if(!a)return;
+ const accountKey=workspaceKey+'-account';
+ const stored=workspace();
+ if(stored){
+   const bound=localStorage.getItem(accountKey);
+   if(bound&&bound!==a.homeAccountId)throw Error('Ο αποθηκευμένος χώρος ανήκει σε άλλη σύνδεση. Επίλεξε Ρυθμίσεις → Κοινόχρηστος φάκελος.');
+   await verifyWorkspace();localStorage.setItem(accountKey,a.homeAccountId);return;
+ }
+ const root=await graph(GROOT+'/me/drive/root:/'+encodeURIComponent(APP_FOLDER));
+ if(root.status===404)throw Error('Δεν βρέθηκε ο υπάρχων φάκελος. Επίλεξε Ρυθμίσεις → Κοινόχρηστος φάκελος μία φορά.');
+ if(!root.ok)throw Error('Ανάγνωση φακέλου: HTTP '+root.status);
+ const m=await root.json();const w={id:m.id,driveId:m.parentReference?.driveId,files:{}};
+ if(!m.folder||!w.id||!w.driveId)throw Error('Μη έγκυρος φάκελος OneDrive.');
+ for(const name of [DATA_FILE,PAR_FILE]){
+   const r=await graph(workspaceURL(w)+':/'+encodeURIComponent(name));
+   if(!r.ok)throw Error('Δεν βρέθηκε το υπάρχον '+name+' — δεν δημιουργείται νέα βάση.');
+   const f=await r.json();const c=await graph(driveItemURL(w.driveId,f.id)+'/content');
+   if(!c.ok)throw Error('Δεν είναι δυνατή η ανάγνωση '+name);
+   const j=await c.json();if(!Array.isArray(name===DATA_FILE?j.records:j.contracts))throw Error('Μη έγκυρο '+name);
+   w.files[name]={id:f.id,driveId:w.driveId};
+ }
+ localStorage.setItem(workspaceKey,JSON.stringify(w));localStorage.setItem(accountKey,a.homeAccountId);
 }
 async function verifyWorkspace(){const w=workspace();if(!w)return false;const r=await graph(workspaceURL(w));if(!r.ok)throw Error('Ο κοινόχρηστος φάκελος δεν είναι προσβάσιμος. Δεν δημιουργείται νέα βάση.');return true;}
 async function excelRefFromPath(path){
@@ -431,7 +456,7 @@ let workspaceAdmin=false;
 async function identifyWorkspaceRole(){
  workspaceAdmin=false;
  document.body.classList.add('collaborator');
- if(!workspace()){workspaceAdmin=true;}else{
+ if(workspace()){
   try{const r=await graph(GROOT+'/me/drive?$select=id');if(r.ok)workspaceAdmin=(await r.json()).id===workspace().driveId;}catch(e){console.warn('Workspace role:',e.message);}
  }
  document.body.classList.toggle('collaborator',!workspaceAdmin);
@@ -486,8 +511,8 @@ function hash(s){let h=0;for(let i=0;i<s.length;i++)h=((h<<5)-h)+s.charCodeAt(i)
 function goBack(){location.href="./"}
 
 async function getAccount(){let a=msalInstance.getActiveAccount();if(!a){const xs=msalInstance.getAllAccounts();if(xs.length){a=xs[0];msalInstance.setActiveAccount(a)}}return a}
-async function getToken(){const a=await getAccount();if(!a)throw new Error("Πρέπει πρώτα να συνδεθείτε με Microsoft.");try{return (await msalInstance.acquireTokenSilent({scopes:["User.Read","Files.ReadWrite"],account:a})).accessToken}catch{return (await msalInstance.acquireTokenPopup({scopes:["User.Read","Files.ReadWrite"],account:a})).accessToken}}
-async function graph(url,opt={}){if(!workspaceAdmin&&!/^(GET|HEAD)$/i.test(opt.method||"GET"))throw Error("Οι παραλαβές είναι μόνο για ανάγνωση.");url=routeWorkspace(url);const tok=await getToken();opt.headers=opt.headers||{};opt.headers.Authorization="Bearer "+tok;return fetch(url,opt)}
+async function getToken(){const a=await getAccount();if(!a)throw new Error("Πρέπει πρώτα να συνδεθείτε με Microsoft.");try{return (await msalInstance.acquireTokenSilent({scopes:["User.Read","Files.ReadWrite"],account:a})).accessToken}catch{throw Error("Η σύνδεση Microsoft χρειάζεται ανανέωση. Πάτησε Σύνδεση Microsoft.")}}
+async function graph(url,opt={}){if(!workspaceAdmin&&!/^(GET|HEAD)$/i.test(opt.method||"GET"))throw Error("Οι παραλαβές είναι μόνο για ανάγνωση.");url=routeWorkspace(url);const tok=await getToken();opt.headers=opt.headers||{};opt.headers.Authorization="Bearer "+tok;return fetch(url,{cache:"no-store",...opt})}
 async function signIn(){try{const r=await msalInstance.loginPopup(loginRequest);msalInstance.setActiveAccount(r.account);setStatus("Συνδεθήκατε ως "+r.account.username,"ok");await loadAll()}catch(e){setStatus("Σφάλμα σύνδεσης:\n"+e.message,"err")}}
 async function ensureRootFolder(){
  if(await verifyWorkspace())return;
@@ -609,6 +634,7 @@ function recompute(){
 }
 async function saveAll(){if(getLedger(false)?.entryMode==="app"){setStatus("Οι παραλαβές αποθηκεύονται κατά την καταχώριση.","ok");return;}return syncFromExcel(true)}
 async function loadAll(){
+ await restoreWorkspace();
  await identifyWorkspaceRole();
  setStatus("Φόρτωση δεδομένων...");
  const s=await readJson(DATA_FILE);contracts=Array.isArray(s?.records)?s.records:[];
@@ -2350,6 +2376,31 @@ async function resetAllContractReceipts(){
   render();setStatus('Διαγράφηκαν όλες οι παραλαβές μόνο της σύμβασης '+(c.studyNo||c.title)+'. Νέο υπόλοιπο με ΦΠΑ: '+euro(candidate.summary.remainingWithVat)+'. Δημιουργήθηκε αντίγραφο ασφαλείας.','ok');
  }catch(e){setStatus('ΔΕΝ ΟΛΟΚΛΗΡΩΘΗΚΕ Ο ΜΗΔΕΝΙΣΜΟΣ: '+e.message,'err');alert(e.message);}finally{busy=false;el('resetAllReceiptsButton').disabled=false;}
 }
+</script>
+<script>
+let receiptRefreshBusy=false;
+async function refreshReceiptsManually(){
+ if(busy||receiptRefreshBusy)return;
+ if(workspaceAdmin && (entryOpen||document.querySelector('dialog[open]')) && !confirm('Η ανανέωση μπορεί να κλείσει ή να αντικαταστήσει μη αποθηκευμένες καταχωρίσεις. Συνέχεια;'))return;
+ receiptRefreshBusy=true;
+ try{await loadAll();}catch(e){setStatus(e.message,'err');}finally{receiptRefreshBusy=false;}
+}
+async function refreshCollaboratorReceipts(){
+ if(document.hidden||workspaceAdmin||busy||receiptRefreshBusy||!workspace()||!(await getAccount()))return;
+ receiptRefreshBusy=true;
+ try{
+  const [s,p]=await Promise.all([readJson(DATA_FILE),readJson(PAR_FILE)]);
+  if(workspaceAdmin||busy)return;
+  if(!Array.isArray(s?.records)||!Array.isArray(p?.contracts))throw Error('Μη έγκυρα δεδομένα OneDrive.');
+  if(JSON.stringify(s.records)!==JSON.stringify(contracts)||JSON.stringify(p)!==JSON.stringify(parData)){
+   contracts=s.records;parData=p;inferMissingDepartments();normalizeParalavesText();
+   if(!contracts.some(c=>c.id===currentId))currentId=filteredContracts()[0]?.id||contracts[0]?.id||null;
+   fillContractSelect();if(currentId)contractSelect.value=currentId;render();
+  }
+ }catch(e){console.warn('Ανανέωση OneDrive:',e.message);setStatus('Η αυτόματη ανανέωση δεν ολοκληρώθηκε: '+e.message,'err');}finally{receiptRefreshBusy=false;}
+}
+setInterval(refreshCollaboratorReceipts,10000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshCollaboratorReceipts();});
 </script>
 </body>
 </html>
