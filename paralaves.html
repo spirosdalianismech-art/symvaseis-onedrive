@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Παραλαβές Συμβάσεων</title>
 <script src="https://alcdn.msauth.net/browser/2.35.0/js/msal-browser.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
 <script>
 // Load optional import libraries only when requested. Failed downloads can be retried.
 const turboLibraries=new Map();
@@ -20,6 +20,7 @@ function turboLoadLibrary(name,url){
  });
  turboLibraries.set(name,pending);pending.catch(()=>turboLibraries.delete(name));return pending;
 }
+const ultraExcel=()=>turboLoadLibrary('XLSX','https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');
 const turboWord=()=>turboLoadLibrary('mammoth','https://cdn.jsdelivr.net/npm/mammoth@1.9.1/mammoth.browser.min.js');
 const turboPdf=()=>turboLoadLibrary('pdfjsLib','https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
 </script>
@@ -143,7 +144,7 @@ body.initial-loading #initialScreen{display:block;position:fixed;inset:0;backgro
 <div id="initialScreen" role="status" aria-label="Άνοιγμα παραλαβών"></div>
 <script>window.addEventListener('error',function(e){if(e.target===window && document.body.classList.contains('initial-loading')){document.body.classList.remove('initial-loading');} });</script>
 <header>
-  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v53 TURBO — ΠΑΡΑΛΑΒΕΣ</small></h1>
+  <h1>Παραλαβές Συμβάσεων <small style="font-size:12px;opacity:.8">v54 ULTRA FAST — ΠΑΡΑΛΑΒΕΣ</small></h1>
   <p>Υπόλοιπα ανά είδος χωρίς ΦΠΑ – συνολικό υπόλοιπο σύμβασης με ΦΠΑ</p>
 </header>
 
@@ -491,7 +492,8 @@ const loginRequest={scopes:["User.Read","Files.ReadWrite"],prompt:"select_accoun
 let contracts=[],parData={version:1,contracts:[]},currentId=null;
 
 function setStatus(m,t=""){const e=document.getElementById("status");e.className="";if(t==="ok")e.classList.add("ok");if(t==="err")e.classList.add("err");e.innerText=m}
-function euro(v){return new Intl.NumberFormat("el-GR",{style:"currency",currency:"EUR"}).format(Number(v||0))}
+const ultraEuroFormatter=new Intl.NumberFormat("el-GR",{style:"currency",currency:"EUR"});
+function euro(v){return ultraEuroFormatter.format(Number(v||0))}
 function num(v){if(typeof v==="number")return v;let s=String(v??"").trim();if(!s)return 0;s=s.replace(/\s/g,"").replace(/€/g,"");if(s.includes(",")&&s.includes(".")){if(s.lastIndexOf(",")>s.lastIndexOf("."))s=s.replace(/\./g,"").replace(",",".");else s=s.replace(/,/g,"")}else if(s.includes(","))s=s.replace(",",".");return Number(s.replace(/[^\d.-]/g,""))||0}
 function norm(s){return String(s??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/\s+/g," ").trim()}
 function esc(v){const d=document.createElement("div");d.textContent=v??"";return d.innerHTML.replace(/"/g,"&quot;").replace(/'/g,"&#39;")}
@@ -509,7 +511,7 @@ async function ensureRootFolder(){
  const c=await graph("https://graph.microsoft.com/v1.0/me/drive/root:/"+encodeURIComponent(APP_FOLDER));if(c.ok)return;if(c.status!==404)throw new Error(await c.text());
  const r=await graph("https://graph.microsoft.com/v1.0/me/drive/root/children",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:APP_FOLDER,folder:{},["@microsoft.graph.conflictBehavior"]:"fail"})});if(!r.ok&&r.status!==409)throw new Error(await r.text())
 }
-async function readJson(name){await ensureRootFolder();const r=await graph("https://graph.microsoft.com/v1.0/me/drive/root:/"+encPath(APP_FOLDER+"/"+name)+":/content",{cache:"no-store"});if(r.status===404){if(workspace())throw Error("Το κοινόχρηστο αρχείο δεν βρέθηκε: "+name);return null;}if(!r.ok)throw new Error(await r.text());return JSON.parse(await r.text())}
+async function readJson(name){if(!workspace())await ensureRootFolder();const r=await graph("https://graph.microsoft.com/v1.0/me/drive/root:/"+encPath(APP_FOLDER+"/"+name)+":/content",{cache:"no-store"});if(r.status===404){if(workspace())throw Error("Το κοινόχρηστο αρχείο δεν βρέθηκε: "+name);return null;}if(!r.ok)throw new Error(await r.text());return JSON.parse(await r.text())}
 async function writeJson(name,obj){
  await ensureRootFolder();
  const r=await graph("https://graph.microsoft.com/v1.0/me/drive/root:/"+encPath(APP_FOLDER+"/"+name)+":/content",{method:"PUT",headers:{"Content-Type":"application/json;charset=utf-8"},body:JSON.stringify(obj,null,2)});
@@ -624,9 +626,10 @@ function recompute(){
 }
 async function saveAll(){if(getLedger(false)?.entryMode==="app"){setStatus("Οι παραλαβές αποθηκεύονται κατά την καταχώριση.","ok");return;}return syncFromExcel(true)}
 async function loadAll(){
- await identifyWorkspaceRole();
+ const account=await getAccount(),bound=localStorage.getItem(workspaceKey+"-account");
+ if(workspace()&&bound&&bound!==account?.homeAccountId)throw Error("Ο κοινόχρηστος φάκελος ανήκει σε άλλη σύνδεση Microsoft. Επανέλαβε τη σύνδεση από το Index.");
  setStatus("Φόρτωση δεδομένων...");
- const [s,p]=await Promise.all([readJson(DATA_FILE),readJson(PAR_FILE)]);contracts=Array.isArray(s?.records)?s.records:[];
+ const [,s,p]=await Promise.all([identifyWorkspaceRole(),readJson(DATA_FILE),readJson(PAR_FILE)]);if(workspace()&&(!Array.isArray(s?.records)||!Array.isArray(p?.contracts)))throw Error("Μη έγκυρη κοινόχρηστη βάση. Δεν έγινε καμία εγγραφή.");contracts=Array.isArray(s?.records)?s.records:[];
  contracts=contracts.map(c=>({
    ...c,
    studyNo:toUpperText(c.studyNo||""),
@@ -1042,6 +1045,7 @@ async function syncFromExcel(showMessage=true){
   if(!r.ok)throw new Error("Δεν βρέθηκε το Excel στο OneDrive. Έλεγξε τη διαδρομή.");
   // Διαβάζουμε τις ημερομηνίες Excel ως αριθμούς σειράς, όχι ως JS Date.
    // Έτσι αποφεύγουμε μετατόπιση κατά μία ημέρα λόγω ζώνης ώρας.
+   await ultraExcel();
    const wb=XLSX.read(await r.arrayBuffer(),{type:"array",cellDates:false,cellNF:true});
   // Επιλογή φύλλου με έλεγχο πραγματικών επικεφαλίδων.
   // Δεν επιλέγουμε ποτέ τυχαία το πρώτο φύλλο, γιατί θα μπορούσαν
@@ -1374,7 +1378,7 @@ function normalizeParalavesText(){
   return changed;
 }
 
-window.addEventListener("load",async()=>{
+window.addEventListener("DOMContentLoaded",async()=>{
   enableUppercaseInputs();
  try{
   const a=await getAccount();
@@ -1802,7 +1806,7 @@ function previewAppReceipt(){
 }
 
 async function commitAppReceipt(){if(busy)return;busy=true;const cid=currentId;try{const r=draftAppReceipt();if(!r.date)throw Error('Επίλεξε ημερομηνία.');const latest=await readJson(PAR_FILE),old=latest?.contracts?.find(x=>x.contractId===cid);if(!old||old.entryMode!=='app')throw Error('Δεν βρέθηκε ενεργή καταχώριση.');const local=getLedger(false);if(currentId!==cid||JSON.stringify(old.receipts)!==JSON.stringify(local.receipts))throw Error('Τα δεδομένα άλλαξαν. Ανανέωσε τη σελίδα.');const duplicate=old.receipts.some(z=>z.itemId===r.itemId&&z.date===r.date&&z.mode===r.mode&&Number(z.units)===r.units&&cents(z.netValue)===cents(r.netValue)&&String(z.note||'')===r.note);if(duplicate&&!confirm('Βρέθηκε ίδια παραλαβή. Είναι πράγματι διαφορετική εγγραφή;'))return;const candidate=JSON.parse(JSON.stringify(old));candidate.receipts.push(r);validateOptionLedger(candidate,getContract());summarizeApp(candidate,getContract());await persistAppLedger(candidate,old);el('appQty').value='';el('appMoney').value='';el('appNote').value='';render();setStatus('Η παραλαβή αποθηκεύτηκε στο OneDrive.','ok');}catch(e){setStatus('ΔΕΝ ΑΠΟΘΗΚΕΥΤΗΚΕ: '+e.message,'err');}finally{busy=false;previewAppReceipt();}}
-function exportAppExcel(){const l=getLedger(false);if(!l||l.entryMode!=='app')return;const wb=XLSX.utils.book_new();const data=[['Ημερομηνία','Είδος','ΟΜΑΔΑ','Μ.Μ.','Τρόπος','Ποσότητα','Αξία χωρίς ΦΠΑ','Παρατήρηση']];for(const r of [...l.receipts].sort((a,b)=>a.date.localeCompare(b.date))){const it=l.items.find(i=>i.id===r.itemId);data.push([r.date,it?.description,itemGroup(it),it?.unit,r.mode==='units'?'ΠΟΣΟΤΗΤΑ':'ΧΡΗΜΑΤΙΚΗ ΑΞΙΑ',r.mode==='units'?r.units:null,r.netValue,r.note]);}XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),'ΠΑΡΑΛΑΒΕΣ');XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['Είδος','ΟΜΑΔΑ','Αρχική ποσότητα','Προαίρεση','Συνολική ποσότητα','Τιμή μονάδας','Συνολική αξία','Υπόλοιπο αξίας'],...l.items.map(it=>[it.description,itemGroup(it),it.initialQty,Number(it.optionQty||0),Number(it.initialQty)+Number(it.optionQty||0),it.unitPrice,Number(it.initialNet)+Number(it.optionQty||0)*Number(it.unitPrice),computeLine(it,l).remainingNet])]),'ΣΥΜΒΑΣΗ');XLSX.writeFile(wb,'ΠΑΡΑΛΑΒΕΣ-'+String(l.studyNo||'ΣΥΜΒΑΣΗ').replace(/[^\p{L}\p{N}-]/gu,'_')+'.xlsx');}
+async function exportAppExcel(){const l=getLedger(false);if(!l||l.entryMode!=='app')return;try{await ultraExcel();}catch(e){setStatus(e.message,'err');return;}const wb=XLSX.utils.book_new();const data=[['Ημερομηνία','Είδος','ΟΜΑΔΑ','Μ.Μ.','Τρόπος','Ποσότητα','Αξία χωρίς ΦΠΑ','Παρατήρηση']];for(const r of [...l.receipts].sort((a,b)=>a.date.localeCompare(b.date))){const it=l.items.find(i=>i.id===r.itemId);data.push([r.date,it?.description,itemGroup(it),it?.unit,r.mode==='units'?'ΠΟΣΟΤΗΤΑ':'ΧΡΗΜΑΤΙΚΗ ΑΞΙΑ',r.mode==='units'?r.units:null,r.netValue,r.note]);}XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),'ΠΑΡΑΛΑΒΕΣ');XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['Είδος','ΟΜΑΔΑ','Αρχική ποσότητα','Προαίρεση','Συνολική ποσότητα','Τιμή μονάδας','Συνολική αξία','Υπόλοιπο αξίας'],...l.items.map(it=>[it.description,itemGroup(it),it.initialQty,Number(it.optionQty||0),Number(it.initialQty)+Number(it.optionQty||0),it.unitPrice,Number(it.initialNet)+Number(it.optionQty||0)*Number(it.unitPrice),computeLine(it,l).remainingNet])]),'ΣΥΜΒΑΣΗ');XLSX.writeFile(wb,'ΠΑΡΑΛΑΒΕΣ-'+String(l.studyNo||'ΣΥΜΒΑΣΗ').replace(/[^\p{L}\p{N}-]/gu,'_')+'.xlsx');}
 
 /* Εισαγωγή από μελέτη .docx με υποχρεωτική επιβεβαίωση, μόνο χωρίς προηγούμενες παραλαβές. */
 let studyWordDraft=null;
@@ -1960,6 +1964,7 @@ async function previewQuantityExcel(){
  quantityDraft=null;el('quantityImportCommit').disabled=true;
  try{
   const f=el('quantityExcelFile').files?.[0];if(!f)throw Error('Επίλεξε το Excel.');
+  await ultraExcel();
   const d=readQuantityOnlyWorkbook(await f.arrayBuffer());quantityDraft={...d,filename:f.name,contractId:currentId};
   const gross=d.optionNet*(1+Number(getLedger(false)?.vat??24)/100);
   const warnings=[];
@@ -2093,7 +2098,7 @@ async function previewCatalogFile(){
    await turboWord();
    rows=normalizeCatalogItems(extractStudyRows((await mammoth.convertToHtml({arrayBuffer:buf})).value));
   }else if(/\.pdf$/i.test(file.name))rows=await catalogFromPdf(buf);
-  else if(/\.xlsx?$/i.test(file.name))rows=catalogFromExcel(buf);
+  else if(/\.xlsx?$/i.test(file.name)){await ultraExcel();rows=catalogFromExcel(buf);}
   else throw Error('Υποστηρίζονται .docx, .pdf, .xlsx, .xls.');
   if(!rows.length)throw Error('Δεν αναγνωρίστηκε αξιόπιστος πίνακας ειδών. Τα σαρωμένα PDF δεν υποστηρίζονται σε αυτή την έκδοση.');
   const net=rows.reduce((a,x)=>a+x.initialNet,0),gross=cents(net*(1+Number(c.vat??24)/100))/100;
@@ -2213,6 +2218,7 @@ async function previewSimpleReceiptFile(){
   if(!l||l.entryMode!=='app')throw Error('Πρώτα ενεργοποίησε την εισαγωγή στη σύμβαση από το συνδεδεμένο Excel. Δεν τροποποιήθηκαν δεδομένα.');
   const date=el('simpleReceiptDate').value;
   if(!/^\d{4}-\d{2}-\d{2}$/.test(date))throw Error('Συμπλήρωσε ημερομηνία παραλαβής.');
+  await ultraExcel();
   const wb=XLSX.read(await file.arrayBuffer(),{type:'array'}),sh=wb.Sheets[wb.SheetNames[0]];
   const all=XLSX.utils.sheet_to_json(sh,{header:1,defval:'',raw:true});
   const headIndex=all.findIndex(row=>{
